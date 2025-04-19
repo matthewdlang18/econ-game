@@ -11,6 +11,6 @@ async function fetchProfile(name, passcode) {
     .select('*')
     .eq('name', name)
     .eq('passcode', passcode)
-    .single();
+    .maybeSingle();
   return { data, error };
 }
