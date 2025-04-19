@@ -14,3 +14,23 @@ async function fetchProfile(name, passcode) {
     .maybeSingle();
   return { data, error };
 }
+
+// Helper: Fetch all sections
+async function fetchSections() {
+  const { data, error } = await supabase
+    .from('sections')
+    .select('*');
+  return { data, error };
+}
+
+// Helper: Update user's section_id
+async function updateUserSection(userId, sectionId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ section_id: sectionId })
+    .eq('id', userId)
+    .select()
+    .maybeSingle();
+  return { data, error };
+}
+
