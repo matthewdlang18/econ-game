@@ -1,0 +1,10 @@
+# Node modules and system files
+node_modules/
+.DS_Store
+.env
+*.log
+# Ignore build output (if any)
+dist/
+build/
+# Ignore Netlify deploy config
+.netlify/
