@@ -36,16 +36,20 @@ async function showDashboard(profile) {
       return;
     }
     let sectionsList = taSections.length > 0
-      ? `<ul>${taSections.map(s => `<li>${s.day} ${s.time} (${s.location})</li>`).join('')}</ul>`
+      ? `<ul class="section-list">${taSections.map(s => `<li><strong>${s.day}</strong> ${s.time}<br><span class="location">${s.location}</span></li>`).join('')}</ul>`
       : '<p>No sections assigned.</p>';
     dashboard.innerHTML = `
       <h2>Welcome TA ${profile.name}</h2>
-      <p><strong>You are logged in as:</strong> ${profile.role}</p>
-      <p><strong>Custom ID:</strong> ${profile.custom_id}</p>
-      <h3>Your Sections:</h3>
+      <div class="info-row"><span class="label">Role:</span> <span class="value">${profile.role}</span></div>
+      <div class="info-row"><span class="label">Custom ID:</span> <span class="value">${profile.custom_id}</span></div>
+      <h3>Your Sections</h3>
       ${sectionsList}
-      <pre style="background:#f4f4f4;padding:1em;border-radius:6px;">${JSON.stringify(profile, null, 2)}</pre>
-      <div id="role-dashboard"><div id="ta-controls">(TA controls go here)</div></div>
+      <div id="role-dashboard" class="dashboard-panel">
+        <div id="ta-controls">
+          <h4>TA Controls</h4>
+          <p>(TA controls will go here)</p>
+        </div>
+      </div>
       <button id="logout-btn">Logout</button>
     `;
     document.getElementById('logout-btn').onclick = () => {
@@ -66,15 +70,20 @@ async function showDashboard(profile) {
   ).join('');
   dashboard.innerHTML = `
     <h2>Welcome ${profile.name}</h2>
-    <p><strong>You are logged in as:</strong> ${profile.role || '(role missing)'}</p>
-    <p><strong>Custom ID:</strong> ${profile.custom_id || '(none)'}</p>
+    <div class="info-row"><span class="label">Role:</span> <span class="value">${profile.role}</span></div>
+    <div class="info-row"><span class="label">Custom ID:</span> <span class="value">${profile.custom_id}</span></div>
     <form id="section-form">
       <label for="section-select"><strong>Section:</strong></label>
       <select id="section-select">${sectionOptions}</select>
       <button type="submit">Save Section</button>
+      <span id="section-success" style="color:green;display:none;margin-left:1em;">Section updated!</span>
     </form>
-    <pre style="background:#f4f4f4;padding:1em;border-radius:6px;">${JSON.stringify(profile, null, 2)}</pre>
-    <div id="role-dashboard"><div id="student-games">(Student game list goes here)</div></div>
+    <div id="role-dashboard" class="dashboard-panel">
+      <div id="student-games">
+        <h4>Student Dashboard</h4>
+        <p>(Student game list and actions will go here)</p>
+      </div>
+    </div>
     <button id="logout-btn">Logout</button>
   `;
   document.getElementById('logout-btn').onclick = () => {
@@ -84,12 +93,16 @@ async function showDashboard(profile) {
   document.getElementById('section-form').onsubmit = async (e) => {
     e.preventDefault();
     const newSectionId = document.getElementById('section-select').value;
+    const successMsg = document.getElementById('section-success');
     if (newSectionId !== profile.section_id) {
       const { data: updatedProfile, error: updateError } = await updateUserSection(profile.id, newSectionId);
       if (updateError) {
         alert('Failed to update section: ' + updateError.message);
         return;
       }
+      // Show success message
+      successMsg.style.display = 'inline';
+      setTimeout(() => successMsg.style.display = 'none', 2000);
       // Re-render dashboard with updated profile
       showDashboard(updatedProfile);
       return;
@@ -97,6 +110,7 @@ async function showDashboard(profile) {
     // If section didn't change, just reload dashboard
     showDashboard(profile);
   };
+
   // Show TA controls or student dashboard after section selection
   const roleDashboard = document.getElementById('role-dashboard');
   if (profile.role === 'ta') {
