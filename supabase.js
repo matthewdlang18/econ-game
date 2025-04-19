@@ -23,6 +23,16 @@ async function fetchSections() {
   return { data, error };
 }
 
+// Helper: Fetch all sections for a TA by custom_id
+async function fetchTASections(taCustomId) {
+  const { data, error } = await supabase
+    .from('sections')
+    .select('*')
+    .eq('ta_id', taCustomId);
+  return { data, error };
+}
+
+
 // Helper: Update user's section_id
 async function updateUserSection(userId, sectionId) {
   const { data, error } = await supabase

@@ -28,20 +28,44 @@ loginForm.addEventListener('submit', async (e) => {
 });
 
 async function showDashboard(profile) {
-  // Fetch all sections
+  if (profile.role === 'ta') {
+    // Fetch all sections for this TA
+    const { data: taSections, error: taSectionError } = await fetchTASections(profile.custom_id);
+    if (taSectionError) {
+      dashboard.innerHTML = `<p>Error loading your sections: ${taSectionError.message}</p>`;
+      return;
+    }
+    let sectionsList = taSections.length > 0
+      ? `<ul>${taSections.map(s => `<li>${s.day} ${s.time} (${s.location})</li>`).join('')}</ul>`
+      : '<p>No sections assigned.</p>';
+    dashboard.innerHTML = `
+      <h2>Welcome TA ${profile.name}</h2>
+      <p><strong>You are logged in as:</strong> ${profile.role}</p>
+      <p><strong>Custom ID:</strong> ${profile.custom_id}</p>
+      <h3>Your Sections:</h3>
+      ${sectionsList}
+      <pre style="background:#f4f4f4;padding:1em;border-radius:6px;">${JSON.stringify(profile, null, 2)}</pre>
+      <div id="role-dashboard"><div id="ta-controls">(TA controls go here)</div></div>
+      <button id="logout-btn">Logout</button>
+    `;
+    document.getElementById('logout-btn').onclick = () => {
+      dashboard.style.display = 'none';
+      document.getElementById('login-container').style.display = 'block';
+    };
+    return;
+  }
+
+  // For students, keep section selection
   const { data: sections, error: sectionError } = await fetchSections();
   if (sectionError) {
     dashboard.innerHTML = `<p>Error loading sections: ${sectionError.message}</p>`;
     return;
   }
-
-  // Section selection dropdown
   let sectionOptions = sections.map(
     s => `<option value="${s.id}" ${profile.section_id === s.id ? 'selected' : ''}>${s.day} ${s.time} (${s.location})</option>`
   ).join('');
-
   dashboard.innerHTML = `
-    <h2>Welcome${profile.role === 'ta' ? ' TA' : ''} ${profile.name}</h2>
+    <h2>Welcome ${profile.name}</h2>
     <p><strong>You are logged in as:</strong> ${profile.role || '(role missing)'}</p>
     <p><strong>Custom ID:</strong> ${profile.custom_id || '(none)'}</p>
     <form id="section-form">
@@ -50,7 +74,7 @@ async function showDashboard(profile) {
       <button type="submit">Save Section</button>
     </form>
     <pre style="background:#f4f4f4;padding:1em;border-radius:6px;">${JSON.stringify(profile, null, 2)}</pre>
-    <div id="role-dashboard"></div>
+    <div id="role-dashboard"><div id="student-games">(Student game list goes here)</div></div>
     <button id="logout-btn">Logout</button>
   `;
   document.getElementById('logout-btn').onclick = () => {
@@ -81,4 +105,3 @@ async function showDashboard(profile) {
     roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
   }
 }
-
