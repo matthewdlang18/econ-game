@@ -2,6 +2,17 @@
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
+const redirectMessage = document.getElementById('redirect-message');
+
+// Check for redirect parameter
+const urlParams = new URLSearchParams(window.location.search);
+const redirect = urlParams.get('redirect');
+
+// Show appropriate message based on redirect parameter
+if (redirect === 'investment-odyssey') {
+  redirectMessage.innerHTML = '<strong>Welcome!</strong> Please sign in to access Investment Odyssey.';
+  redirectMessage.style.display = 'block';
+}
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -21,10 +32,26 @@ loginForm.addEventListener('submit', async (e) => {
     .update({ last_login: new Date().toISOString() })
     .eq('id', profile.id);
 
-  // Hide login, show dashboard
-  document.getElementById('login-container').style.display = 'none';
-  dashboard.style.display = 'block';
-  showDashboard(profile);
+  // Save user info to localStorage for Investment Odyssey
+  localStorage.setItem('student_id', profile.id);
+  localStorage.setItem('student_name', profile.name);
+  if (profile.section_id) {
+    localStorage.setItem('section_id', profile.section_id);
+  }
+
+  // Check if the user wants to go to Investment Odyssey
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirect = urlParams.get('redirect');
+
+  if (redirect === 'investment-odyssey') {
+    // Redirect to Investment Odyssey about page
+    window.location.href = 'investment-odyssey/about.html';
+  } else {
+    // Hide login, show dashboard
+    document.getElementById('login-container').style.display = 'none';
+    dashboard.style.display = 'block';
+    showDashboard(profile);
+  }
 });
 
 async function showDashboard(profile) {
