@@ -32,6 +32,28 @@ async function fetchTASections(taCustomId) {
   return { data, error };
 }
 
+// Helper: Fetch all students in a section
+async function fetchStudentsBySection(sectionId) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, name, custom_id')
+    .eq('role', 'student')
+    .eq('section_id', sectionId);
+  return { data, error };
+}
+
+// Helper: Fetch games for a section (stub)
+async function fetchGamesBySection(sectionId) {
+  // TODO: Implement when games table is ready
+  return { data: [], error: null };
+}
+
+// Helper: Fetch games for a student (stub)
+async function fetchGamesByStudent(studentId) {
+  // TODO: Implement when games table is ready
+  return { data: [], error: null };
+}
+
 
 // Helper: Update user's section_id
 async function updateUserSection(userId, sectionId) {

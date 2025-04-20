@@ -36,7 +36,7 @@ async function showDashboard(profile) {
       return;
     }
     let sectionsList = taSections.length > 0
-      ? `<ul class="section-list">${taSections.map(s => `<li><strong>${s.day}</strong> ${s.time}<br><span class="location">${s.location}</span></li>`).join('')}</ul>`
+      ? `<ul class="section-list">${taSections.map((s, idx) => `<li><strong>${s.day}</strong> ${s.time}<br><span class="location">${s.location}</span> <button class="roster-toggle" data-section="${s.id}" data-idx="${idx}">Show Roster</button><div class="roster" id="roster-${s.id}" style="display:none;"></div></li>`).join('')}</ul>`
       : '<p>No sections assigned.</p>';
     dashboard.innerHTML = `
       <h2>Welcome TA ${profile.name}</h2>
@@ -47,11 +47,33 @@ async function showDashboard(profile) {
       <div id="role-dashboard" class="dashboard-panel">
         <div id="ta-controls">
           <h4>TA Controls</h4>
-          <p>(TA controls will go here)</p>
+          <p>Click "Show Roster" to view students in a section.</p>
         </div>
       </div>
       <button id="logout-btn">Logout</button>
     `;
+    document.querySelectorAll('.roster-toggle').forEach(btn => {
+      btn.onclick = async function() {
+        const sectionId = btn.getAttribute('data-section');
+        const rosterDiv = document.getElementById(`roster-${sectionId}`);
+        if (rosterDiv.style.display === 'none') {
+          rosterDiv.innerHTML = '<em>Loading...</em>';
+          rosterDiv.style.display = 'block';
+          const { data: students, error } = await fetchStudentsBySection(sectionId);
+          if (error) {
+            rosterDiv.innerHTML = `<span style="color:red">Failed to load roster</span>`;
+          } else if (students.length === 0) {
+            rosterDiv.innerHTML = '<span>No students enrolled.</span>';
+          } else {
+            rosterDiv.innerHTML = `<ul class="roster-list">${students.map(stu => `<li>${stu.name} <span class="student-id">(${stu.custom_id})</span></li>`).join('')}</ul>`;
+          }
+          btn.textContent = 'Hide Roster';
+        } else {
+          rosterDiv.style.display = 'none';
+          btn.textContent = 'Show Roster';
+        }
+      };
+    });
     document.getElementById('logout-btn').onclick = () => {
       dashboard.style.display = 'none';
       document.getElementById('login-container').style.display = 'block';
@@ -81,11 +103,23 @@ async function showDashboard(profile) {
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
         <h4>Student Dashboard</h4>
-        <p>(Student game list and actions will go here)</p>
+        <div id="student-section-info"></div>
+        <div id="student-games-list"><em>(No games available yet)</em></div>
       </div>
     </div>
     <button id="logout-btn">Logout</button>
   `;
+  // Show current section info for students
+  const sectionInfoDiv = document.getElementById('student-section-info');
+  const currentSection = sections.find(s => s.id === profile.section_id);
+  if (currentSection) {
+    sectionInfoDiv.innerHTML = `<div class="info-row"><span class="label">Section:</span> <span class="value">${currentSection.day} ${currentSection.time} (${currentSection.location})</span></div>`;
+  } else {
+    sectionInfoDiv.innerHTML = `<span style="color:#b00">No section selected.</span>`;
+  }
+  // (Optional) Load games for student when implemented
+  // const { data: games, error: gamesError } = await fetchGamesByStudent(profile.id);
+  // ...
   document.getElementById('logout-btn').onclick = () => {
     dashboard.style.display = 'none';
     document.getElementById('login-container').style.display = 'block';
