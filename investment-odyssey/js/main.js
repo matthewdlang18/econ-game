@@ -6,6 +6,8 @@
 // DOM Elements
 const loadingSection = document.getElementById('loading-section');
 const notAuthenticatedSection = document.getElementById('not-authenticated-section');
+const mainPageAuthMessage = document.getElementById('main-page-auth-message');
+const useMainSessionBtn = document.getElementById('use-main-session-btn');
 const gameDashboard = document.getElementById('game-dashboard');
 const gameInterface = document.getElementById('game-interface');
 const userInfo = document.getElementById('user-info');
@@ -26,57 +28,92 @@ async function checkAuth() {
     notAuthenticatedSection.classList.add('d-none');
     gameDashboard.classList.add('d-none');
 
-    // Use auth helper to check if user is authenticated
-    const isAuth = await authHelper.isAuthenticated();
+    // First, try to get the session directly from Supabase
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (!isAuth) {
+    if (sessionError || !session) {
       console.log('No active session found');
       showNotAuthenticated();
       return;
     }
 
-    // Get current user
-    const user = await authHelper.getCurrentUser();
+    console.log('Session found:', session.user.id);
 
-    if (!user) {
-      console.log('No user found in session');
-      showNotAuthenticated();
+    // Try to get the profile from the profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
+    }
+
+    if (profile) {
+      console.log('Profile found by ID:', profile.name);
+      currentProfile = profile;
+      showDashboard(profile);
       return;
     }
 
-    console.log('User authenticated:', user.id);
-
-    // Get user profile
-    let profile = await authHelper.getUserProfile(user.id);
-
-    if (!profile) {
-      // If profile not found by ID, try to find by email
-      const email = user.email || `${user.id}@example.com`;
-      const emailParts = email.split('@');
+    // If profile not found by ID, try to find by email
+    if (session.user.email) {
+      const emailParts = session.user.email.split('@');
       const customId = emailParts[0];
 
-      const { data: profileByCustomId } = await supabase
+      const { data: profileByEmail, error: emailError } = await supabase
         .from('profiles')
         .select('*')
         .eq('custom_id', customId)
         .maybeSingle();
 
-      if (profileByCustomId) {
-        profile = profileByCustomId;
+      if (emailError) {
+        console.error('Error fetching profile by email:', emailError);
+      }
+
+      if (profileByEmail) {
+        console.log('Profile found by email:', profileByEmail.name);
+        currentProfile = profileByEmail;
+        showDashboard(profileByEmail);
+        return;
       }
     }
 
-    if (!profile) {
-      console.error('Profile not found');
-      showNotAuthenticated();
-      return;
+    // If we still don't have a profile, try to get it from the user metadata
+    if (session.user.user_metadata && session.user.user_metadata.name) {
+      // Create a new profile based on the user metadata
+      const { data: newProfile, error: newProfileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: session.user.id,
+          name: session.user.user_metadata.name,
+          custom_id: crypto.randomUUID(),
+          role: session.user.user_metadata.role || 'student',
+          passcode: 'password', // Default passcode
+          created_at: new Date().toISOString(),
+          last_login: new Date().toISOString()
+        })
+        .select()
+        .maybeSingle();
+
+      if (newProfileError) {
+        console.error('Error creating new profile:', newProfileError);
+        showNotAuthenticated();
+        return;
+      }
+
+      if (newProfile) {
+        console.log('New profile created:', newProfile.name);
+        currentProfile = newProfile;
+        showDashboard(newProfile);
+        return;
+      }
     }
 
-    console.log('Profile loaded:', profile.name);
-
-    // User is logged in, show dashboard
-    currentProfile = profile;
-    showDashboard(profile);
+    // If we still don't have a profile, show the not authenticated section
+    console.log('No profile found for user');
+    showNotAuthenticated();
   } catch (err) {
     console.error('Auth check error:', err);
     showNotAuthenticated();
@@ -84,12 +121,20 @@ async function checkAuth() {
 }
 
 // Show not authenticated section
-function showNotAuthenticated() {
+async function showNotAuthenticated() {
   loadingSection.classList.add('d-none');
   notAuthenticatedSection.classList.remove('d-none');
   gameDashboard.classList.add('d-none');
   gameInterface.classList.add('d-none');
   userInfo.classList.add('d-none');
+
+  // Check if user is logged in on main page
+  const isMainPageAuth = await authHelper.checkMainPageAuth();
+  if (isMainPageAuth) {
+    mainPageAuthMessage.classList.remove('d-none');
+  } else {
+    mainPageAuthMessage.classList.add('d-none');
+  }
 }
 
 // Show dashboard
@@ -206,18 +251,6 @@ guestModeBtn.addEventListener('click', async () => {
       return;
     }
 
-    // Sign in the guest
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: `${result.profile.custom_id}@example.com`,
-      password: result.profile.passcode
-    });
-
-    if (signInError) {
-      console.error('Guest sign in error:', signInError);
-      showNotAuthenticated();
-      return;
-    }
-
     // Show dashboard with guest profile
     currentProfile = result.profile;
     showDashboard(result.profile);
@@ -227,14 +260,34 @@ guestModeBtn.addEventListener('click', async () => {
   }
 });
 
+// Handle use main session button click
+useMainSessionBtn.addEventListener('click', async () => {
+  // Show loading section
+  loadingSection.classList.remove('d-none');
+  notAuthenticatedSection.classList.add('d-none');
+
+  // Redirect to main page and back to refresh the session
+  window.location.href = '../index.html?redirect=investment-odyssey';
+});
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Investment Odyssey initializing...');
+
+  // Check if we were redirected from the main page
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirected = urlParams.get('redirected');
 
   // Remove any query parameters to avoid confusion on refresh
   if (window.location.search) {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, document.title, newUrl);
+  }
+
+  // If redirected from main page, force refresh the auth state
+  if (redirected === 'true') {
+    console.log('Redirected from main page, refreshing auth state');
+    supabase.auth.refreshSession();
   }
 
   // Check authentication status

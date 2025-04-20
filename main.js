@@ -3,6 +3,17 @@ const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
 
+// Check for redirect parameter
+document.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirect = urlParams.get('redirect');
+
+  if (redirect === 'investment-odyssey') {
+    // Redirect back to Investment Odyssey with redirected=true parameter
+    window.location.href = 'investment-odyssey/index.html?redirected=true';
+  }
+});
+
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';

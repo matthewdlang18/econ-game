@@ -77,41 +77,19 @@ async function getUserProfile(userId) {
 // Create a guest profile
 async function createGuestProfile() {
   try {
-    // Generate a random guest name and email
+    // Generate a random guest name
     const guestName = 'Guest_' + Math.floor(Math.random() * 10000);
-    const guestEmail = `guest_${Math.random().toString(36).substring(2, 10)}@example.com`;
-    const guestPassword = 'guest123456'; // At least 6 characters
 
-    // First create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: guestEmail,
-      password: guestPassword,
-      options: {
-        data: {
-          name: guestName,
-          role: 'guest'
-        }
-      }
-    });
-
-    if (authError) {
-      console.error('Guest auth creation error:', authError);
-      return { success: false, error: authError };
-    }
-
-    // Get the user ID from the auth response
-    const userId = authData.user.id;
+    // Create a guest profile without auth
     const customId = crypto.randomUUID();
 
-    // Create a guest profile linked to the auth user
     const { data: profile, error } = await supabase
       .from('profiles')
       .insert({
-        id: userId, // Link to auth user
         name: guestName,
         custom_id: customId,
         role: 'guest',
-        passcode: guestPassword,
+        passcode: 'guest',
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       })
@@ -130,12 +108,40 @@ async function createGuestProfile() {
   }
 }
 
+// Check if user is logged in on main page
+async function checkMainPageAuth() {
+  try {
+    // Try to get the session from localStorage
+    const localStorageData = localStorage.getItem('supabase.auth.token');
+    if (localStorageData) {
+      console.log('Found auth token in localStorage');
+      return true;
+    }
+
+    // If not in localStorage, check for cookies
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.startsWith('supabase-auth-token=')) {
+        console.log('Found auth token in cookies');
+        return true;
+      }
+    }
+
+    return false;
+  } catch (err) {
+    console.error('Error checking main page auth:', err);
+    return false;
+  }
+}
+
 // Export functions for use in other modules
 if (typeof window !== 'undefined') {
   window.authHelper = {
     isAuthenticated,
     getCurrentUser,
     getUserProfile,
-    createGuestProfile
+    createGuestProfile,
+    checkMainPageAuth
   };
 }
