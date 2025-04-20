@@ -22,19 +22,19 @@ let currentProfile = null;
 // Check if user is already logged in
 async function checkAuth() {
   try {
-    // First check if we have a session cookie
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    // Use auth helper to check if user is authenticated
+    const isAuth = await authHelper.isAuthenticated();
 
-    if (sessionError || !session) {
+    if (!isAuth) {
       console.log('No active session found');
       showLogin();
       return;
     }
 
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Get current user
+    const user = await authHelper.getCurrentUser();
 
-    if (error || !user) {
-      // No active session, show login
+    if (!user) {
       console.log('No user found in session');
       showLogin();
       return;
@@ -42,15 +42,28 @@ async function checkAuth() {
 
     console.log('User authenticated:', user.id);
 
-    // Get user profile from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Get user profile
+    let profile = await authHelper.getUserProfile(user.id);
 
-    if (profileError || !profile) {
-      console.error('Error fetching profile:', profileError);
+    if (!profile) {
+      // If profile not found by ID, try to find by email
+      const email = user.email || `${user.id}@example.com`;
+      const emailParts = email.split('@');
+      const customId = emailParts[0];
+
+      const { data: profileByCustomId } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('custom_id', customId)
+        .maybeSingle();
+
+      if (profileByCustomId) {
+        profile = profileByCustomId;
+      }
+    }
+
+    if (!profile) {
+      console.error('Profile not found');
       showLogin();
       return;
     }
@@ -151,35 +164,54 @@ loginForm.addEventListener('submit', async (e) => {
   const passcode = document.getElementById('passcode').value.trim();
 
   try {
-    // Use the fetchProfile function from the parent scope (supabase.js)
-    let profileResult;
-    if (typeof window.fetchProfile === 'function') {
-      profileResult = await window.fetchProfile(name, passcode);
-    } else {
-      // Fallback implementation if the function isn't available
-      profileResult = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('name', name)
-        .eq('passcode', passcode)
-        .maybeSingle();
-    }
+    // First, try to find the profile
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('name', name)
+      .eq('passcode', passcode)
+      .maybeSingle();
 
-    const { data: profile, error } = profileResult;
-
-    if (error || !profile) {
+    if (profileError || !profile) {
       loginError.textContent = 'Invalid name or passcode.';
       return;
     }
 
-    // Sign in with Supabase Auth
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: `${profile.custom_id}@example.com`, // Using custom_id as email
-      password: passcode
-    });
+    console.log('Profile found:', profile.name);
 
-    if (signInError) {
-      console.error('Sign in error:', signInError);
+    // Create a unique email for authentication
+    const email = `${profile.custom_id}@example.com`;
+
+    // Check if user already exists in auth
+    try {
+      // Try to sign in first
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: passcode
+      });
+
+      if (signInError) {
+        // If sign in fails, try to sign up
+        console.log('Sign in failed, trying to sign up');
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: email,
+          password: passcode,
+          options: {
+            data: {
+              name: profile.name,
+              role: profile.role
+            }
+          }
+        });
+
+        if (signUpError) {
+          console.error('Sign up error:', signUpError);
+          loginError.textContent = 'Authentication error. Please try again.';
+          return;
+        }
+      }
+    } catch (authError) {
+      console.error('Auth error:', authError);
       loginError.textContent = 'Authentication error. Please try again.';
       return;
     }
@@ -202,17 +234,42 @@ loginForm.addEventListener('submit', async (e) => {
 // Handle guest mode button click
 guestModeBtn.addEventListener('click', async () => {
   try {
-    // Generate a random guest ID
-    const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+    // Generate a random guest name and email
+    const guestName = 'Guest_' + Math.floor(Math.random() * 10000);
+    const guestEmail = `guest_${Math.random().toString(36).substring(2, 10)}@example.com`;
+    const guestPassword = 'guest123';
 
-    // Create a guest profile
+    // First create the auth user
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: guestEmail,
+      password: guestPassword,
+      options: {
+        data: {
+          name: guestName,
+          role: 'guest'
+        }
+      }
+    });
+
+    if (authError) {
+      console.error('Guest auth creation error:', authError);
+      loginError.textContent = 'Failed to create guest account.';
+      return;
+    }
+
+    // Get the user ID from the auth response
+    const userId = authData.user.id;
+    const customId = crypto.randomUUID();
+
+    // Create a guest profile linked to the auth user
     const { data: profile, error } = await supabase
       .from('profiles')
       .insert({
-        name: `Guest_${guestId.substring(6)}`,
-        custom_id: guestId,
+        id: userId, // Link to auth user
+        name: guestName,
+        custom_id: customId,
         role: 'guest',
-        passcode: 'guest',
+        passcode: guestPassword,
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       })
@@ -222,6 +279,18 @@ guestModeBtn.addEventListener('click', async () => {
     if (error) {
       console.error('Guest profile creation error:', error);
       loginError.textContent = 'Failed to create guest account.';
+      return;
+    }
+
+    // Sign in the guest
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: guestEmail,
+      password: guestPassword
+    });
+
+    if (signInError) {
+      console.error('Guest sign in error:', signInError);
+      loginError.textContent = 'Failed to sign in as guest.';
       return;
     }
 
@@ -263,6 +332,17 @@ logoutBtn.addEventListener('click', async () => {
 
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
+  // Check if we were redirected from the main page with a session
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasSession = urlParams.get('session');
+
+  if (hasSession === 'true') {
+    console.log('Redirected from main page with session');
+    // Remove the query parameter to avoid confusion on refresh
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+  }
+
   // Check authentication status
   checkAuth();
 
