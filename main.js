@@ -65,7 +65,7 @@ async function showDashboard(profile) {
           } else if (students.length === 0) {
             rosterDiv.innerHTML = '<span>No students enrolled.</span>';
           } else {
-            rosterDiv.innerHTML = `<ul class="roster-list">${students.map(stu => `<li>${stu.name} <span class="student-id">(${stu.custom_id})</span></li>`).join('')}</ul>`;
+            rosterDiv.innerHTML = `<ul class="roster-list">${students.map(stu => `<li>${stu.name}</li>`).join('')}</ul>`;
           }
           btn.textContent = 'Hide Roster';
         } else {
