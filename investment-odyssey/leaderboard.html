@@ -249,7 +249,7 @@
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${score.user_name}</td>
-                            <td>$${formatCurrency(score.final_portfolio)}</td>
+                            <td>$${score.final_portfolio.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
                             <td>${formattedDate}</td>
                         `;
 
@@ -318,7 +318,7 @@
                         row.innerHTML = `
                             <td>${index + 1}</td>
                             <td>${score.user_name}</td>
-                            <td>$${formatCurrency(score.final_portfolio)}</td>
+                            <td>$${score.final_portfolio.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</td>
                             <td>${formattedDate}</td>
                         `;
 

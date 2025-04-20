@@ -2,6 +2,110 @@
 
 // Service object for Supabase integration
 window.Service = {
+    // Save game state to Supabase
+    saveGameState: async function(studentId, gameType, gameData) {
+        try {
+            // Check if Supabase client is available
+            if (!window.supabase) {
+                console.error('Supabase client not available');
+                return { success: false, error: 'Supabase client not available' };
+            }
+
+            // Check if student ID is available
+            if (!studentId) {
+                console.error('Student ID not available');
+                return { success: false, error: 'Student ID not available' };
+            }
+
+            // Check if game data exists for this user
+            const { data: existingData, error: checkError } = await window.supabase
+                .from('game_states')
+                .select('id')
+                .eq('user_id', studentId)
+                .eq('game_type', gameType)
+                .maybeSingle();
+
+            if (checkError) {
+                console.error('Error checking for existing game state:', checkError);
+                return { success: false, error: checkError.message };
+            }
+
+            let result;
+            if (existingData) {
+                // Update existing game state
+                result = await window.supabase
+                    .from('game_states')
+                    .update({
+                        game_data: gameData,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', existingData.id);
+            } else {
+                // Insert new game state
+                result = await window.supabase
+                    .from('game_states')
+                    .insert([
+                        {
+                            user_id: studentId,
+                            game_type: gameType,
+                            game_data: gameData,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }
+                    ]);
+            }
+
+            if (result.error) {
+                console.error('Error saving game state to Supabase:', result.error);
+                return { success: false, error: result.error.message };
+            }
+
+            return { success: true, data: result.data };
+        } catch (error) {
+            console.error('Error saving game state to Supabase:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // Load game state from Supabase
+    loadGameState: async function(studentId, gameType) {
+        try {
+            // Check if Supabase client is available
+            if (!window.supabase) {
+                console.error('Supabase client not available');
+                return { success: false, error: 'Supabase client not available' };
+            }
+
+            // Check if student ID is available
+            if (!studentId) {
+                console.error('Student ID not available');
+                return { success: false, error: 'Student ID not available' };
+            }
+
+            // Get game state from Supabase
+            const { data, error } = await window.supabase
+                .from('game_states')
+                .select('game_data')
+                .eq('user_id', studentId)
+                .eq('game_type', gameType)
+                .maybeSingle();
+
+            if (error) {
+                console.error('Error loading game state from Supabase:', error);
+                return { success: false, error: error.message };
+            }
+
+            if (!data) {
+                return { success: false, error: 'No game state found' };
+            }
+
+            return { success: true, data: data.game_data };
+        } catch (error) {
+            console.error('Error loading game state from Supabase:', error);
+            return { success: false, error: error.message };
+        }
+    },
+
     // Save game score to Supabase
     saveGameScore: async function(studentId, studentName, gameType, score, taName = null, isClassGame = false) {
         try {

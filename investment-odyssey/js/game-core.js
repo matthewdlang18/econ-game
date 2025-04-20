@@ -131,7 +131,7 @@ function resetAllCharts() {
 }
 
 // Start a new game
-function startGame() {
+async function startGame() {
     // Reset all charts first
     resetAllCharts();
 
@@ -174,14 +174,14 @@ function startGame() {
     }
 
     // Save game state
-    saveGameState();
+    await saveGameState();
 
     // Show notification
     showNotification('Game started! You have $10,000 to invest.', 'success');
 }
 
 // Advance to next round
-function nextRound() {
+async function nextRound() {
     try {
         console.log('Starting nextRound function');
 
@@ -278,9 +278,9 @@ function nextRound() {
         }
 
         try {
-            // Save game state to local storage
+            // Save game state to local storage and Supabase
             console.log('Saving game state...');
-            saveGameState();
+            await saveGameState();
             console.log('Game state saved');
         } catch (saveError) {
             console.error('Error saving game state:', saveError);
@@ -296,69 +296,165 @@ function nextRound() {
     }
 }
 
+// Asset returns configuration - from macro3.py
+// Make it available globally for other scripts
+window.assetReturns = {
+    'S&P 500': {
+        mean: 0.1151,
+        stdDev: 0.1949,
+        min: -0.43,
+        max: 0.50
+    },
+    'Bonds': {
+        mean: 0.0334,
+        stdDev: 0.0301,
+        min: 0.0003,
+        max: 0.14
+    },
+    'Real Estate': {
+        mean: 0.0439,
+        stdDev: 0.0620,
+        min: -0.12,
+        max: 0.24
+    },
+    'Gold': {
+        mean: 0.0648,
+        stdDev: 0.2076,
+        min: -0.32,
+        max: 1.25
+    },
+    'Commodities': {
+        mean: 0.0815,
+        stdDev: 0.1522,
+        min: -0.25,
+        max: 2.00
+    },
+    'Bitcoin': {
+        mean: 0.50,
+        stdDev: 1.00,
+        min: -0.73,
+        max: 2.50
+    }
+};
+
+// Correlation matrix for assets - from macro3.py
+// Make it available globally for other scripts
+window.correlationMatrix = [
+    [1.0000, -0.5169, 0.3425, 0.0199, 0.1243, 0.4057],
+    [-0.5169, 1.0000, 0.0176, 0.0289, -0.0235, -0.2259],
+    [0.3425, 0.0176, 1.0000, -0.4967, -0.0334, 0.1559],
+    [0.0199, 0.0289, -0.4967, 1.0000, 0.0995, -0.5343],
+    [0.1243, -0.0235, -0.0334, 0.0995, 1.0000, 0.0436],
+    [0.4057, -0.2259, 0.1559, -0.5343, 0.0436, 1.0000]
+];
+
 // Generate new prices
 function generateNewPrices() {
-    // Store last round prices for change calculation
-    lastRoundPrices = {...gameState.assetPrices};
-    lastPricesRoundNumber = gameState.roundNumber - 1;
+    try {
+        // Store last round prices for change calculation
+        lastRoundPrices = {...gameState.assetPrices};
+        lastPricesRoundNumber = gameState.roundNumber - 1;
 
-    // S&P 500 - Moderate volatility
-    const sp500Change = (Math.random() * 0.2) - 0.05; // -5% to +15%
-    gameState.assetPrices['S&P 500'] *= (1 + sp500Change);
+        // Generate correlated random returns
+        const assetNames = Object.keys(window.assetReturns);
+        const means = assetNames.map(asset => window.assetReturns[asset].mean);
+        const stdDevs = assetNames.map(asset => window.assetReturns[asset].stdDev);
 
-    // Bonds - Low volatility
-    const bondsChange = (Math.random() * 0.06) - 0.01; // -1% to +5%
-    gameState.assetPrices['Bonds'] *= (1 + bondsChange);
-
-    // Real Estate - Moderate volatility with slight upward bias
-    const realEstateChange = (Math.random() * 0.15) - 0.05; // -5% to +10%
-    gameState.assetPrices['Real Estate'] *= (1 + realEstateChange);
-
-    // Gold - Higher volatility
-    const goldChange = (Math.random() * 0.25) - 0.1; // -10% to +15%
-    gameState.assetPrices['Gold'] *= (1 + goldChange);
-
-    // Commodities - High volatility
-    const commoditiesChange = (Math.random() * 0.3) - 0.15; // -15% to +15%
-    gameState.assetPrices['Commodities'] *= (1 + commoditiesChange);
-
-    // Bitcoin - Extreme volatility with occasional crashes
-    let bitcoinChange;
-
-    // Check if it's time for a Bitcoin crash (approximately every 5-8 rounds)
-    const roundsSinceLastCrash = gameState.roundNumber - gameState.lastBitcoinCrashRound;
-    const crashProbability = Math.min(0.1 + (roundsSinceLastCrash * 0.05), 0.4); // Increases over time
-
-    if (Math.random() < crashProbability) {
-        // Bitcoin crash
-        const crashSeverity = Math.random() * (gameState.bitcoinShockRange[1] - gameState.bitcoinShockRange[0]) + gameState.bitcoinShockRange[0];
-        bitcoinChange = crashSeverity; // -50% to -75% crash
-        gameState.lastBitcoinCrashRound = gameState.roundNumber;
-
-        // Make the next crash potentially more severe
-        gameState.bitcoinShockRange[0] -= 0.05;
-        gameState.bitcoinShockRange[1] -= 0.05;
-    } else {
-        // Normal Bitcoin volatility
-        bitcoinChange = (Math.random() * 0.6) - 0.2; // -20% to +40%
-    }
-
-    gameState.assetPrices['Bitcoin'] *= (1 + bitcoinChange);
-
-    // Ensure prices don't go below a minimum threshold
-    const minPrices = {
-        'S&P 500': 10,
-        'Bonds': 50,
-        'Real Estate': 1000,
-        'Gold': 500,
-        'Commodities': 10,
-        'Bitcoin': 1000
-    };
-
-    for (const [asset, minPrice] of Object.entries(minPrices)) {
-        if (gameState.assetPrices[asset] < minPrice) {
-            gameState.assetPrices[asset] = minPrice;
+        // Generate uncorrelated standard normal random variables
+        const uncorrelatedZ = [];
+        for (let i = 0; i < assetNames.length; i++) {
+            // Box-Muller transform for normal distribution
+            const u1 = Math.random();
+            const u2 = Math.random();
+            const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+            uncorrelatedZ.push(z);
         }
+
+        // Apply Cholesky decomposition to get correlated random variables
+        // This is a simplified approach - we'll use the correlation matrix directly
+        const correlatedReturns = {};
+
+        // Special handling for Bitcoin
+        let bitcoinReturn;
+
+        // Check if it's time for a Bitcoin crash (approximately every 5-8 rounds)
+        const roundsSinceLastCrash = gameState.roundNumber - gameState.lastBitcoinCrashRound;
+        const crashProbability = Math.min(0.1 + (roundsSinceLastCrash * 0.05), 0.4); // Increases over time
+
+        if (Math.random() < crashProbability) {
+            // Bitcoin crash
+            const crashSeverity = Math.random() * (gameState.bitcoinShockRange[1] - gameState.bitcoinShockRange[0]) + gameState.bitcoinShockRange[0];
+            bitcoinReturn = crashSeverity; // -50% to -75% crash
+            gameState.lastBitcoinCrashRound = gameState.roundNumber;
+
+            // Make the next crash potentially more severe
+            gameState.bitcoinShockRange[0] -= 0.05;
+            gameState.bitcoinShockRange[1] -= 0.05;
+        } else {
+            // Normal Bitcoin volatility with correlation to other assets
+            let weightedReturn = 0;
+            for (let j = 0; j < assetNames.length; j++) {
+                weightedReturn += window.correlationMatrix[5][j] * uncorrelatedZ[j];
+            }
+            bitcoinReturn = window.assetReturns['Bitcoin'].mean + window.assetReturns['Bitcoin'].stdDev * weightedReturn;
+        }
+
+        // Ensure Bitcoin return is within bounds
+        bitcoinReturn = Math.max(
+            window.assetReturns['Bitcoin'].min,
+            Math.min(window.assetReturns['Bitcoin'].max, bitcoinReturn)
+        );
+
+        correlatedReturns['Bitcoin'] = bitcoinReturn;
+
+        // Generate correlated returns for other assets
+        for (let i = 0; i < assetNames.length - 1; i++) { // Skip Bitcoin which we handled separately
+            const asset = assetNames[i];
+            if (asset === 'Bitcoin') continue;
+
+            let weightedReturn = 0;
+            for (let j = 0; j < assetNames.length; j++) {
+                weightedReturn += window.correlationMatrix[i][j] * uncorrelatedZ[j];
+            }
+
+            let assetReturn = means[i] + stdDevs[i] * weightedReturn;
+
+            // Ensure return is within bounds
+            assetReturn = Math.max(
+                window.assetReturns[asset].min,
+                Math.min(window.assetReturns[asset].max, assetReturn)
+            );
+
+            correlatedReturns[asset] = assetReturn;
+        }
+
+        // Apply returns to prices and update history
+        for (const [asset, price] of Object.entries(gameState.assetPrices)) {
+            const returnRate = correlatedReturns[asset] || 0;
+            const newPrice = price * (1 + returnRate);
+            gameState.assetPrices[asset] = newPrice;
+
+            // Add the new price to the history
+            gameState.priceHistory[asset].push(newPrice);
+        }
+
+        // Ensure prices don't go below a minimum threshold
+        const minPrices = {
+            'S&P 500': 10,
+            'Bonds': 50,
+            'Real Estate': 1000,
+            'Gold': 500,
+            'Commodities': 10,
+            'Bitcoin': 1000
+        };
+
+        for (const [asset, minPrice] of Object.entries(minPrices)) {
+            if (gameState.assetPrices[asset] < minPrice) {
+                gameState.assetPrices[asset] = minPrice;
+            }
+        }
+    } catch (error) {
+        console.error('Error in generateNewPrices function:', error);
     }
 }
 
@@ -460,7 +556,7 @@ async function endGame() {
 
         // Add the new score
         leaderboard.push({
-            id: `score_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            id: `score_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
             studentId: studentId || 'guest_' + Date.now(),
             studentName: studentName || 'Guest',
             finalPortfolio: totalValue,
@@ -486,9 +582,18 @@ async function endGame() {
     // If Supabase service is available, save score there too
     if (typeof window.Service !== 'undefined' && typeof window.Service.saveGameScore === 'function') {
         try {
+            console.log('Attempting to save score to Supabase...');
+            console.log('Student ID:', studentId);
+            console.log('Student Name:', studentName || 'Guest');
+            console.log('Total Value:', totalValue);
+
+            // If studentId is not available, try to get it from localStorage
+            const userId = studentId || localStorage.getItem('student_id') || 'guest_' + Date.now();
+            const userName = studentName || localStorage.getItem('student_name') || 'Guest';
+
             const result = await window.Service.saveGameScore(
-                studentId,
-                studentName || 'Guest',
+                userId,
+                userName,
                 'investment-odyssey',
                 totalValue,
                 null, // TA name
@@ -497,24 +602,47 @@ async function endGame() {
 
             if (result.success) {
                 console.log('Score saved to Supabase successfully');
+                showNotification('Your score has been saved to the global leaderboard!', 'success', 5000);
             } else {
                 console.error('Error saving score to Supabase:', result.error);
+                showNotification('Failed to save your score to the global leaderboard.', 'warning', 5000);
             }
         } catch (error) {
             console.error('Error saving score to Supabase:', error);
+            showNotification('Failed to save your score to the global leaderboard.', 'warning', 5000);
         }
+    } else {
+        console.warn('Supabase service not available, score not saved to global leaderboard');
     }
 }
 
-// Save game state to local storage
-function saveGameState() {
+// Save game state to local storage and Supabase
+async function saveGameState() {
     try {
         const gameData = {
             gameState: gameState,
             playerState: playerState
         };
 
+        // Save to localStorage
         localStorage.setItem('investmentOdysseyGameData', JSON.stringify(gameData));
+
+        // Save to Supabase if available
+        const studentId = localStorage.getItem('student_id');
+        if (studentId && typeof window.Service !== 'undefined' && typeof window.Service.saveGameState === 'function') {
+            try {
+                console.log('Saving game state to Supabase...');
+                const result = await window.Service.saveGameState(studentId, 'investment-odyssey', gameData);
+                if (result.success) {
+                    console.log('Game state saved to Supabase successfully');
+                } else {
+                    console.error('Error saving game state to Supabase:', result.error);
+                }
+            } catch (supabaseError) {
+                console.error('Error saving game state to Supabase:', supabaseError);
+            }
+        }
+
         return true;
     } catch (error) {
         console.error('Error saving game state:', error);
@@ -522,65 +650,89 @@ function saveGameState() {
     }
 }
 
-// Load game state from local storage
-function loadGameState() {
+// Load game state from local storage or Supabase
+async function loadGameState() {
     try {
-        const gameData = localStorage.getItem('investmentOdysseyGameData');
+        // First try to load from localStorage
+        const localGameData = localStorage.getItem('investmentOdysseyGameData');
+        let parsedData = null;
 
-        if (gameData) {
-            const parsedData = JSON.parse(gameData);
+        if (localGameData) {
+            parsedData = JSON.parse(localGameData);
+        }
 
-            // Validate data
-            if (parsedData.gameState && parsedData.playerState) {
-                // Load game state
-                gameState = parsedData.gameState;
-                playerState = parsedData.playerState;
+        // If not found in localStorage, try to load from Supabase
+        if (!parsedData) {
+            const studentId = localStorage.getItem('student_id');
+            if (studentId && typeof window.Service !== 'undefined' && typeof window.Service.loadGameState === 'function') {
+                try {
+                    console.log('Loading game state from Supabase...');
+                    const result = await window.Service.loadGameState(studentId, 'investment-odyssey');
+                    if (result.success) {
+                        console.log('Game state loaded from Supabase successfully');
+                        parsedData = result.data;
 
-                // Initialize lastRoundPrices
-                lastRoundPrices = {...gameState.assetPrices};
-                lastPricesRoundNumber = gameState.roundNumber;
-
-                // Update UI
-                updateUI();
-
-                // Update game progress
-                updateGameProgress();
-
-                // Check if game is over
-                if (gameState.roundNumber >= gameState.maxRounds) {
-                    // Disable next round button
-                    const nextRoundBtn = document.getElementById('next-round');
-                    if (nextRoundBtn) {
-                        nextRoundBtn.disabled = true;
+                        // Save to localStorage for future use
+                        localStorage.setItem('investmentOdysseyGameData', JSON.stringify(parsedData));
+                    } else {
+                        console.log('No game state found in Supabase:', result.error);
                     }
+                } catch (supabaseError) {
+                    console.error('Error loading game state from Supabase:', supabaseError);
+                }
+            }
+        }
 
-                    // Enable start game button
-                    const startGameBtn = document.getElementById('start-game');
-                    if (startGameBtn) {
-                        startGameBtn.disabled = false;
-                    }
-                } else if (gameState.roundNumber > 0) {
-                    // Enable next round button
-                    const nextRoundBtn = document.getElementById('next-round');
-                    if (nextRoundBtn) {
-                        nextRoundBtn.disabled = false;
-                    }
+        // If we have data from either source, load it
+        if (parsedData && parsedData.gameState && parsedData.playerState) {
+            // Load game state
+            gameState = parsedData.gameState;
+            playerState = parsedData.playerState;
 
-                    // Disable start game button
-                    const startGameBtn = document.getElementById('start-game');
-                    if (startGameBtn) {
-                        startGameBtn.disabled = true;
-                    }
+            // Initialize lastRoundPrices
+            lastRoundPrices = {...gameState.assetPrices};
+            lastPricesRoundNumber = gameState.roundNumber;
 
-                    // Show sticky next round button
-                    const stickyNextRoundBtn = document.getElementById('sticky-next-round');
-                    if (stickyNextRoundBtn) {
-                        stickyNextRoundBtn.style.display = 'flex';
-                    }
+            // Update UI
+            updateUI();
+
+            // Update game progress
+            updateGameProgress();
+
+            // Check if game is over
+            if (gameState.roundNumber >= gameState.maxRounds) {
+                // Disable next round button
+                const nextRoundBtn = document.getElementById('next-round');
+                if (nextRoundBtn) {
+                    nextRoundBtn.disabled = true;
                 }
 
-                return true;
+                // Enable start game button
+                const startGameBtn = document.getElementById('start-game');
+                if (startGameBtn) {
+                    startGameBtn.disabled = false;
+                }
+            } else if (gameState.roundNumber > 0) {
+                // Enable next round button
+                const nextRoundBtn = document.getElementById('next-round');
+                if (nextRoundBtn) {
+                    nextRoundBtn.disabled = false;
+                }
+
+                // Disable start game button
+                const startGameBtn = document.getElementById('start-game');
+                if (startGameBtn) {
+                    startGameBtn.disabled = true;
+                }
+
+                // Show sticky next round button
+                const stickyNextRoundBtn = document.getElementById('sticky-next-round');
+                if (stickyNextRoundBtn) {
+                    stickyNextRoundBtn.style.display = 'flex';
+                }
             }
+
+            return true;
         }
     } catch (error) {
         console.error('Error loading game state:', error);
@@ -619,23 +771,38 @@ function showNotification(message, type = 'info', duration = 3000) {
 }
 
 // Initialize event listeners
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Start game button
     const startGameBtn = document.getElementById('start-game');
     if (startGameBtn) {
-        startGameBtn.addEventListener('click', startGame);
+        startGameBtn.addEventListener('click', () => {
+            startGame().catch(error => {
+                console.error('Error starting game:', error);
+                showNotification('Error starting game. Please try again.', 'danger', 3000);
+            });
+        });
     }
 
     // Next round button
     const nextRoundBtn = document.getElementById('next-round');
     if (nextRoundBtn) {
-        nextRoundBtn.addEventListener('click', nextRound);
+        nextRoundBtn.addEventListener('click', () => {
+            nextRound().catch(error => {
+                console.error('Error advancing to next round:', error);
+                showNotification('Error advancing to next round. Please try again.', 'danger', 3000);
+            });
+        });
     }
 
     // Sticky next round button
     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
     if (stickyNextRoundBtn) {
-        stickyNextRoundBtn.addEventListener('click', nextRound);
+        stickyNextRoundBtn.addEventListener('click', () => {
+            nextRound().catch(error => {
+                console.error('Error advancing to next round:', error);
+                showNotification('Error advancing to next round. Please try again.', 'danger', 3000);
+            });
+        });
     }
 
     // Restart game button
@@ -643,14 +810,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (restartGameBtn) {
         restartGameBtn.addEventListener('click', function() {
             if (confirm('Are you sure you want to restart the game? All progress will be lost.')) {
-                startGame();
+                startGame().catch(error => {
+                    console.error('Error restarting game:', error);
+                    showNotification('Error restarting game. Please try again.', 'danger', 3000);
+                });
             }
         });
     }
 
     // Try to load saved game
-    if (!loadGameState()) {
-        // If no saved game, initialize a new one
+    try {
+        // Show loading indicator
+        showNotification('Loading game data...', 'info', 2000);
+
+        // Try to load from localStorage or Supabase
+        const gameLoaded = await loadGameState();
+
+        if (!gameLoaded) {
+            // If no saved game, initialize a new one
+            initializeGame();
+        } else {
+            showNotification('Game loaded successfully!', 'success', 2000);
+        }
+    } catch (error) {
+        console.error('Error during initialization:', error);
+        // Initialize a new game as fallback
         initializeGame();
+        showNotification('Failed to load saved game. Starting new game.', 'warning', 3000);
     }
 });
