@@ -10,45 +10,43 @@ window.Service = {
                 console.error('Supabase client not available');
                 return { success: false, error: 'Supabase client not available' };
             }
-            
+
             // Check if student ID is available
             if (!studentId) {
                 console.error('Student ID not available');
                 return { success: false, error: 'Student ID not available' };
             }
-            
+
             // Get section ID from localStorage
             const sectionId = localStorage.getItem('section_id');
-            
-            // Create score object
-            const scoreData = {
-                student_id: studentId,
-                student_name: studentName,
-                game_type: gameType,
-                score: score,
-                section_id: sectionId || null,
-                ta_name: taName,
-                is_class_game: isClassGame,
-                created_at: new Date().toISOString()
-            };
-            
+
             // Save score to Supabase
             const { data, error } = await window.supabase
-                .from('game_scores')
-                .insert([scoreData]);
-            
+                .from('leaderboard')
+                .insert([{
+                    user_id: studentId,
+                    user_name: studentName,
+                    game_id: 'single_player_' + Date.now(),
+                    game_type: gameType,
+                    game_mode: isClassGame ? 'class' : 'single',
+                    final_portfolio: score,
+                    ta_name: taName,
+                    section_id: sectionId,
+                    created_at: new Date().toISOString()
+                }]);
+
             if (error) {
                 console.error('Error saving score to Supabase:', error);
                 return { success: false, error: error.message };
             }
-            
+
             return { success: true, data };
         } catch (error) {
             console.error('Error saving score to Supabase:', error);
             return { success: false, error: error.message };
         }
     },
-    
+
     // Get game scores from Supabase
     getGameScores: async function(gameType, limit = 10) {
         try {
@@ -57,27 +55,27 @@ window.Service = {
                 console.error('Supabase client not available');
                 return { success: false, error: 'Supabase client not available' };
             }
-            
+
             // Get scores from Supabase
             const { data, error } = await window.supabase
-                .from('game_scores')
+                .from('leaderboard')
                 .select('*')
                 .eq('game_type', gameType)
-                .order('score', { ascending: false })
+                .order('final_portfolio', { ascending: false })
                 .limit(limit);
-            
+
             if (error) {
                 console.error('Error getting scores from Supabase:', error);
                 return { success: false, error: error.message };
             }
-            
+
             return { success: true, data };
         } catch (error) {
             console.error('Error getting scores from Supabase:', error);
             return { success: false, error: error.message };
         }
     },
-    
+
     // Get student's game scores from Supabase
     getStudentGameScores: async function(studentId, gameType) {
         try {
@@ -86,33 +84,33 @@ window.Service = {
                 console.error('Supabase client not available');
                 return { success: false, error: 'Supabase client not available' };
             }
-            
+
             // Check if student ID is available
             if (!studentId) {
                 console.error('Student ID not available');
                 return { success: false, error: 'Student ID not available' };
             }
-            
+
             // Get scores from Supabase
             const { data, error } = await window.supabase
-                .from('game_scores')
+                .from('leaderboard')
                 .select('*')
-                .eq('student_id', studentId)
+                .eq('user_id', studentId)
                 .eq('game_type', gameType)
                 .order('created_at', { ascending: false });
-            
+
             if (error) {
                 console.error('Error getting student scores from Supabase:', error);
                 return { success: false, error: error.message };
             }
-            
+
             return { success: true, data };
         } catch (error) {
             console.error('Error getting student scores from Supabase:', error);
             return { success: false, error: error.message };
         }
     },
-    
+
     // Get section's game scores from Supabase
     getSectionGameScores: async function(sectionId, gameType) {
         try {
@@ -121,26 +119,26 @@ window.Service = {
                 console.error('Supabase client not available');
                 return { success: false, error: 'Supabase client not available' };
             }
-            
+
             // Check if section ID is available
             if (!sectionId) {
                 console.error('Section ID not available');
                 return { success: false, error: 'Section ID not available' };
             }
-            
+
             // Get scores from Supabase
             const { data, error } = await window.supabase
-                .from('game_scores')
+                .from('leaderboard')
                 .select('*')
                 .eq('section_id', sectionId)
                 .eq('game_type', gameType)
-                .order('score', { ascending: false });
-            
+                .order('final_portfolio', { ascending: false });
+
             if (error) {
                 console.error('Error getting section scores from Supabase:', error);
                 return { success: false, error: error.message };
             }
-            
+
             return { success: true, data };
         } catch (error) {
             console.error('Error getting section scores from Supabase:', error);

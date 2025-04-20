@@ -234,10 +234,10 @@ canvas {
     border-bottom: 1px solid #f0f0f0;
 }
 
-#market-data-table .chart-cell {
-    width: 120px;
-    height: 40px;
-    padding: 0;
+#market-data-table .holdings-cell {
+    width: 150px;
+    padding: 8px;
+    text-align: left;
 }
 
 #market-data-table canvas {
@@ -386,25 +386,31 @@ canvas {
 .sticky-button {
     display: none;
     padding: 12px 24px;
-    background-color: #ffc107;
-    color: #212529;
+    background-color: #28a745;
+    color: white;
     border: none;
     border-radius: 50px;
     font-weight: bold;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: all 0.3s ease;
+    align-items: center;
+    justify-content: center;
 }
 
 .sticky-button:hover {
     transform: translateY(-3px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-    background-color: #ffca2c;
-    border-color: #ffc107;
+    background-color: #218838;
 }
 
 .sticky-button i {
     margin-left: 8px;
+}
+
+/* When displayed, use flex */
+.sticky-button[style*="display: flex"] {
+    display: flex !important;
 }
 
 /* Hide the sticky button on small screens */

@@ -68,20 +68,20 @@ function updateMarketData() {
     // Add rows for each asset
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
         const row = document.createElement('tr');
-        
+
         // Calculate price change
         let change = 0;
         let percentChange = 0;
-        
+
         if (lastRoundPrices[asset] && lastPricesRoundNumber === gameState.roundNumber - 1) {
             change = price - lastRoundPrices[asset];
             percentChange = (change / lastRoundPrices[asset]) * 100;
         }
-        
+
         // Determine change class and icon
         let changeClass = 'text-muted';
         let changeIcon = '';
-        
+
         if (change > 0) {
             changeClass = 'text-success';
             changeIcon = '<i class="fas fa-arrow-up mr-1"></i>';
@@ -89,19 +89,32 @@ function updateMarketData() {
             changeClass = 'text-danger';
             changeIcon = '<i class="fas fa-arrow-down mr-1"></i>';
         }
-        
+
         // Get asset ID for DOM elements
         const assetId = asset.replace(/[^a-zA-Z0-9]/g, '-');
-        
+
+        // Calculate holdings
+        const quantity = playerState.portfolio[asset] || 0;
+        const value = quantity * price;
+        const portfolioTotal = calculatePortfolioValue() + playerState.cash;
+        const percentage = portfolioTotal > 0 ? (value / portfolioTotal) * 100 : 0;
+
+        // Create holdings display
+        let holdingsDisplay = '<em class="text-muted">None</em>';
+        if (quantity > 0) {
+            holdingsDisplay = `
+                <div>${quantity.toFixed(4)} units</div>
+                <div class="text-success">$${formatCurrency(value)} (${percentage.toFixed(1)}%)</div>
+            `;
+        }
+
         row.innerHTML = `
             <td>${asset}</td>
             <td class="price-cell" id="price-${assetId}">$${formatCurrency(price)}</td>
             <td class="${changeClass}" id="change-${assetId}">${changeIcon}${change.toFixed(2)} (${percentChange.toFixed(2)}%)</td>
-            <td class="chart-cell">
-                <canvas id="mini-chart-${assetId}" width="120" height="40"></canvas>
-            </td>
+            <td class="holdings-cell" id="holdings-${assetId}">${holdingsDisplay}</td>
         `;
-        
+
         tableBody.appendChild(row);
     }
 }
@@ -132,20 +145,20 @@ function updatePortfolioTable() {
 
         const row = document.createElement('tr');
         const price = gameState.assetPrices[asset] || 0;
-        
+
         // Calculate price change
         let change = 0;
         let percentChange = 0;
-        
+
         if (lastRoundPrices[asset] && lastPricesRoundNumber === gameState.roundNumber - 1) {
             change = price - lastRoundPrices[asset];
             percentChange = (change / lastRoundPrices[asset]) * 100;
         }
-        
+
         // Determine change class and icon
         let changeClass = 'text-muted';
         let changeIcon = '';
-        
+
         if (change > 0) {
             changeClass = 'text-success';
             changeIcon = '<i class="fas fa-arrow-up mr-1"></i>';
@@ -153,7 +166,7 @@ function updatePortfolioTable() {
             changeClass = 'text-danger';
             changeIcon = '<i class="fas fa-arrow-down mr-1"></i>';
         }
-        
+
         // Get asset ID for DOM elements
         const assetId = asset.replace(/[^a-zA-Z0-9]/g, '-');
 
@@ -170,7 +183,7 @@ function updatePortfolioTable() {
             <td id="value-${assetId}">$${formatCurrency(value)}</td>
             <td id="percentage-${assetId}">${percentage.toFixed(1)}%</td>
         `;
-        
+
         tableBody.appendChild(row);
     }
 }
@@ -187,20 +200,20 @@ function updatePriceTicker() {
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
         const tickerItem = document.createElement('div');
         tickerItem.className = 'ticker-item';
-        
+
         // Calculate price change
         let change = 0;
         let percentChange = 0;
-        
+
         if (lastRoundPrices[asset] && lastPricesRoundNumber === gameState.roundNumber - 1) {
             change = price - lastRoundPrices[asset];
             percentChange = (change / lastRoundPrices[asset]) * 100;
         }
-        
+
         // Determine change class
         let changeClass = '';
         let changeSign = '';
-        
+
         if (change > 0) {
             changeClass = 'change-positive';
             changeSign = '+';
@@ -208,13 +221,13 @@ function updatePriceTicker() {
             changeClass = 'change-negative';
             changeSign = '';
         }
-        
+
         tickerItem.innerHTML = `
             <span class="asset-name">${asset}:</span>
             <span class="price">$${formatCurrency(price)}</span>
             <span class="${changeClass}">${changeSign}${percentChange.toFixed(2)}%</span>
         `;
-        
+
         priceTicker.appendChild(tickerItem);
     }
 }
@@ -345,11 +358,11 @@ function updateAssetPriceCharts() {
     for (const [asset, priceHistory] of Object.entries(gameState.priceHistory)) {
         const assetId = asset.replace(/[^a-zA-Z0-9]/g, '-');
         const chartCanvas = document.getElementById(`mini-chart-${assetId}`);
-        
+
         if (chartCanvas) {
             // Prepare data
             const data = priceHistory;
-            
+
             // Create or update chart
             if (!window.assetPriceCharts[asset]) {
                 window.assetPriceCharts[asset] = new Chart(chartCanvas, {
@@ -450,10 +463,10 @@ function updateComparativeReturnsChart() {
 
     // Prepare data
     const labels = Array.from({ length: gameState.roundNumber + 1 }, (_, i) => `Round ${i}`);
-    
+
     // Calculate returns for each asset
     const datasets = [];
-    
+
     // Colors for each asset
     const colors = {
         'S&P 500': 'rgba(54, 162, 235, 1)',
@@ -464,13 +477,13 @@ function updateComparativeReturnsChart() {
         'Bitcoin': 'rgba(255, 159, 64, 1)',
         'CPI': 'rgba(220, 53, 69, 1)'
     };
-    
+
     // Add datasets for each asset
     for (const [asset, priceHistory] of Object.entries(gameState.priceHistory)) {
         if (priceHistory.length > 0) {
             const initialPrice = priceHistory[0];
             const returns = priceHistory.map(price => ((price / initialPrice) - 1) * 100);
-            
+
             datasets.push({
                 label: asset,
                 data: returns,
@@ -483,12 +496,12 @@ function updateComparativeReturnsChart() {
             });
         }
     }
-    
+
     // Add CPI dataset
     if (gameState.CPIHistory.length > 0) {
         const initialCPI = gameState.CPIHistory[0];
         const cpiReturns = gameState.CPIHistory.map(cpi => ((cpi / initialCPI) - 1) * 100);
-        
+
         datasets.push({
             label: 'CPI',
             data: cpiReturns,
@@ -501,7 +514,7 @@ function updateComparativeReturnsChart() {
             hidden: true // Hide CPI by default
         });
     }
-    
+
     // Create or update chart
     if (!window.comparativeReturnsChart) {
         window.comparativeReturnsChart = new Chart(chartCanvas, {
@@ -548,7 +561,7 @@ function updateComparativeReturnsChart() {
                 }
             }
         });
-        
+
         // Set up checkbox listeners for toggling datasets
         if (!window.checkboxListenersSet) {
             setupCheckboxListeners();
@@ -573,7 +586,7 @@ function setupCheckboxListeners() {
         'show-bitcoin': 'Bitcoin',
         'show-cpi': 'CPI'
     };
-    
+
     for (const [checkboxId, datasetLabel] of Object.entries(checkboxes)) {
         const checkbox = document.getElementById(checkboxId);
         if (checkbox) {
@@ -589,7 +602,7 @@ function setupCheckboxListeners() {
             });
         }
     }
-    
+
     // Reset zoom button
     const resetZoomBtn = document.getElementById('reset-comparative-zoom');
     if (resetZoomBtn) {
@@ -605,7 +618,7 @@ function setupCheckboxListeners() {
 function updateAssetPrice() {
     const assetSelect = document.getElementById('asset-select');
     const currentPriceDisplay = document.getElementById('current-price-display');
-    
+
     if (assetSelect && currentPriceDisplay) {
         const asset = assetSelect.value;
         const price = gameState.assetPrices[asset] || 0;
@@ -673,14 +686,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const asset = assetSelect.value;
             const price = gameState.assetPrices[asset] || 0;
             const amount = parseFloat(amountInput.value) || 0;
-            
+
             if (price > 0) {
                 const quantity = amount / price;
                 quantityInput.value = quantity.toFixed(6);
-                
+
                 // Update total cost
                 updateTotalCost();
-                
+
                 // Update amount slider and percentage
                 if (amountSlider && amountPercentage && playerState) {
                     const percentage = Math.min(100, (amount / playerState.cash) * 100);
@@ -712,13 +725,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const percentage = parseFloat(quantitySlider.value) || 0;
             const asset = assetSelect.value;
             const action = actionSelect.value;
-            
+
             if (action === 'sell') {
                 const maxQuantity = playerState.portfolio[asset] || 0;
                 const quantity = (percentage / 100) * maxQuantity;
                 quantityInput.value = quantity.toFixed(6);
                 quantityPercentage.value = percentage.toFixed(0);
-                
+
                 // Trigger the quantity input event to update amount
                 const event = new Event('input', { bubbles: true });
                 quantityInput.dispatchEvent(event);
@@ -747,13 +760,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const percentage = Math.min(100, Math.max(0, parseFloat(quantityPercentage.value) || 0));
             const asset = assetSelect.value;
             const action = actionSelect.value;
-            
+
             if (action === 'sell') {
                 const maxQuantity = playerState.portfolio[asset] || 0;
                 const quantity = (percentage / 100) * maxQuantity;
                 quantityInput.value = quantity.toFixed(6);
                 quantitySlider.value = percentage;
-                
+
                 // Trigger the quantity input event to update amount
                 const event = new Event('input', { bubbles: true });
                 quantityInput.dispatchEvent(event);

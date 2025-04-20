@@ -125,7 +125,7 @@ function resetAllCharts() {
         window.comparativeReturnsChart.destroy();
         window.comparativeReturnsChart = null;
     }
-    
+
     // Reset checkbox listeners
     window.checkboxListenersSet = false;
 }
@@ -155,6 +155,23 @@ function startGame() {
 
     // Update game progress
     updateGameProgress();
+
+    // Enable/disable buttons
+    const nextRoundBtn = document.getElementById('next-round');
+    if (nextRoundBtn) {
+        nextRoundBtn.disabled = false;
+    }
+
+    const startGameBtn = document.getElementById('start-game');
+    if (startGameBtn) {
+        startGameBtn.disabled = true;
+    }
+
+    // Show sticky next round button
+    const stickyNextRoundBtn = document.getElementById('sticky-next-round');
+    if (stickyNextRoundBtn) {
+        stickyNextRoundBtn.style.display = 'flex';
+    }
 
     // Save game state
     saveGameState();
@@ -307,17 +324,17 @@ function generateNewPrices() {
 
     // Bitcoin - Extreme volatility with occasional crashes
     let bitcoinChange;
-    
+
     // Check if it's time for a Bitcoin crash (approximately every 5-8 rounds)
     const roundsSinceLastCrash = gameState.roundNumber - gameState.lastBitcoinCrashRound;
     const crashProbability = Math.min(0.1 + (roundsSinceLastCrash * 0.05), 0.4); // Increases over time
-    
+
     if (Math.random() < crashProbability) {
         // Bitcoin crash
         const crashSeverity = Math.random() * (gameState.bitcoinShockRange[1] - gameState.bitcoinShockRange[0]) + gameState.bitcoinShockRange[0];
         bitcoinChange = crashSeverity; // -50% to -75% crash
         gameState.lastBitcoinCrashRound = gameState.roundNumber;
-        
+
         // Make the next crash potentially more severe
         gameState.bitcoinShockRange[0] -= 0.05;
         gameState.bitcoinShockRange[1] -= 0.05;
@@ -325,7 +342,7 @@ function generateNewPrices() {
         // Normal Bitcoin volatility
         bitcoinChange = (Math.random() * 0.6) - 0.2; // -20% to +40%
     }
-    
+
     gameState.assetPrices['Bitcoin'] *= (1 + bitcoinChange);
 
     // Ensure prices don't go below a minimum threshold
@@ -350,7 +367,7 @@ function updateCPI() {
     // Generate a random CPI change with upward bias
     const cpiChange = (Math.random() * 0.05) - 0.01; // -1% to +4%
     gameState.CPI *= (1 + cpiChange);
-    
+
     // Add to CPI history
     gameState.CPIHistory.push(gameState.CPI);
 }
@@ -375,12 +392,12 @@ function generateCashInjection() {
 // Calculate portfolio value
 function calculatePortfolioValue() {
     let totalValue = 0;
-    
+
     for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
         const price = gameState.assetPrices[asset] || 0;
         totalValue += price * quantity;
     }
-    
+
     return totalValue;
 }
 
@@ -393,11 +410,11 @@ function calculateTotalValue() {
 function updateGameProgress() {
     const currentRoundDisplay = document.getElementById('current-round-display');
     const roundProgress = document.getElementById('round-progress');
-    
+
     if (currentRoundDisplay) {
         currentRoundDisplay.textContent = gameState.roundNumber;
     }
-    
+
     if (roundProgress) {
         const progressPercentage = (gameState.roundNumber / gameState.maxRounds) * 100;
         roundProgress.style.width = `${progressPercentage}%`;
@@ -411,32 +428,32 @@ async function endGame() {
     // Calculate final portfolio value
     const portfolioValue = calculatePortfolioValue();
     const totalValue = playerState.cash + portfolioValue;
-    
+
     // Show game over message
     showNotification(`Game Over! Your final portfolio value is $${totalValue.toFixed(2)}`, 'success', 10000);
-    
+
     // Disable next round button
     const nextRoundBtn = document.getElementById('next-round');
     if (nextRoundBtn) {
         nextRoundBtn.disabled = true;
     }
-    
+
     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
     if (stickyNextRoundBtn) {
         stickyNextRoundBtn.style.display = 'none';
     }
-    
+
     // Enable start game button
     const startGameBtn = document.getElementById('start-game');
     if (startGameBtn) {
         startGameBtn.disabled = false;
     }
-    
+
     // Get student info from localStorage
     const studentId = localStorage.getItem('student_id');
     const studentName = localStorage.getItem('student_name');
     const isGuest = localStorage.getItem('is_guest') === 'true';
-    
+
     // Save score to localStorage
     try {
         const leaderboard = JSON.parse(localStorage.getItem('investment-odyssey-scores') || '[]');
@@ -465,19 +482,19 @@ async function endGame() {
         console.error('Failed to save score to localStorage:', localError);
         showNotification('Failed to save your score. Please try again.', 'danger', 5000);
     }
-    
+
     // If Supabase service is available, save score there too
     if (typeof window.Service !== 'undefined' && typeof window.Service.saveGameScore === 'function') {
         try {
             const result = await window.Service.saveGameScore(
                 studentId,
-                studentName,
+                studentName || 'Guest',
                 'investment-odyssey',
                 totalValue,
                 null, // TA name
                 false // Not a class game
             );
-            
+
             if (result.success) {
                 console.log('Score saved to Supabase successfully');
             } else {
@@ -509,26 +526,26 @@ function saveGameState() {
 function loadGameState() {
     try {
         const gameData = localStorage.getItem('investmentOdysseyGameData');
-        
+
         if (gameData) {
             const parsedData = JSON.parse(gameData);
-            
+
             // Validate data
             if (parsedData.gameState && parsedData.playerState) {
                 // Load game state
                 gameState = parsedData.gameState;
                 playerState = parsedData.playerState;
-                
+
                 // Initialize lastRoundPrices
                 lastRoundPrices = {...gameState.assetPrices};
                 lastPricesRoundNumber = gameState.roundNumber;
-                
+
                 // Update UI
                 updateUI();
-                
+
                 // Update game progress
                 updateGameProgress();
-                
+
                 // Check if game is over
                 if (gameState.roundNumber >= gameState.maxRounds) {
                     // Disable next round button
@@ -536,7 +553,7 @@ function loadGameState() {
                     if (nextRoundBtn) {
                         nextRoundBtn.disabled = true;
                     }
-                    
+
                     // Enable start game button
                     const startGameBtn = document.getElementById('start-game');
                     if (startGameBtn) {
@@ -548,27 +565,27 @@ function loadGameState() {
                     if (nextRoundBtn) {
                         nextRoundBtn.disabled = false;
                     }
-                    
+
                     // Disable start game button
                     const startGameBtn = document.getElementById('start-game');
                     if (startGameBtn) {
                         startGameBtn.disabled = true;
                     }
-                    
+
                     // Show sticky next round button
                     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
                     if (stickyNextRoundBtn) {
                         stickyNextRoundBtn.style.display = 'flex';
                     }
                 }
-                
+
                 return true;
             }
         }
     } catch (error) {
         console.error('Error loading game state:', error);
     }
-    
+
     return false;
 }
 
@@ -576,25 +593,25 @@ function loadGameState() {
 function showNotification(message, type = 'info', duration = 3000) {
     // Create notification element if it doesn't exist
     let notification = document.getElementById('game-notification');
-    
+
     if (!notification) {
         notification = document.createElement('div');
         notification.id = 'game-notification';
         notification.className = 'notification';
         document.body.appendChild(notification);
     }
-    
+
     // Set notification type
     notification.className = `notification notification-${type}`;
-    
+
     // Set message
     notification.textContent = message;
-    
+
     // Show notification
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
-    
+
     // Hide notification after duration
     setTimeout(() => {
         notification.classList.remove('show');
@@ -608,19 +625,19 @@ document.addEventListener('DOMContentLoaded', function() {
     if (startGameBtn) {
         startGameBtn.addEventListener('click', startGame);
     }
-    
+
     // Next round button
     const nextRoundBtn = document.getElementById('next-round');
     if (nextRoundBtn) {
         nextRoundBtn.addEventListener('click', nextRound);
     }
-    
+
     // Sticky next round button
     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
     if (stickyNextRoundBtn) {
         stickyNextRoundBtn.addEventListener('click', nextRound);
     }
-    
+
     // Restart game button
     const restartGameBtn = document.getElementById('restart-game');
     if (restartGameBtn) {
@@ -630,7 +647,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Try to load saved game
     if (!loadGameState()) {
         // If no saved game, initialize a new one
