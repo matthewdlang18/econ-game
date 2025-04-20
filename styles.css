@@ -4,6 +4,32 @@ body {
   margin: 0;
   padding: 0;
 }
+
+.games-container {
+  margin-top: 2rem;
+}
+
+.game-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.game-link {
+  display: inline-block;
+  background: #0077cc;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  margin-top: 0.5rem;
+}
+
+.game-link:hover {
+  background: #005fa3;
+}
 .info-row {
   margin-bottom: 0.5em;
   display: flex;

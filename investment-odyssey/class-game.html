@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Odyssey - Class Game</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header class="py-3 mb-4 border-bottom">
+      <div class="d-flex align-items-center justify-content-between">
+        <h1 class="h4 mb-0">Investment Odyssey - Class Game</h1>
+        <div class="d-flex align-items-center">
+          <a href="index.html" class="btn btn-outline-primary me-2">Back to Game</a>
+          <div id="user-info" class="d-none">
+            <span id="user-name"></span>
+            <button id="logout-btn" class="btn btn-sm btn-outline-secondary ms-2">Logout</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Class Game Join Section -->
+      <section id="class-game-join" class="card p-4 mb-4">
+        <h2 class="h5 mb-3">Join Class Game</h2>
+        <div id="section-info">
+          <p>You need to select a section before joining a class game.</p>
+          <a href="index.html" class="btn btn-primary">Go to Dashboard</a>
+        </div>
+        <div id="game-list" class="d-none">
+          <h3 class="h6 mb-3">Available Games</h3>
+          <div class="list-group mb-3" id="available-games">
+            <!-- Available games will be populated here -->
+          </div>
+          <div id="no-games-message" class="alert alert-info d-none">
+            No active games available for your section.
+          </div>
+        </div>
+      </section>
+
+      <!-- Class Game Interface (Hidden until joined) -->
+      <section id="class-game-interface" class="d-none">
+        <div class="alert alert-info mb-4" id="game-status">
+          Waiting for TA to start the game...
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0">Portfolio Overview</h3>
+                <div>
+                  <span class="badge bg-primary">Round: <span id="current-round">0</span>/<span id="max-rounds">20</span></span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="mb-3">
+                  <h4 class="h6">Total Value: $<span id="portfolio-value">10,000.00</span></h4>
+                  <div class="progress">
+                    <div id="portfolio-progress" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <h4 class="h6">Cash: $<span id="cash-balance">10,000.00</span></h4>
+                </div>
+                <div>
+                  <h4 class="h6">Asset Allocation</h4>
+                  <div id="allocation-chart-container" style="height: 200px;">
+                    <canvas id="allocation-chart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <h3 class="h5 mb-0">Market Data</h3>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Asset</th>
+                        <th>Price</th>
+                        <th>Change</th>
+                      </tr>
+                    </thead>
+                    <tbody id="market-data">
+                      <!-- Market data will be populated here -->
+                    </tbody>
+                  </table>
+                </div>
+                <div id="price-chart-container" style="height: 200px;">
+                  <canvas id="price-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-4">
+          <div class="col-md-8">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="h5 mb-0">Trading</h3>
+              </div>
+              <div class="card-body">
+                <form id="trade-form" class="row g-3">
+                  <div class="col-md-4">
+                    <label for="asset-select" class="form-label">Asset</label>
+                    <select id="asset-select" class="form-select" required>
+                      <option value="">Select Asset</option>
+                      <option value="sp500">S&P 500</option>
+                      <option value="bonds">Bonds</option>
+                      <option value="real_estate">Real Estate</option>
+                      <option value="gold">Gold</option>
+                      <option value="commodities">Commodities</option>
+                      <option value="bitcoin">Bitcoin</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="action-select" class="form-label">Action</label>
+                    <select id="action-select" class="form-select" required>
+                      <option value="buy">Buy</option>
+                      <option value="sell">Sell</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label for="amount-input" class="form-label">Amount ($)</label>
+                    <input type="number" id="amount-input" class="form-control" min="0" step="0.01" required>
+                  </div>
+                  <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Trade</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="h5 mb-0">Class Rankings</h3>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody id="class-rankings">
+                      <!-- Class rankings will be populated here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header">
+                <h3 class="h5 mb-0">Trade History</h3>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Round</th>
+                        <th>Asset</th>
+                        <th>Action</th>
+                        <th>Amount</th>
+                        <th>Price</th>
+                        <th>Quantity</th>
+                      </tr>
+                    </thead>
+                    <tbody id="trade-history">
+                      <!-- Trade history will be populated here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Game End Modal -->
+  <div class="modal fade" id="game-end-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Game Complete</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <h4>Final Portfolio Value: $<span id="final-value">0.00</span></h4>
+          <p>Starting Value: $10,000.00</p>
+          <p>Return: <span id="final-return">0.00</span>%</p>
+          <div id="final-allocation-chart-container" style="height: 200px;">
+            <canvas id="final-allocation-chart"></canvas>
+          </div>
+          <div class="mt-3">
+            <h5>Final Class Rankings</h5>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Player</th>
+                    <th>Value</th>
+                    <th>Return</th>
+                  </tr>
+                </thead>
+                <tbody id="final-rankings">
+                  <!-- Final rankings will be populated here -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <a href="index.html" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="/supabase.js"></script>
+  <script src="js/game-core.js"></script>
+  <script src="js/game-ui.js"></script>
+  <script src="js/game-trading.js"></script>
+  <script src="js/class-game.js"></script>
+</body>
+</html>

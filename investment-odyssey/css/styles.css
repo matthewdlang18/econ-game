@@ -1,0 +1,203 @@
+/* Investment Odyssey Styles */
+
+/* General Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+}
+
+/* Header Styles */
+header {
+  background-color: #fff;
+}
+
+/* Card Styles */
+.card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #eee;
+  font-weight: 600;
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: #3a86ff;
+  border-color: #3a86ff;
+}
+
+.btn-primary:hover {
+  background-color: #2a75e8;
+  border-color: #2a75e8;
+}
+
+.btn-success {
+  background-color: #38b000;
+  border-color: #38b000;
+}
+
+.btn-success:hover {
+  background-color: #2d9000;
+  border-color: #2d9000;
+}
+
+.btn-danger {
+  background-color: #ff5a5f;
+  border-color: #ff5a5f;
+}
+
+.btn-danger:hover {
+  background-color: #e54a4f;
+  border-color: #e54a4f;
+}
+
+/* Form Styles */
+.form-control:focus, .form-select:focus {
+  border-color: #3a86ff;
+  box-shadow: 0 0 0 0.25rem rgba(58, 134, 255, 0.25);
+}
+
+/* Table Styles */
+.table {
+  font-size: 0.95rem;
+}
+
+.table th {
+  font-weight: 600;
+  color: #555;
+}
+
+/* Market Data Styles */
+.price-up {
+  color: #38b000;
+}
+
+.price-down {
+  color: #ff5a5f;
+}
+
+.price-unchanged {
+  color: #6c757d;
+}
+
+/* Portfolio Progress Bar */
+.progress {
+  height: 8px;
+  margin-top: 5px;
+}
+
+/* Asset Colors for Charts */
+:root {
+  --sp500-color: #3a86ff;
+  --bonds-color: #8338ec;
+  --real-estate-color: #ff006e;
+  --gold-color: #ffbe0b;
+  --commodities-color: #fb5607;
+  --bitcoin-color: #f77f00;
+  --cash-color: #a0a0a0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .table {
+    font-size: 0.85rem;
+  }
+  
+  #app {
+    padding: 1rem;
+  }
+}
+
+/* Animation for price changes */
+@keyframes flash-green {
+  0% { background-color: rgba(56, 176, 0, 0.2); }
+  100% { background-color: transparent; }
+}
+
+@keyframes flash-red {
+  0% { background-color: rgba(255, 90, 95, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.flash-green {
+  animation: flash-green 1s ease-out;
+}
+
+.flash-red {
+  animation: flash-red 1s ease-out;
+}
+
+/* TA Controls Specific Styles */
+.section-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.section-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.section-card.active {
+  border-left: 4px solid #3a86ff;
+}
+
+/* Leaderboard Specific Styles */
+.rank-1 {
+  font-weight: bold;
+  color: #ffbe0b;
+}
+
+.rank-2 {
+  font-weight: bold;
+  color: #a7a7a7;
+}
+
+.rank-3 {
+  font-weight: bold;
+  color: #cd7f32;
+}
+
+/* Game Status Badges */
+.badge.bg-in-progress {
+  background-color: #3a86ff;
+}
+
+.badge.bg-completed {
+  background-color: #38b000;
+}
+
+.badge.bg-cancelled {
+  background-color: #6c757d;
+}
+
+/* Trade History Styles */
+.trade-buy {
+  color: #38b000;
+}
+
+.trade-sell {
+  color: #ff5a5f;
+}
+
+/* Tooltip Styles */
+.tooltip-inner {
+  max-width: 200px;
+  padding: 8px 12px;
+  background-color: #333;
+  border-radius: 6px;
+}
