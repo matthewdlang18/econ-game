@@ -2,29 +2,6 @@
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
-const redirectMessage = document.getElementById('redirect-message');
-
-// Check for redirect parameter
-const urlParams = new URLSearchParams(window.location.search);
-const redirect = urlParams.get('redirect');
-
-// Show appropriate message based on redirect parameter
-if (redirect === 'investment-odyssey') {
-  redirectMessage.innerHTML = '<strong>Welcome!</strong> Please sign in to access Investment Odyssey.';
-  redirectMessage.style.display = 'block';
-}
-
-// Handle guest mode link
-const guestModeLink = document.getElementById('guest-mode-link');
-if (guestModeLink) {
-  guestModeLink.addEventListener('click', function(e) {
-    e.preventDefault();
-    // Set guest mode in localStorage
-    localStorage.setItem('is_guest', 'true');
-    // Redirect to Investment Odyssey
-    window.location.href = 'investment-odyssey/about.html';
-  });
-}
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -44,26 +21,10 @@ loginForm.addEventListener('submit', async (e) => {
     .update({ last_login: new Date().toISOString() })
     .eq('id', profile.id);
 
-  // Save user info to localStorage for Investment Odyssey
-  localStorage.setItem('student_id', profile.id);
-  localStorage.setItem('student_name', profile.name);
-  if (profile.section_id) {
-    localStorage.setItem('section_id', profile.section_id);
-  }
-
-  // Check if the user wants to go to Investment Odyssey
-  const urlParams = new URLSearchParams(window.location.search);
-  const redirect = urlParams.get('redirect');
-
-  if (redirect === 'investment-odyssey') {
-    // Redirect to Investment Odyssey about page
-    window.location.href = 'investment-odyssey/about.html';
-  } else {
-    // Hide login, show dashboard
-    document.getElementById('login-container').style.display = 'none';
-    dashboard.style.display = 'block';
-    showDashboard(profile);
-  }
+  // Hide login, show dashboard
+  document.getElementById('login-container').style.display = 'none';
+  dashboard.style.display = 'block';
+  showDashboard(profile);
 });
 
 async function showDashboard(profile) {
@@ -89,19 +50,6 @@ async function showDashboard(profile) {
           <p>Click "Show Roster" to view students in a section.</p>
         </div>
       </div>
-
-      <div class="dashboard-panel">
-        <h4>Available Games</h4>
-        <div class="game-card">
-          <h4>Investment Odyssey</h4>
-          <p>Practice your investment skills in this financial market simulation.</p>
-          <div class="game-links">
-            <a href="investment-odyssey/about.html" class="game-link primary">Play Now</a>
-            <a href="investment-odyssey/ta-controls.html" class="game-link">TA Controls</a>
-          </div>
-        </div>
-      </div>
-
       <button id="logout-btn">Logout</button>
     `;
     document.querySelectorAll('.roster-toggle').forEach(btn => {
@@ -127,13 +75,6 @@ async function showDashboard(profile) {
       };
     });
     document.getElementById('logout-btn').onclick = () => {
-      // Clear user data from localStorage
-      localStorage.removeItem('student_id');
-      localStorage.removeItem('student_name');
-      localStorage.removeItem('section_id');
-      localStorage.removeItem('is_guest');
-
-      // Hide dashboard and show login form
       dashboard.style.display = 'none';
       document.getElementById('login-container').style.display = 'block';
     };
@@ -179,14 +120,8 @@ async function showDashboard(profile) {
     <div id="student-section-info"></div>
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
-        <h4>Available Games</h4>
-        <div class="game-card">
-          <h4>Investment Odyssey</h4>
-          <p>Practice your investment skills in this financial market simulation.</p>
-          <div class="game-links">
-            <a href="investment-odyssey/about.html" class="game-link primary">Play Now</a>
-          </div>
-        </div>
+        <h4>Student Dashboard</h4>
+        <div id="student-games-list"><em>(No games available yet)</em></div>
       </div>
     </div>
     <button id="logout-btn">Logout</button>
@@ -203,13 +138,6 @@ async function showDashboard(profile) {
   // const { data: games, error: gamesError } = await fetchGamesByStudent(profile.id);
   // ...
   document.getElementById('logout-btn').onclick = () => {
-    // Clear user data from localStorage
-    localStorage.removeItem('student_id');
-    localStorage.removeItem('student_name');
-    localStorage.removeItem('section_id');
-    localStorage.removeItem('is_guest');
-
-    // Hide dashboard and show login form
     dashboard.style.display = 'none';
     document.getElementById('login-container').style.display = 'block';
   };
@@ -243,31 +171,8 @@ async function showDashboard(profile) {
   // Show TA controls or student dashboard after section selection
   const roleDashboard = document.getElementById('role-dashboard');
   if (profile.role === 'ta') {
-    roleDashboard.innerHTML = `
-      <div id="ta-controls">
-        <h4>TA Controls</h4>
-        <div class="game-card">
-          <h4>Investment Odyssey</h4>
-          <p>Manage your section's Investment Odyssey game.</p>
-          <div class="game-links">
-            <a href="investment-odyssey/ta-controls.html" class="game-link primary">TA Controls</a>
-          </div>
-        </div>
-      </div>
-    `;
+    roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
   } else {
-    roleDashboard.innerHTML = `
-      <div id="student-games">
-        <h4>Available Games</h4>
-        <div class="game-card">
-          <h4>Investment Odyssey</h4>
-          <p>Practice your investment skills in this financial market simulation.</p>
-          <div class="game-links">
-            <a href="investment-odyssey/about.html" class="game-link">Learn More</a>
-            <a href="investment-odyssey/index.html" class="game-link primary">Play Now</a>
-          </div>
-        </div>
-      </div>
-    `;
+    roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
   }
 }
