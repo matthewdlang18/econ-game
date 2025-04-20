@@ -4,11 +4,10 @@
  */
 
 // DOM Elements
-const loginSection = document.getElementById('login-section');
+const loadingSection = document.getElementById('loading-section');
+const notAuthenticatedSection = document.getElementById('not-authenticated-section');
 const gameDashboard = document.getElementById('game-dashboard');
 const gameInterface = document.getElementById('game-interface');
-const loginForm = document.getElementById('login-form');
-const loginError = document.getElementById('login-error');
 const userInfo = document.getElementById('user-info');
 const userName = document.getElementById('user-name');
 const logoutBtn = document.getElementById('logout-btn');
@@ -22,12 +21,17 @@ let currentProfile = null;
 // Check if user is already logged in
 async function checkAuth() {
   try {
+    // Show loading section
+    loadingSection.classList.remove('d-none');
+    notAuthenticatedSection.classList.add('d-none');
+    gameDashboard.classList.add('d-none');
+
     // Use auth helper to check if user is authenticated
     const isAuth = await authHelper.isAuthenticated();
 
     if (!isAuth) {
       console.log('No active session found');
-      showLogin();
+      showNotAuthenticated();
       return;
     }
 
@@ -36,7 +40,7 @@ async function checkAuth() {
 
     if (!user) {
       console.log('No user found in session');
-      showLogin();
+      showNotAuthenticated();
       return;
     }
 
@@ -64,7 +68,7 @@ async function checkAuth() {
 
     if (!profile) {
       console.error('Profile not found');
-      showLogin();
+      showNotAuthenticated();
       return;
     }
 
@@ -75,13 +79,14 @@ async function checkAuth() {
     showDashboard(profile);
   } catch (err) {
     console.error('Auth check error:', err);
-    showLogin();
+    showNotAuthenticated();
   }
 }
 
-// Show login section
-function showLogin() {
-  loginSection.classList.remove('d-none');
+// Show not authenticated section
+function showNotAuthenticated() {
+  loadingSection.classList.add('d-none');
+  notAuthenticatedSection.classList.remove('d-none');
   gameDashboard.classList.add('d-none');
   gameInterface.classList.add('d-none');
   userInfo.classList.add('d-none');
@@ -89,8 +94,9 @@ function showLogin() {
 
 // Show dashboard
 function showDashboard(profile) {
-  // Hide login, show dashboard
-  loginSection.classList.add('d-none');
+  // Hide loading and not authenticated sections, show dashboard
+  loadingSection.classList.add('d-none');
+  notAuthenticatedSection.classList.add('d-none');
   gameDashboard.classList.remove('d-none');
   gameInterface.classList.add('d-none');
 
@@ -155,153 +161,7 @@ async function loadPlayerStats(profile) {
   }
 }
 
-// Handle login form submission
-loginForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  loginError.textContent = '';
 
-  const name = document.getElementById('name').value.trim();
-  const passcode = document.getElementById('passcode').value.trim();
-
-  try {
-    // First, try to find the profile
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('name', name)
-      .eq('passcode', passcode)
-      .maybeSingle();
-
-    if (profileError || !profile) {
-      loginError.textContent = 'Invalid name or passcode.';
-      return;
-    }
-
-    console.log('Profile found:', profile.name);
-
-    // Create a unique email for authentication
-    const email = `${profile.custom_id}@example.com`;
-
-    // Check if user already exists in auth
-    try {
-      // Try to sign in first
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: passcode
-      });
-
-      if (signInError) {
-        // If sign in fails, try to sign up
-        console.log('Sign in failed, trying to sign up');
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: email,
-          password: passcode,
-          options: {
-            data: {
-              name: profile.name,
-              role: profile.role
-            }
-          }
-        });
-
-        if (signUpError) {
-          console.error('Sign up error:', signUpError);
-          loginError.textContent = 'Authentication error. Please try again.';
-          return;
-        }
-      }
-    } catch (authError) {
-      console.error('Auth error:', authError);
-      loginError.textContent = 'Authentication error. Please try again.';
-      return;
-    }
-
-    // Update last_login timestamp
-    await supabase
-      .from('profiles')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', profile.id);
-
-    // Show dashboard
-    currentProfile = profile;
-    showDashboard(profile);
-  } catch (err) {
-    console.error('Login error:', err);
-    loginError.textContent = 'An error occurred. Please try again.';
-  }
-});
-
-// Handle guest mode button click
-guestModeBtn.addEventListener('click', async () => {
-  try {
-    // Generate a random guest name and email
-    const guestName = 'Guest_' + Math.floor(Math.random() * 10000);
-    const guestEmail = `guest_${Math.random().toString(36).substring(2, 10)}@example.com`;
-    const guestPassword = 'guest123';
-
-    // First create the auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: guestEmail,
-      password: guestPassword,
-      options: {
-        data: {
-          name: guestName,
-          role: 'guest'
-        }
-      }
-    });
-
-    if (authError) {
-      console.error('Guest auth creation error:', authError);
-      loginError.textContent = 'Failed to create guest account.';
-      return;
-    }
-
-    // Get the user ID from the auth response
-    const userId = authData.user.id;
-    const customId = crypto.randomUUID();
-
-    // Create a guest profile linked to the auth user
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .insert({
-        id: userId, // Link to auth user
-        name: guestName,
-        custom_id: customId,
-        role: 'guest',
-        passcode: guestPassword,
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      })
-      .select()
-      .maybeSingle();
-
-    if (error) {
-      console.error('Guest profile creation error:', error);
-      loginError.textContent = 'Failed to create guest account.';
-      return;
-    }
-
-    // Sign in the guest
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: guestEmail,
-      password: guestPassword
-    });
-
-    if (signInError) {
-      console.error('Guest sign in error:', signInError);
-      loginError.textContent = 'Failed to sign in as guest.';
-      return;
-    }
-
-    // Show dashboard with guest profile
-    currentProfile = profile;
-    showDashboard(profile);
-  } catch (err) {
-    console.error('Guest mode error:', err);
-    loginError.textContent = 'An error occurred. Please try again.';
-  }
-});
 
 // Handle single player button click
 singlePlayerBtn.addEventListener('click', () => {
@@ -330,15 +190,49 @@ logoutBtn.addEventListener('click', async () => {
   }
 });
 
+// Handle guest mode button click
+guestModeBtn.addEventListener('click', async () => {
+  try {
+    // Show loading section
+    loadingSection.classList.remove('d-none');
+    notAuthenticatedSection.classList.add('d-none');
+
+    // Create a guest profile using the auth helper
+    const result = await authHelper.createGuestProfile();
+
+    if (!result.success) {
+      console.error('Failed to create guest profile:', result.error);
+      showNotAuthenticated();
+      return;
+    }
+
+    // Sign in the guest
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: `${result.profile.custom_id}@example.com`,
+      password: result.profile.passcode
+    });
+
+    if (signInError) {
+      console.error('Guest sign in error:', signInError);
+      showNotAuthenticated();
+      return;
+    }
+
+    // Show dashboard with guest profile
+    currentProfile = result.profile;
+    showDashboard(result.profile);
+  } catch (err) {
+    console.error('Guest mode error:', err);
+    showNotAuthenticated();
+  }
+});
+
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
-  // Check if we were redirected from the main page with a session
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasSession = urlParams.get('session');
+  console.log('Investment Odyssey initializing...');
 
-  if (hasSession === 'true') {
-    console.log('Redirected from main page with session');
-    // Remove the query parameter to avoid confusion on refresh
+  // Remove any query parameters to avoid confusion on refresh
+  if (window.location.search) {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, document.title, newUrl);
   }
