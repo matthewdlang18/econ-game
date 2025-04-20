@@ -15,13 +15,14 @@ async function fetchProfile(name, passcode) {
   return { data, error };
 }
 
-// Helper: Fetch all sections
+// Helper: Fetch all sections with TA name joined from profiles
 async function fetchSections() {
   const { data, error } = await supabase
     .from('sections')
-    .select('*');
+    .select('*, profiles:ta_id(name)');
   return { data, error };
 }
+
 
 // Helper: Fetch all sections for a TA by custom_id
 async function fetchTASections(taCustomId) {

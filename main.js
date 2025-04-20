@@ -88,7 +88,10 @@ async function showDashboard(profile) {
     return;
   }
   let sectionOptions = sections.map(
-    s => `<option value="${s.id}" ${profile.section_id === s.id ? 'selected' : ''}>${s.day} ${s.time} (${s.location})</option>`
+    s => {
+      const taName = s.profiles ? s.profiles.name : '(No TA)';
+      return `<option value="${s.id}" ${profile.section_id === s.id ? 'selected' : ''}>${s.day} ${s.time} (${s.location}) - TA: ${taName}</option>`;
+    }
   ).join('');
   // Helper to render the section confirmation and change option
   function renderSectionConfirmation(section) {
