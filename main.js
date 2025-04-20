@@ -127,6 +127,13 @@ async function showDashboard(profile) {
       };
     });
     document.getElementById('logout-btn').onclick = () => {
+      // Clear user data from localStorage
+      localStorage.removeItem('student_id');
+      localStorage.removeItem('student_name');
+      localStorage.removeItem('section_id');
+      localStorage.removeItem('is_guest');
+
+      // Hide dashboard and show login form
       dashboard.style.display = 'none';
       document.getElementById('login-container').style.display = 'block';
     };
@@ -196,6 +203,13 @@ async function showDashboard(profile) {
   // const { data: games, error: gamesError } = await fetchGamesByStudent(profile.id);
   // ...
   document.getElementById('logout-btn').onclick = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('student_id');
+    localStorage.removeItem('student_name');
+    localStorage.removeItem('section_id');
+    localStorage.removeItem('is_guest');
+
+    // Hide dashboard and show login form
     dashboard.style.display = 'none';
     document.getElementById('login-container').style.display = 'block';
   };
@@ -229,8 +243,31 @@ async function showDashboard(profile) {
   // Show TA controls or student dashboard after section selection
   const roleDashboard = document.getElementById('role-dashboard');
   if (profile.role === 'ta') {
-    roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
+    roleDashboard.innerHTML = `
+      <div id="ta-controls">
+        <h4>TA Controls</h4>
+        <div class="game-card">
+          <h4>Investment Odyssey</h4>
+          <p>Manage your section's Investment Odyssey game.</p>
+          <div class="game-links">
+            <a href="investment-odyssey/ta-controls.html" class="game-link primary">TA Controls</a>
+          </div>
+        </div>
+      </div>
+    `;
   } else {
-    roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
+    roleDashboard.innerHTML = `
+      <div id="student-games">
+        <h4>Available Games</h4>
+        <div class="game-card">
+          <h4>Investment Odyssey</h4>
+          <p>Practice your investment skills in this financial market simulation.</p>
+          <div class="game-links">
+            <a href="investment-odyssey/about.html" class="game-link">Learn More</a>
+            <a href="investment-odyssey/index.html" class="game-link primary">Play Now</a>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
