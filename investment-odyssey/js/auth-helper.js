@@ -101,8 +101,11 @@ async function createGuestProfile() {
 
     console.log('Using role for guest:', guestRole);
 
-    // Use a passcode that meets the minimum length requirement (6 characters)
-    const guestPasscode = 'guest123';
+    // Use a 5-digit passcode for the profile (matching existing format)
+    const profilePasscode = '12345';
+
+    // Use a longer password for auth that meets the minimum length requirement
+    const authPassword = 'password123';
 
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -110,7 +113,7 @@ async function createGuestProfile() {
         name: guestName,
         custom_id: customId,
         role: guestRole,
-        passcode: guestPasscode,
+        passcode: profilePasscode,
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       })
@@ -129,7 +132,7 @@ async function createGuestProfile() {
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
-        password: guestPasscode,
+        password: authPassword, // Use the longer password for auth
         options: {
           data: {
             name: guestName,

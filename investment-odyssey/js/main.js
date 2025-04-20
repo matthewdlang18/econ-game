@@ -28,29 +28,33 @@ async function checkAuth() {
     notAuthenticatedSection.classList.add('d-none');
     gameDashboard.classList.add('d-none');
 
-    // First, try to get the current user profile directly
-    const { profile, error } = await window.getCurrentUserProfile();
+    // First, try to get the session directly from Supabase
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
-    if (profile) {
-      console.log('User already logged in:', profile.name);
-      currentProfile = profile;
-      showDashboard(profile);
-      return;
+    if (!sessionError && session) {
+      console.log('Active session found:', session.user.id);
+
+      // Try to get the profile from the profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (!profileError && profile) {
+        console.log('Profile found:', profile.name);
+        currentProfile = profile;
+        showDashboard(profile);
+        return;
+      }
+
+      console.log('No profile found for session user');
+    } else {
+      console.log('No active session found');
     }
 
-    console.log('No active session or profile found');
-
-    // If no profile found, try to create a guest profile
-    const result = await authHelper.createGuestProfile();
-    if (result.success) {
-      console.log('Created guest profile automatically');
-      currentProfile = result.profile;
-      showDashboard(result.profile);
-      return;
-    }
-
-    // If guest profile creation failed, show not authenticated section
-    console.log('Failed to create guest profile');
+    // If we get here, either there's no session or no profile found
+    // Show the not authenticated section
     showNotAuthenticated();
   } catch (err) {
     console.error('Auth check error:', err);
@@ -193,6 +197,22 @@ guestModeBtn.addEventListener('click', async () => {
       alert('Failed to create guest profile. Please try again or log in.');
       showNotAuthenticated();
       return;
+    }
+
+    // Try to sign in with the guest profile
+    const email = `${result.profile.custom_id}@example.com`;
+    const authPassword = 'password123'; // Same as in auth-helper.js
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: authPassword
+    });
+
+    if (signInError) {
+      console.error('Guest sign in error:', signInError);
+      // Continue anyway, just show the profile
+    } else {
+      console.log('Guest signed in successfully');
     }
 
     // Show dashboard with guest profile

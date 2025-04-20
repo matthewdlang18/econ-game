@@ -31,6 +31,7 @@ loginForm.addEventListener('submit', async (e) => {
   const name = document.getElementById('name').value.trim();
   const passcode = document.getElementById('passcode').value.trim();
 
+  // First, check if the profile exists with this name and passcode
   const { data: profile, error } = await fetchProfile(name, passcode);
   if (error || !profile) {
     loginError.textContent = 'Invalid name or passcode.';
@@ -42,17 +43,32 @@ loginForm.addEventListener('submit', async (e) => {
 
   // For Supabase Auth, we need to ensure the password is at least 6 characters
   // We'll pad it with a fixed suffix to make it consistent
-  const authPassword = passcode + 'secure';
+  const authPassword = 'password123'; // Use a fixed password that meets requirements
 
   console.log('Authenticating with email:', email);
 
-  // Sign in with Supabase Auth to create a session
-  const { data, error: signInError } = await supabase.auth.signInWithPassword({
-    email: email,
-    password: authPassword
-  });
+  // Try to sign in first
+  try {
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: authPassword
+    });
 
-  if (signInError) {
+    if (!signInError) {
+      console.log('Sign in successful');
+      // Update last_login timestamp in Supabase
+      await supabase
+        .from('profiles')
+        .update({ last_login: new Date().toISOString() })
+        .eq('id', profile.id);
+
+      // Hide login, show dashboard
+      document.getElementById('login-container').style.display = 'none';
+      dashboard.style.display = 'block';
+      showDashboard(profile);
+      return;
+    }
+
     // If sign in fails, try to sign up
     console.log('Sign in failed, trying to sign up');
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
@@ -71,6 +87,12 @@ loginForm.addEventListener('submit', async (e) => {
       loginError.textContent = 'Authentication error. Please try again.';
       return;
     }
+
+    console.log('Sign up successful');
+  } catch (authError) {
+    console.error('Authentication error:', authError);
+    loginError.textContent = 'An error occurred during authentication. Please try again.';
+    return;
   }
 
   // Update last_login timestamp in Supabase
