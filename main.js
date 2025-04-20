@@ -40,10 +40,16 @@ loginForm.addEventListener('submit', async (e) => {
   // Create a unique email for authentication
   const email = `${profile.custom_id}@example.com`;
 
+  // For Supabase Auth, we need to ensure the password is at least 6 characters
+  // We'll pad it with a fixed suffix to make it consistent
+  const authPassword = passcode + 'secure';
+
+  console.log('Authenticating with email:', email);
+
   // Sign in with Supabase Auth to create a session
   const { data, error: signInError } = await supabase.auth.signInWithPassword({
     email: email,
-    password: passcode
+    password: authPassword
   });
 
   if (signInError) {
@@ -51,7 +57,7 @@ loginForm.addEventListener('submit', async (e) => {
     console.log('Sign in failed, trying to sign up');
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: email,
-      password: passcode,
+      password: authPassword,
       options: {
         data: {
           name: profile.name,

@@ -101,13 +101,16 @@ async function createGuestProfile() {
 
     console.log('Using role for guest:', guestRole);
 
+    // Use a passcode that meets the minimum length requirement (6 characters)
+    const guestPasscode = 'guest123';
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .insert({
         name: guestName,
         custom_id: customId,
         role: guestRole,
-        passcode: 'guest',
+        passcode: guestPasscode,
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
       })
@@ -117,6 +120,31 @@ async function createGuestProfile() {
     if (error) {
       console.error('Guest profile creation error:', error);
       return { success: false, error };
+    }
+
+    // Now create an auth user for this profile
+    const email = `${customId}@example.com`;
+
+    // Try to create an auth user
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: guestPasscode,
+        options: {
+          data: {
+            name: guestName,
+            role: guestRole
+          }
+        }
+      });
+
+      if (authError) {
+        console.log('Note: Could not create auth user for guest, but profile was created:', authError);
+      } else {
+        console.log('Auth user created for guest profile');
+      }
+    } catch (authErr) {
+      console.log('Auth creation error (non-critical):', authErr);
     }
 
     return { success: true, profile };
