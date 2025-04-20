@@ -14,6 +14,18 @@ if (redirect === 'investment-odyssey') {
   redirectMessage.style.display = 'block';
 }
 
+// Handle guest mode link
+const guestModeLink = document.getElementById('guest-mode-link');
+if (guestModeLink) {
+  guestModeLink.addEventListener('click', function(e) {
+    e.preventDefault();
+    // Set guest mode in localStorage
+    localStorage.setItem('is_guest', 'true');
+    // Redirect to Investment Odyssey
+    window.location.href = 'investment-odyssey/about.html';
+  });
+}
+
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';
@@ -77,6 +89,19 @@ async function showDashboard(profile) {
           <p>Click "Show Roster" to view students in a section.</p>
         </div>
       </div>
+
+      <div class="dashboard-panel">
+        <h4>Available Games</h4>
+        <div class="game-card">
+          <h4>Investment Odyssey</h4>
+          <p>Practice your investment skills in this financial market simulation.</p>
+          <div class="game-links">
+            <a href="investment-odyssey/about.html" class="game-link primary">Play Now</a>
+            <a href="investment-odyssey/ta-controls.html" class="game-link">TA Controls</a>
+          </div>
+        </div>
+      </div>
+
       <button id="logout-btn">Logout</button>
     `;
     document.querySelectorAll('.roster-toggle').forEach(btn => {
@@ -147,8 +172,14 @@ async function showDashboard(profile) {
     <div id="student-section-info"></div>
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
-        <h4>Student Dashboard</h4>
-        <div id="student-games-list"><em>(No games available yet)</em></div>
+        <h4>Available Games</h4>
+        <div class="game-card">
+          <h4>Investment Odyssey</h4>
+          <p>Practice your investment skills in this financial market simulation.</p>
+          <div class="game-links">
+            <a href="investment-odyssey/about.html" class="game-link primary">Play Now</a>
+          </div>
+        </div>
       </div>
     </div>
     <button id="logout-btn">Logout</button>
