@@ -15,6 +15,9 @@ async function fetchProfile(name, passcode) {
   return { data, error };
 }
 
+// Make fetchProfile globally accessible
+window.fetchProfile = fetchProfile;
+
 // Helper: Fetch all sections with TA name joined from profiles
 async function fetchSections() {
   const { data, error } = await supabase
@@ -202,3 +205,22 @@ async function getLeaderboard(options = {}) {
   const { data, error } = await query;
   return { data, error };
 }
+
+// Make all helper functions globally accessible
+window.fetchSections = fetchSections;
+window.fetchTASections = fetchTASections;
+window.fetchStudentsBySection = fetchStudentsBySection;
+window.fetchGamesBySection = fetchGamesBySection;
+window.fetchGamesByStudent = fetchGamesByStudent;
+window.updateUserSection = updateUserSection;
+window.createGame = createGame;
+window.updateGameStatus = updateGameStatus;
+window.advanceGameRound = advanceGameRound;
+window.createGameRound = createGameRound;
+window.getGameRound = getGameRound;
+window.createPlayerState = createPlayerState;
+window.updatePlayerState = updatePlayerState;
+window.getPlayerState = getPlayerState;
+window.getGameParticipants = getGameParticipants;
+window.addToLeaderboard = addToLeaderboard;
+window.getLeaderboard = getLeaderboard;

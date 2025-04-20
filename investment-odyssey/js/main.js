@@ -22,27 +22,41 @@ let currentProfile = null;
 // Check if user is already logged in
 async function checkAuth() {
   try {
-    const { data: { user }, error } = await supabase.auth.getUser();
-    
-    if (error || !user) {
-      // No active session, show login
+    // First check if we have a session cookie
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      console.log('No active session found');
       showLogin();
       return;
     }
-    
+
+    const { data: { user }, error } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      // No active session, show login
+      console.log('No user found in session');
+      showLogin();
+      return;
+    }
+
+    console.log('User authenticated:', user.id);
+
     // Get user profile from profiles table
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
       .maybeSingle();
-    
+
     if (profileError || !profile) {
       console.error('Error fetching profile:', profileError);
       showLogin();
       return;
     }
-    
+
+    console.log('Profile loaded:', profile.name);
+
     // User is logged in, show dashboard
     currentProfile = profile;
     showDashboard(profile);
@@ -66,11 +80,11 @@ function showDashboard(profile) {
   loginSection.classList.add('d-none');
   gameDashboard.classList.remove('d-none');
   gameInterface.classList.add('d-none');
-  
+
   // Update user info
   userName.textContent = profile.name;
   userInfo.classList.remove('d-none');
-  
+
   // Load player stats
   loadPlayerStats(profile);
 }
@@ -78,7 +92,7 @@ function showDashboard(profile) {
 // Load player statistics
 async function loadPlayerStats(profile) {
   const playerStats = document.getElementById('player-stats');
-  
+
   try {
     // Fetch player's games from leaderboard
     const { data: games, error } = await supabase
@@ -86,24 +100,24 @@ async function loadPlayerStats(profile) {
       .select('*')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       console.error('Error fetching player stats:', error);
       playerStats.innerHTML = '<p>Error loading statistics.</p>';
       return;
     }
-    
+
     if (!games || games.length === 0) {
       playerStats.innerHTML = '<p>You haven\'t played any games yet.</p>';
       return;
     }
-    
+
     // Calculate statistics
     const totalGames = games.length;
     const bestScore = Math.max(...games.map(game => game.final_portfolio));
     const avgScore = games.reduce((sum, game) => sum + game.final_portfolio, 0) / totalGames;
     const lastGame = games[0];
-    
+
     // Display statistics
     playerStats.innerHTML = `
       <div class="row">
@@ -132,37 +146,50 @@ async function loadPlayerStats(profile) {
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';
-  
+
   const name = document.getElementById('name').value.trim();
   const passcode = document.getElementById('passcode').value.trim();
-  
+
   try {
-    // Fetch profile by name and passcode
-    const { data: profile, error } = await fetchProfile(name, passcode);
-    
+    // Use the fetchProfile function from the parent scope (supabase.js)
+    let profileResult;
+    if (typeof window.fetchProfile === 'function') {
+      profileResult = await window.fetchProfile(name, passcode);
+    } else {
+      // Fallback implementation if the function isn't available
+      profileResult = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('name', name)
+        .eq('passcode', passcode)
+        .maybeSingle();
+    }
+
+    const { data: profile, error } = profileResult;
+
     if (error || !profile) {
       loginError.textContent = 'Invalid name or passcode.';
       return;
     }
-    
+
     // Sign in with Supabase Auth
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: `${profile.custom_id}@example.com`, // Using custom_id as email
       password: passcode
     });
-    
+
     if (signInError) {
       console.error('Sign in error:', signInError);
       loginError.textContent = 'Authentication error. Please try again.';
       return;
     }
-    
+
     // Update last_login timestamp
     await supabase
       .from('profiles')
       .update({ last_login: new Date().toISOString() })
       .eq('id', profile.id);
-    
+
     // Show dashboard
     currentProfile = profile;
     showDashboard(profile);
@@ -177,7 +204,7 @@ guestModeBtn.addEventListener('click', async () => {
   try {
     // Generate a random guest ID
     const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
-    
+
     // Create a guest profile
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -191,13 +218,13 @@ guestModeBtn.addEventListener('click', async () => {
       })
       .select()
       .maybeSingle();
-    
+
     if (error) {
       console.error('Guest profile creation error:', error);
       loginError.textContent = 'Failed to create guest account.';
       return;
     }
-    
+
     // Show dashboard with guest profile
     currentProfile = profile;
     showDashboard(profile);
@@ -223,10 +250,10 @@ logoutBtn.addEventListener('click', async () => {
   try {
     // Sign out from Supabase Auth
     await supabase.auth.signOut();
-    
+
     // Reset current profile
     currentProfile = null;
-    
+
     // Show login
     showLogin();
   } catch (err) {
@@ -238,9 +265,17 @@ logoutBtn.addEventListener('click', async () => {
 document.addEventListener('DOMContentLoaded', () => {
   // Check authentication status
   checkAuth();
-  
+
   // Initialize game UI components
   if (typeof gameUI !== 'undefined') {
     gameUI.initGameUI();
   }
+
+  // Add event listener to handle page visibility changes
+  // This helps maintain authentication state when user returns to the page
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !currentProfile) {
+      checkAuth();
+    }
+  });
 });
