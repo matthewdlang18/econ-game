@@ -3,95 +3,15 @@ const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
 
-// Check for redirect parameter
-document.addEventListener('DOMContentLoaded', async () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const redirect = urlParams.get('redirect');
-
-  if (redirect === 'investment-odyssey') {
-    // Check if user is already authenticated
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    if (session) {
-      console.log('User is authenticated, redirecting to Investment Odyssey');
-      // Redirect back to Investment Odyssey with redirected=true parameter
-      window.location.href = 'investment-odyssey/index.html?redirected=true';
-    } else {
-      console.log('User is not authenticated, staying on main page');
-      // Remove the redirect parameter
-      const newUrl = window.location.pathname;
-      window.history.replaceState({}, document.title, newUrl);
-    }
-  }
-});
-
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.textContent = '';
   const name = document.getElementById('name').value.trim();
   const passcode = document.getElementById('passcode').value.trim();
 
-  // First, check if the profile exists with this name and passcode
   const { data: profile, error } = await fetchProfile(name, passcode);
   if (error || !profile) {
     loginError.textContent = 'Invalid name or passcode.';
-    return;
-  }
-
-  // Create a unique email for authentication
-  const email = `${profile.custom_id}@example.com`;
-
-  // For Supabase Auth, we need to ensure the password is at least 6 characters
-  // We'll pad it with a fixed suffix to make it consistent
-  const authPassword = 'password123'; // Use a fixed password that meets requirements
-
-  console.log('Authenticating with email:', email);
-
-  // Try to sign in first
-  try {
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: authPassword
-    });
-
-    if (!signInError) {
-      console.log('Sign in successful');
-      // Update last_login timestamp in Supabase
-      await supabase
-        .from('profiles')
-        .update({ last_login: new Date().toISOString() })
-        .eq('id', profile.id);
-
-      // Hide login, show dashboard
-      document.getElementById('login-container').style.display = 'none';
-      dashboard.style.display = 'block';
-      showDashboard(profile);
-      return;
-    }
-
-    // If sign in fails, try to sign up
-    console.log('Sign in failed, trying to sign up');
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email: email,
-      password: authPassword,
-      options: {
-        data: {
-          name: profile.name,
-          role: profile.role
-        }
-      }
-    });
-
-    if (signUpError) {
-      console.error('Sign up error:', signUpError);
-      loginError.textContent = 'Authentication error. Please try again.';
-      return;
-    }
-
-    console.log('Sign up successful');
-  } catch (authError) {
-    console.error('Authentication error:', authError);
-    loginError.textContent = 'An error occurred during authentication. Please try again.';
     return;
   }
 
