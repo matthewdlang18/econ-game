@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Odyssey - Leaderboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/header-styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+    <!-- Banner -->
+    <div class="banner-container">
+        <img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80" alt="Investment Banner" class="banner-image">
+        <div class="banner-overlay">
+            <div class="nav-links">
+                <div class="nav-links-left">
+                    <a href="about.html" class="nav-link">About</a>
+                    <a href="index.html" class="nav-link">Play Game</a>
+                    <a href="leaderboard.html" class="nav-link active">Leaderboard</a>
+                </div>
+                <div class="nav-links-right">
+                    <!-- User info container (shown when logged in) -->
+                    <div class="user-info" id="user-info-container" style="display: none;">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <span class="user-name" id="user-name-display">User</span>
+                        <button class="sign-out-btn" id="sign-out-btn">
+                            <i class="fas fa-sign-out-alt"></i> Sign Out
+                        </button>
+                    </div>
+                    
+                    <!-- Sign in link (shown when not logged in) -->
+                    <a href="../../index.html?redirect=investment-odyssey" class="nav-link" id="sign-in-link">Sign In</a>
+                    
+                    <!-- Guest link (shown when not logged in) -->
+                    <a href="#" class="nav-link" id="guest-link">Continue as Guest</a>
+                </div>
+            </div>
+            <h1 class="activity-title">Investment Odyssey</h1>
+            <p class="activity-date">Leaderboard</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Leaderboard Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Top Performers</h5>
+                <button id="clear-leaderboard" class="btn btn-sm btn-light">Clear Leaderboard</button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Final Portfolio</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-table-body">
+                            <!-- Leaderboard entries will be added here by JavaScript -->
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <em>No scores yet</em>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supabase Leaderboard Card -->
+        <div class="card mb-4" id="supabase-leaderboard-card" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Global Leaderboard</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Final Portfolio</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supabase-leaderboard-table-body">
+                            <!-- Supabase leaderboard entries will be added here by JavaScript -->
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <em>Loading global scores...</em>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Leaderboard Card -->
+        <div class="card mb-4" id="section-leaderboard-card" style="display: none;">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Section Leaderboard</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Player</th>
+                                <th>Final Portfolio</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="section-leaderboard-table-body">
+                            <!-- Section leaderboard entries will be added here by JavaScript -->
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <em>Loading section scores...</em>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Return to Game Button -->
+        <div class="text-center mb-5">
+            <a href="index.html" class="btn btn-primary btn-lg">Return to Game</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Investment Odyssey</h5>
+                    <p>A financial market simulation game to help you understand investment strategies, risk management, and portfolio diversification.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="about.html" class="text-white">About</a></li>
+                        <li><a href="index.html" class="text-white">Play Game</a></li>
+                        <li><a href="leaderboard.html" class="text-white">Leaderboard</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Investment Guide</a></li>
+                        <li><a href="#" class="text-white">Market Glossary</a></li>
+                        <li><a href="#" class="text-white">FAQ</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12 text-center">
+                    <p class="mb-0">&copy; 2023 Investment Odyssey. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Supabase Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../../supabase.js"></script>
+
+    <!-- Authentication Scripts -->
+    <script src="js/auth-check.js"></script>
+    
+    <!-- Header Authentication Script -->
+    <script src="js/header-auth.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="js/game-core.js"></script>
+    <script src="js/local-storage-scores.js"></script>
+    <script src="js/supabase-service.js"></script>
+
+    <!-- Leaderboard Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Display local leaderboard
+            displayLeaderboard();
+            
+            // Display Supabase leaderboard if available
+            displaySupabaseLeaderboard();
+            
+            // Display section leaderboard if available
+            displaySectionLeaderboard();
+        });
+        
+        // Display Supabase leaderboard
+        async function displaySupabaseLeaderboard() {
+            const supabaseLeaderboardCard = document.getElementById('supabase-leaderboard-card');
+            const supabaseLeaderboardTableBody = document.getElementById('supabase-leaderboard-table-body');
+            
+            if (!supabaseLeaderboardCard || !supabaseLeaderboardTableBody) return;
+            
+            // Check if Service is available
+            if (typeof window.Service === 'undefined' || typeof window.Service.getGameScores !== 'function') {
+                supabaseLeaderboardTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">
+                            <em>Global leaderboard not available</em>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            try {
+                // Get scores from Supabase
+                const result = await window.Service.getGameScores('investment-odyssey', 20);
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // Show the card
+                    supabaseLeaderboardCard.style.display = 'block';
+                    
+                    // Clear table
+                    supabaseLeaderboardTableBody.innerHTML = '';
+                    
+                    // Add rows for each score
+                    result.data.forEach((score, index) => {
+                        const row = document.createElement('tr');
+                        
+                        // Format date
+                        const date = new Date(score.created_at);
+                        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                        
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${score.student_name}</td>
+                            <td>$${formatCurrency(score.score)}</td>
+                            <td>${formattedDate}</td>
+                        `;
+                        
+                        supabaseLeaderboardTableBody.appendChild(row);
+                    });
+                } else {
+                    supabaseLeaderboardTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <em>No global scores available</em>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error displaying Supabase leaderboard:', error);
+                supabaseLeaderboardTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">
+                            <em>Error loading global scores</em>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        // Display section leaderboard
+        async function displaySectionLeaderboard() {
+            const sectionLeaderboardCard = document.getElementById('section-leaderboard-card');
+            const sectionLeaderboardTableBody = document.getElementById('section-leaderboard-table-body');
+            
+            if (!sectionLeaderboardCard || !sectionLeaderboardTableBody) return;
+            
+            // Get section ID from localStorage
+            const sectionId = localStorage.getItem('section_id');
+            
+            // Check if section ID is available
+            if (!sectionId) {
+                return;
+            }
+            
+            // Check if Service is available
+            if (typeof window.Service === 'undefined' || typeof window.Service.getSectionGameScores !== 'function') {
+                return;
+            }
+            
+            try {
+                // Get scores from Supabase
+                const result = await window.Service.getSectionGameScores(sectionId, 'investment-odyssey');
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    // Show the card
+                    sectionLeaderboardCard.style.display = 'block';
+                    
+                    // Clear table
+                    sectionLeaderboardTableBody.innerHTML = '';
+                    
+                    // Add rows for each score
+                    result.data.forEach((score, index) => {
+                        const row = document.createElement('tr');
+                        
+                        // Format date
+                        const date = new Date(score.created_at);
+                        const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                        
+                        row.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>${score.student_name}</td>
+                            <td>$${formatCurrency(score.score)}</td>
+                            <td>${formattedDate}</td>
+                        `;
+                        
+                        sectionLeaderboardTableBody.appendChild(row);
+                    });
+                } else {
+                    sectionLeaderboardTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center">
+                                <em>No section scores available</em>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error displaying section leaderboard:', error);
+                sectionLeaderboardTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center">
+                            <em>Error loading section scores</em>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    </script>
+
+    <!-- Bootstrap Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+</body>
+</html>
