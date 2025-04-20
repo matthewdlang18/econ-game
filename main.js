@@ -90,6 +90,20 @@ async function showDashboard(profile) {
   let sectionOptions = sections.map(
     s => `<option value="${s.id}" ${profile.section_id === s.id ? 'selected' : ''}>${s.day} ${s.time} (${s.location})</option>`
   ).join('');
+  // Helper to render the section confirmation and change option
+  function renderSectionConfirmation(section) {
+    sectionInfoDiv.innerHTML = `
+      <div class="info-row"><span class="label">Section:</span> <span class="value">${section.day} ${section.time} (${section.location})</span></div>
+      <button id="change-section-btn" class="change-section">Change Section</button>
+    `;
+    const form = document.getElementById('section-form');
+    if (form) form.style.display = 'none';
+    document.getElementById('change-section-btn').onclick = () => {
+      if (form) form.style.display = 'flex';
+      sectionInfoDiv.innerHTML = '';
+    };
+  }
+
   dashboard.innerHTML = `
     <h2>Welcome ${profile.name}</h2>
     <div class="info-row"><span class="label">Role:</span> <span class="value">${profile.role}</span></div>
@@ -100,10 +114,10 @@ async function showDashboard(profile) {
       <button type="submit">Save Section</button>
       <span id="section-success" style="color:green;display:none;margin-left:1em;">Section updated!</span>
     </form>
+    <div id="student-section-info"></div>
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
         <h4>Student Dashboard</h4>
-        <div id="student-section-info"></div>
         <div id="student-games-list"><em>(No games available yet)</em></div>
       </div>
     </div>
@@ -113,7 +127,7 @@ async function showDashboard(profile) {
   const sectionInfoDiv = document.getElementById('student-section-info');
   const currentSection = sections.find(s => s.id === profile.section_id);
   if (currentSection) {
-    sectionInfoDiv.innerHTML = `<div class="info-row"><span class="label">Section:</span> <span class="value">${currentSection.day} ${currentSection.time} (${currentSection.location})</span></div>`;
+    renderSectionConfirmation(currentSection);
   } else {
     sectionInfoDiv.innerHTML = `<span style="color:#b00">No section selected.</span>`;
   }
@@ -144,6 +158,12 @@ async function showDashboard(profile) {
     // If section didn't change, just reload dashboard
     showDashboard(profile);
   };
+
+  // Hide section form if student already has a section
+  if (currentSection) {
+    const form = document.getElementById('section-form');
+    if (form) form.style.display = 'none';
+  }
 
   // Show TA controls or student dashboard after section selection
   const roleDashboard = document.getElementById('role-dashboard');
