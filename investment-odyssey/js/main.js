@@ -33,6 +33,16 @@ async function checkAuth() {
 
     if (sessionError || !session) {
       console.log('No active session found');
+      // Try to create a guest profile directly
+      const result = await authHelper.createGuestProfile();
+      if (result.success) {
+        console.log('Created guest profile automatically');
+        currentProfile = result.profile;
+        showDashboard(result.profile);
+        return;
+      }
+
+      // If guest profile creation failed, show not authenticated section
       showNotAuthenticated();
       return;
     }
@@ -80,39 +90,59 @@ async function checkAuth() {
       }
     }
 
-    // If we still don't have a profile, try to get it from the user metadata
-    if (session.user.user_metadata && session.user.user_metadata.name) {
-      // Create a new profile based on the user metadata
-      const { data: newProfile, error: newProfileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: session.user.id,
-          name: session.user.user_metadata.name,
-          custom_id: crypto.randomUUID(),
-          role: session.user.user_metadata.role || 'student',
-          passcode: 'password', // Default passcode
-          created_at: new Date().toISOString(),
-          last_login: new Date().toISOString()
-        })
-        .select()
-        .maybeSingle();
+    // If we still don't have a profile, create a new one based on the session
+    const userName = session.user.user_metadata?.name ||
+                    session.user.email?.split('@')[0] ||
+                    'User_' + Math.floor(Math.random() * 10000);
 
-      if (newProfileError) {
-        console.error('Error creating new profile:', newProfileError);
-        showNotAuthenticated();
+    // Create a new profile
+    const { data: newProfile, error: newProfileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: session.user.id,
+        name: userName,
+        custom_id: crypto.randomUUID(),
+        role: 'student', // Default to student role
+        passcode: 'password', // Default passcode
+        created_at: new Date().toISOString(),
+        last_login: new Date().toISOString()
+      })
+      .select()
+      .maybeSingle();
+
+    if (newProfileError) {
+      console.error('Error creating new profile:', newProfileError);
+      // Try to create a guest profile as fallback
+      const result = await authHelper.createGuestProfile();
+      if (result.success) {
+        console.log('Created guest profile as fallback');
+        currentProfile = result.profile;
+        showDashboard(result.profile);
         return;
       }
 
-      if (newProfile) {
-        console.log('New profile created:', newProfile.name);
-        currentProfile = newProfile;
-        showDashboard(newProfile);
-        return;
-      }
+      showNotAuthenticated();
+      return;
     }
 
-    // If we still don't have a profile, show the not authenticated section
-    console.log('No profile found for user');
+    if (newProfile) {
+      console.log('New profile created:', newProfile.name);
+      currentProfile = newProfile;
+      showDashboard(newProfile);
+      return;
+    }
+
+    // If we still don't have a profile, create a guest profile
+    const result = await authHelper.createGuestProfile();
+    if (result.success) {
+      console.log('Created guest profile as last resort');
+      currentProfile = result.profile;
+      showDashboard(result.profile);
+      return;
+    }
+
+    // If all else fails, show not authenticated section
+    console.log('No profile found or created');
     showNotAuthenticated();
   } catch (err) {
     console.error('Auth check error:', err);
@@ -247,6 +277,7 @@ guestModeBtn.addEventListener('click', async () => {
 
     if (!result.success) {
       console.error('Failed to create guest profile:', result.error);
+      alert('Failed to create guest profile. Please try again or log in.');
       showNotAuthenticated();
       return;
     }
@@ -256,6 +287,7 @@ guestModeBtn.addEventListener('click', async () => {
     showDashboard(result.profile);
   } catch (err) {
     console.error('Guest mode error:', err);
+    alert('An error occurred. Please try again or log in.');
     showNotAuthenticated();
   }
 });
@@ -274,23 +306,22 @@ useMainSessionBtn.addEventListener('click', async () => {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('Investment Odyssey initializing...');
 
-  // Check if we were redirected from the main page
-  const urlParams = new URLSearchParams(window.location.search);
-  const redirected = urlParams.get('redirected');
-
   // Remove any query parameters to avoid confusion on refresh
   if (window.location.search) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirected = urlParams.get('redirected');
+
+    // If redirected from main page, force refresh the auth state
+    if (redirected === 'true') {
+      console.log('Redirected from main page, refreshing auth state');
+      supabase.auth.refreshSession();
+    }
+
     const newUrl = window.location.pathname;
     window.history.replaceState({}, document.title, newUrl);
   }
 
-  // If redirected from main page, force refresh the auth state
-  if (redirected === 'true') {
-    console.log('Redirected from main page, refreshing auth state');
-    supabase.auth.refreshSession();
-  }
-
-  // Check authentication status
+  // Check authentication status - this will automatically create a guest profile if needed
   checkAuth();
 
   // Initialize game UI components

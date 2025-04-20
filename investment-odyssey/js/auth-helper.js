@@ -83,12 +83,30 @@ async function createGuestProfile() {
     // Create a guest profile without auth
     const customId = crypto.randomUUID();
 
+    // First, check what roles are allowed in the profiles table
+    const { data: roleInfo, error: roleError } = await supabase
+      .rpc('get_allowed_roles');
+
+    // Default to 'student' if we can't get the allowed roles
+    let guestRole = 'student';
+
+    if (!roleError && roleInfo && roleInfo.length > 0) {
+      // Use the first allowed role that's appropriate for guests
+      if (roleInfo.includes('guest')) {
+        guestRole = 'guest';
+      } else if (roleInfo.includes('student')) {
+        guestRole = 'student';
+      }
+    }
+
+    console.log('Using role for guest:', guestRole);
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .insert({
         name: guestName,
         custom_id: customId,
-        role: 'guest',
+        role: guestRole,
         passcode: 'guest',
         created_at: new Date().toISOString(),
         last_login: new Date().toISOString()
