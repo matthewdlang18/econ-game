@@ -4,9 +4,15 @@
 window.Service = {
     // Check if Supabase client is properly initialized
     isSupabaseAvailable: function() {
-        return typeof window.supabase !== 'undefined' &&
+        const available = typeof window.supabase !== 'undefined' &&
                typeof window.supabase.from === 'function' &&
                typeof window.supabase.auth === 'object';
+
+        if (!available) {
+            console.error('Supabase client not properly initialized. Current state:', window.supabase);
+        }
+
+        return available;
     },
 
     // Save game state to Supabase
