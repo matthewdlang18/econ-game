@@ -43,6 +43,9 @@ function updateUI() {
         // Update CPI display
         updateElementText('cpi-display', gameState.CPI.toFixed(2));
 
+        // Update Bitcoin market phase indicator if available
+        updateBitcoinMarketPhase();
+
         console.log('updateUI function completed successfully');
     } catch (error) {
         console.error('Error in updateUI function:', error);
@@ -453,6 +456,60 @@ function updateCPIChart() {
         window.cpiChart.data.labels = labels;
         window.cpiChart.data.datasets[0].data = data;
         window.cpiChart.update();
+    }
+}
+
+// Update Bitcoin market phase indicator
+function updateBitcoinMarketPhase() {
+    // Check if Bitcoin utils are available
+    if (typeof window.BitcoinUtils === 'undefined') {
+        console.log('Bitcoin utils not available');
+        return;
+    }
+
+    // Get current Bitcoin market phase
+    const marketPhase = window.BitcoinUtils.getBitcoinMarketPhase(gameState.roundNumber);
+
+    // Try to find Bitcoin row in market data table
+    const bitcoinRow = document.querySelector('#market-data-table-body tr:nth-child(6)');
+    if (bitcoinRow) {
+        // Check if phase indicator already exists
+        let phaseIndicator = bitcoinRow.querySelector('.bitcoin-phase-indicator');
+
+        if (!phaseIndicator) {
+            // Create phase indicator if it doesn't exist
+            const bitcoinCell = bitcoinRow.querySelector('td:first-child');
+            if (bitcoinCell) {
+                phaseIndicator = document.createElement('span');
+                phaseIndicator.className = 'badge ml-2 bitcoin-phase-indicator';
+                phaseIndicator.id = 'bitcoin-phase-indicator';
+                bitcoinCell.appendChild(phaseIndicator);
+            }
+        }
+
+        if (phaseIndicator) {
+            // Update phase text
+            phaseIndicator.textContent = marketPhase.charAt(0).toUpperCase() + marketPhase.slice(1);
+
+            // Update phase color
+            phaseIndicator.className = 'badge ml-2 bitcoin-phase-indicator';
+            switch (marketPhase) {
+                case 'accumulation':
+                    phaseIndicator.classList.add('badge-info');
+                    break;
+                case 'bull':
+                    phaseIndicator.classList.add('badge-success');
+                    break;
+                case 'distribution':
+                    phaseIndicator.classList.add('badge-warning');
+                    break;
+                case 'bear':
+                    phaseIndicator.classList.add('badge-danger');
+                    break;
+                default:
+                    phaseIndicator.classList.add('badge-secondary');
+            }
+        }
     }
 }
 

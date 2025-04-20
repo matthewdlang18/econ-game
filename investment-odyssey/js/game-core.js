@@ -376,27 +376,93 @@ function generateNewPrices() {
 
         // Special handling for Bitcoin
         let bitcoinReturn;
+        const bitcoinPrice = gameState.assetPrices['Bitcoin'];
 
-        // Check if it's time for a Bitcoin crash (approximately every 5-8 rounds)
-        const roundsSinceLastCrash = gameState.roundNumber - gameState.lastBitcoinCrashRound;
-        const crashProbability = Math.min(0.1 + (roundsSinceLastCrash * 0.05), 0.4); // Increases over time
-
-        if (Math.random() < crashProbability) {
-            // Bitcoin crash
-            const crashSeverity = Math.random() * (gameState.bitcoinShockRange[1] - gameState.bitcoinShockRange[0]) + gameState.bitcoinShockRange[0];
-            bitcoinReturn = crashSeverity; // -50% to -75% crash
-            gameState.lastBitcoinCrashRound = gameState.roundNumber;
-
-            // Make the next crash potentially more severe
-            gameState.bitcoinShockRange[0] -= 0.05;
-            gameState.bitcoinShockRange[1] -= 0.05;
+        // Bitcoin has special growth patterns based on its price
+        if (bitcoinPrice < 10000) {
+            // Low price: rapid growth
+            bitcoinReturn = 2 + Math.random() * 2; // Return between 200% and 400%
+            console.log(`Bitcoin price < 10000: Rapid growth return: ${bitcoinReturn.toFixed(2)}`);
+        } else if (bitcoinPrice >= 1000000) {
+            // Very high price: crash
+            bitcoinReturn = -0.3 - Math.random() * 0.2; // Return between -30% and -50%
+            console.log(`Bitcoin price >= 1000000: Crash return: ${bitcoinReturn.toFixed(2)}`);
         } else {
-            // Normal Bitcoin volatility with correlation to other assets
+            // Normal price range: correlated random return
             let weightedReturn = 0;
             for (let j = 0; j < assetNames.length; j++) {
                 weightedReturn += window.correlationMatrix[5][j] * uncorrelatedZ[j];
             }
-            bitcoinReturn = window.assetReturns['Bitcoin'].mean + window.assetReturns['Bitcoin'].stdDev * weightedReturn;
+            const oldReturn = window.assetReturns['Bitcoin'].mean + window.assetReturns['Bitcoin'].stdDev * weightedReturn;
+            bitcoinReturn = oldReturn;
+
+            // Adjust Bitcoin's return based on its current price
+            const priceThreshold = 100000;
+            if (bitcoinPrice > priceThreshold) {
+                // Calculate how many increments above threshold
+                const incrementsAboveThreshold = Math.max(0, (bitcoinPrice - priceThreshold) / 50000);
+
+                // Reduce volatility as price grows (more mature asset)
+                const volatilityReduction = Math.min(0.7, incrementsAboveThreshold * 0.05);
+                const adjustedStdDev = window.assetReturns['Bitcoin'].stdDev * (1 - volatilityReduction);
+
+                // Use a skewed distribution to avoid clustering around the mean
+                // This creates more varied returns while still respecting the reduced volatility
+                const u1 = Math.random();
+                const u2 = Math.random();
+                const normalRandom = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+
+                // Adjust the mean based on price to create more varied returns
+                const adjustedMean = window.assetReturns['Bitcoin'].mean * (0.5 + (Math.random() * 0.5));
+
+                // Recalculate return with reduced volatility and varied mean
+                bitcoinReturn = adjustedMean + (normalRandom * adjustedStdDev);
+                console.log(`Bitcoin price > ${priceThreshold}: Adjusted return from ${oldReturn.toFixed(2)} to ${bitcoinReturn.toFixed(2)}`);
+            }
+
+            // Get Bitcoin market phase and cycle information
+            const marketPhase = window.BitcoinUtils.getBitcoinMarketPhase(gameState.roundNumber);
+            const roundsSinceLastCrash = gameState.roundNumber - gameState.lastBitcoinCrashRound;
+            const volatilityMultiplier = window.BitcoinUtils.getVolatilityMultiplier(gameState.roundNumber);
+            const returnBias = window.BitcoinUtils.getReturnBias(gameState.roundNumber);
+
+            console.log(`Bitcoin market phase: ${marketPhase}, Volatility multiplier: ${volatilityMultiplier}, Return bias: ${returnBias}`);
+            console.log(`Checking Bitcoin cycle: Current round: ${gameState.roundNumber}, Last crash: ${gameState.lastBitcoinCrashRound}, Diff: ${roundsSinceLastCrash}`);
+
+            // Apply market phase adjustments to the return
+            bitcoinReturn = bitcoinReturn * volatilityMultiplier + returnBias;
+
+            // Calculate crash probability based on market phase and rounds since last crash
+            const crashProbability = window.BitcoinUtils.getCrashProbability(gameState.roundNumber, gameState.lastBitcoinCrashRound);
+            console.log(`Bitcoin crash probability: ${crashProbability.toFixed(2)}`);
+
+            // Check for Bitcoin crash
+            if (Math.random() < crashProbability) {
+                // Generate crash severity based on market phase
+                const crashSeverity = window.BitcoinUtils.getCrashSeverity(gameState.roundNumber, gameState.bitcoinShockRange);
+                bitcoinReturn = crashSeverity;
+
+                // Update last crash round
+                gameState.lastBitcoinCrashRound = gameState.roundNumber;
+
+                // Update shock range for next crash
+                if (marketPhase === 'bear' || marketPhase === 'accumulation') {
+                    // Less severe crashes during bear and accumulation phases
+                    gameState.bitcoinShockRange = [
+                        Math.min(Math.max(gameState.bitcoinShockRange[0] + 0.1, -0.5), -0.05),
+                        Math.min(Math.max(gameState.bitcoinShockRange[1] + 0.1, -0.75), -0.15)
+                    ];
+                } else {
+                    // More severe crashes during bull and distribution phases
+                    gameState.bitcoinShockRange = [
+                        Math.max(gameState.bitcoinShockRange[0] - 0.05, -0.8),
+                        Math.max(gameState.bitcoinShockRange[1] - 0.05, -0.95)
+                    ];
+                }
+
+                console.log(`BITCOIN CRASH in round ${gameState.roundNumber} during ${marketPhase} phase with return ${bitcoinReturn.toFixed(2)}`);
+                console.log(`New shock range: [${gameState.bitcoinShockRange[0].toFixed(2)}, ${gameState.bitcoinShockRange[1].toFixed(2)}]`);
+            }
         }
 
         // Ensure Bitcoin return is within bounds
@@ -694,7 +760,13 @@ async function loadGameState() {
             lastPricesRoundNumber = gameState.roundNumber;
 
             // Update UI
-            updateUI();
+            if (typeof updateUI === 'function') {
+                updateUI();
+            } else {
+                console.warn('updateUI function not available');
+                // Update basic UI elements
+                updateGameProgress();
+            }
 
             // Update game progress
             updateGameProgress();
