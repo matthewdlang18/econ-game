@@ -95,8 +95,9 @@ async function showDashboard(profile) {
   ).join('');
   // Helper to render the section confirmation and change option
   function renderSectionConfirmation(section) {
+    const taName = section.profiles ? section.profiles.name : '(No TA)';
     sectionInfoDiv.innerHTML = `
-      <div class="info-row"><span class="label">Section:</span> <span class="value">${section.day} ${section.time} (${section.location})</span></div>
+      <div class="info-row"><span class="label">Section:</span> <span class="value">${section.day} ${section.time} (${section.location}) - TA: ${taName}</span></div>
       <button id="change-section-btn" class="change-section">Change Section</button>
     `;
     const form = document.getElementById('section-form');
@@ -110,7 +111,6 @@ async function showDashboard(profile) {
   dashboard.innerHTML = `
     <h2>Welcome ${profile.name}</h2>
     <div class="info-row"><span class="label">Role:</span> <span class="value">${profile.role}</span></div>
-    <div class="info-row"><span class="label">Custom ID:</span> <span class="value">${profile.custom_id}</span></div>
     <form id="section-form">
       <label for="section-select"><strong>Section:</strong></label>
       <select id="section-select">${sectionOptions}</select>
