@@ -28,121 +28,29 @@ async function checkAuth() {
     notAuthenticatedSection.classList.add('d-none');
     gameDashboard.classList.add('d-none');
 
-    // First, try to get the session directly from Supabase
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    if (sessionError || !session) {
-      console.log('No active session found');
-      // Try to create a guest profile directly
-      const result = await authHelper.createGuestProfile();
-      if (result.success) {
-        console.log('Created guest profile automatically');
-        currentProfile = result.profile;
-        showDashboard(result.profile);
-        return;
-      }
-
-      // If guest profile creation failed, show not authenticated section
-      showNotAuthenticated();
-      return;
-    }
-
-    console.log('Session found:', session.user.id);
-
-    // Try to get the profile from the profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error('Error fetching profile:', profileError);
-    }
+    // First, try to get the current user profile directly
+    const { profile, error } = await window.getCurrentUserProfile();
 
     if (profile) {
-      console.log('Profile found by ID:', profile.name);
+      console.log('User already logged in:', profile.name);
       currentProfile = profile;
       showDashboard(profile);
       return;
     }
 
-    // If profile not found by ID, try to find by email
-    if (session.user.email) {
-      const emailParts = session.user.email.split('@');
-      const customId = emailParts[0];
+    console.log('No active session or profile found');
 
-      const { data: profileByEmail, error: emailError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('custom_id', customId)
-        .maybeSingle();
-
-      if (emailError) {
-        console.error('Error fetching profile by email:', emailError);
-      }
-
-      if (profileByEmail) {
-        console.log('Profile found by email:', profileByEmail.name);
-        currentProfile = profileByEmail;
-        showDashboard(profileByEmail);
-        return;
-      }
-    }
-
-    // If we still don't have a profile, create a new one based on the session
-    const userName = session.user.user_metadata?.name ||
-                    session.user.email?.split('@')[0] ||
-                    'User_' + Math.floor(Math.random() * 10000);
-
-    // Create a new profile
-    const { data: newProfile, error: newProfileError } = await supabase
-      .from('profiles')
-      .insert({
-        id: session.user.id,
-        name: userName,
-        custom_id: crypto.randomUUID(),
-        role: 'student', // Default to student role
-        passcode: 'password', // Default passcode
-        created_at: new Date().toISOString(),
-        last_login: new Date().toISOString()
-      })
-      .select()
-      .maybeSingle();
-
-    if (newProfileError) {
-      console.error('Error creating new profile:', newProfileError);
-      // Try to create a guest profile as fallback
-      const result = await authHelper.createGuestProfile();
-      if (result.success) {
-        console.log('Created guest profile as fallback');
-        currentProfile = result.profile;
-        showDashboard(result.profile);
-        return;
-      }
-
-      showNotAuthenticated();
-      return;
-    }
-
-    if (newProfile) {
-      console.log('New profile created:', newProfile.name);
-      currentProfile = newProfile;
-      showDashboard(newProfile);
-      return;
-    }
-
-    // If we still don't have a profile, create a guest profile
+    // If no profile found, try to create a guest profile
     const result = await authHelper.createGuestProfile();
     if (result.success) {
-      console.log('Created guest profile as last resort');
+      console.log('Created guest profile automatically');
       currentProfile = result.profile;
       showDashboard(result.profile);
       return;
     }
 
-    // If all else fails, show not authenticated section
-    console.log('No profile found or created');
+    // If guest profile creation failed, show not authenticated section
+    console.log('Failed to create guest profile');
     showNotAuthenticated();
   } catch (err) {
     console.error('Auth check error:', err);
@@ -252,16 +160,21 @@ classGameBtn.addEventListener('click', () => {
 // Handle logout button click
 logoutBtn.addEventListener('click', async () => {
   try {
+    // Show loading section
+    loadingSection.classList.remove('d-none');
+    gameDashboard.classList.add('d-none');
+
     // Sign out from Supabase Auth
     await supabase.auth.signOut();
 
     // Reset current profile
     currentProfile = null;
 
-    // Show login
-    showLogin();
+    // Redirect to main page
+    window.location.href = '../index.html';
   } catch (err) {
     console.error('Logout error:', err);
+    showNotAuthenticated();
   }
 });
 
@@ -303,22 +216,32 @@ useMainSessionBtn.addEventListener('click', async () => {
 });
 
 // Initialize application
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   console.log('Investment Odyssey initializing...');
+
+  // Check if we were redirected from the main page
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirected = urlParams.get('redirected');
 
   // Remove any query parameters to avoid confusion on refresh
   if (window.location.search) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const redirected = urlParams.get('redirected');
-
-    // If redirected from main page, force refresh the auth state
-    if (redirected === 'true') {
-      console.log('Redirected from main page, refreshing auth state');
-      supabase.auth.refreshSession();
-    }
-
     const newUrl = window.location.pathname;
     window.history.replaceState({}, document.title, newUrl);
+  }
+
+  // If redirected from main page, force refresh the auth state
+  if (redirected === 'true') {
+    console.log('Redirected from main page, refreshing auth state');
+    await supabase.auth.refreshSession();
+  }
+
+  // First check if we have an active session
+  const { session, error } = await window.isAuthenticated();
+
+  if (session) {
+    console.log('Active session found, user is authenticated');
+  } else {
+    console.log('No active session found, will try to create guest profile');
   }
 
   // Check authentication status - this will automatically create a guest profile if needed

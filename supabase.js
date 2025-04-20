@@ -206,6 +206,37 @@ async function getLeaderboard(options = {}) {
   return { data, error };
 }
 
+// Helper: Check if user is authenticated
+async function isAuthenticated() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  return { session, error };
+}
+
+// Helper: Get current user profile
+async function getCurrentUserProfile() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      return { profile: null, error: 'No active session' };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      return { profile: null, error: profileError };
+    }
+
+    return { profile, error: null };
+  } catch (err) {
+    return { profile: null, error: err };
+  }
+}
+
 // Make all helper functions globally accessible
 window.fetchSections = fetchSections;
 window.fetchTASections = fetchTASections;
@@ -224,3 +255,5 @@ window.getPlayerState = getPlayerState;
 window.getGameParticipants = getGameParticipants;
 window.addToLeaderboard = addToLeaderboard;
 window.getLeaderboard = getLeaderboard;
+window.isAuthenticated = isAuthenticated;
+window.getCurrentUserProfile = getCurrentUserProfile;

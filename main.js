@@ -4,13 +4,24 @@ const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
 
 // Check for redirect parameter
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const redirect = urlParams.get('redirect');
 
   if (redirect === 'investment-odyssey') {
-    // Redirect back to Investment Odyssey with redirected=true parameter
-    window.location.href = 'investment-odyssey/index.html?redirected=true';
+    // Check if user is already authenticated
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (session) {
+      console.log('User is authenticated, redirecting to Investment Odyssey');
+      // Redirect back to Investment Odyssey with redirected=true parameter
+      window.location.href = 'investment-odyssey/index.html?redirected=true';
+    } else {
+      console.log('User is not authenticated, staying on main page');
+      // Remove the redirect parameter
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
   }
 });
 
@@ -24,6 +35,36 @@ loginForm.addEventListener('submit', async (e) => {
   if (error || !profile) {
     loginError.textContent = 'Invalid name or passcode.';
     return;
+  }
+
+  // Create a unique email for authentication
+  const email = `${profile.custom_id}@example.com`;
+
+  // Sign in with Supabase Auth to create a session
+  const { data, error: signInError } = await supabase.auth.signInWithPassword({
+    email: email,
+    password: passcode
+  });
+
+  if (signInError) {
+    // If sign in fails, try to sign up
+    console.log('Sign in failed, trying to sign up');
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email: email,
+      password: passcode,
+      options: {
+        data: {
+          name: profile.name,
+          role: profile.role
+        }
+      }
+    });
+
+    if (signUpError) {
+      console.error('Sign up error:', signUpError);
+      loginError.textContent = 'Authentication error. Please try again.';
+      return;
+    }
   }
 
   // Update last_login timestamp in Supabase
