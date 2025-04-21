@@ -562,56 +562,20 @@
         });
     </script>
 
+    <!-- Supabase Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="../supabase.js"></script>
+
+    <!-- Service Script -->
+    <script src="js/service.js"></script>
+
     <!-- Header Authentication Script -->
     <script src="js/header-auth.js"></script>
 
-    <!-- Game Scripts - Load these after service scripts are loaded -->
-    <script>
-        // Wait for service scripts to be loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Service is available every 100ms
-            const checkInterval = setInterval(function() {
-                if (typeof window.Service !== 'undefined') {
-                    clearInterval(checkInterval);
-                    console.log('Service is available, loading game scripts');
-
-                    // Load game scripts
-                    const gameScripts = [
-                        'js/game-core.js',
-                        'js/game-ui.js',
-                        'js/game-trading.js'
-                    ];
-
-                    gameScripts.forEach(function(src) {
-                        const script = document.createElement('script');
-                        script.src = src;
-                        document.body.appendChild(script);
-                    });
-                }
-            }, 100);
-
-            // Set a timeout to prevent infinite checking
-            setTimeout(function() {
-                clearInterval(checkInterval);
-                if (typeof window.Service === 'undefined') {
-                    console.error('Service not available after timeout, loading game scripts anyway');
-
-                    // Load game scripts anyway
-                    const gameScripts = [
-                        'js/game-core.js',
-                        'js/game-ui.js',
-                        'js/game-trading.js'
-                    ];
-
-                    gameScripts.forEach(function(src) {
-                        const script = document.createElement('script');
-                        script.src = src;
-                        document.body.appendChild(script);
-                    });
-                }
-            }, 5000); // 5 second timeout
-        });
-    </script>
+    <!-- Game Scripts -->
+    <script src="js/game-core.js"></script>
+    <script src="js/game-ui.js"></script>
+    <script src="js/game-trading.js"></script>
 
     <!-- Sticky Next Round Button -->
     <div class="sticky-button-container">

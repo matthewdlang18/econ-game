@@ -47,30 +47,44 @@ document.addEventListener('DOMContentLoaded', function() {
         amountPercentBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 if (!playerState || !gameState) return;
+                console.log('Amount percent button clicked');
 
                 const percent = parseFloat(btn.getAttribute('data-percent'));
                 const asset = assetSelect.value;
                 const price = gameState.assetPrices[asset];
                 const action = actionSelect.value;
 
+                console.log(`Percent: ${percent}%, Asset: ${asset}, Price: ${price}, Action: ${action}`);
+
                 if (action === 'buy') {
                     // Calculate amount based on percentage of cash
                     const amount = playerState.cash * (percent / 100);
+                    console.log(`Calculating ${percent}% of cash: $${playerState.cash} = $${amount.toFixed(2)}`);
                     amountInput.value = amount.toFixed(2);
 
                     // Update quantity
                     if (price > 0) {
                         const quantity = amount / price;
+                        console.log(`Calculating quantity: $${amount.toFixed(2)} / $${price} = ${quantity.toFixed(4)} units`);
                         quantityInput.value = quantity.toFixed(4);
                     }
                 } else if (action === 'sell') {
                     // Calculate amount based on percentage of holdings
                     const quantity = (playerState.portfolio[asset] || 0) * (percent / 100);
+                    console.log(`Calculating ${percent}% of holdings: ${playerState.portfolio[asset] || 0} = ${quantity.toFixed(4)} units`);
                     quantityInput.value = quantity.toFixed(4);
 
                     // Update amount
                     const amount = quantity * price;
+                    console.log(`Calculating amount: ${quantity.toFixed(4)} units * $${price} = $${amount.toFixed(2)}`);
                     amountInput.value = amount.toFixed(2);
+                }
+
+                // Trigger input event to update related fields
+                if (action === 'buy') {
+                    amountInput.dispatchEvent(new Event('input'));
+                } else {
+                    quantityInput.dispatchEvent(new Event('input'));
                 }
             });
         });
@@ -81,30 +95,40 @@ document.addEventListener('DOMContentLoaded', function() {
         quantityPercentBtns.forEach(btn => {
             btn.addEventListener('click', function() {
                 if (!playerState || !gameState) return;
+                console.log('Quantity percent button clicked');
 
                 const percent = parseFloat(btn.getAttribute('data-percent'));
                 const asset = assetSelect.value;
                 const price = gameState.assetPrices[asset];
                 const action = actionSelect.value;
 
+                console.log(`Percent: ${percent}%, Asset: ${asset}, Price: ${price}, Action: ${action}`);
+
                 if (action === 'sell') {
                     // Calculate quantity based on percentage of holdings
                     const quantity = (playerState.portfolio[asset] || 0) * (percent / 100);
+                    console.log(`Calculating ${percent}% of holdings: ${playerState.portfolio[asset] || 0} = ${quantity.toFixed(4)} units`);
                     quantityInput.value = quantity.toFixed(4);
 
                     // Update amount
                     const amount = quantity * price;
+                    console.log(`Calculating amount: ${quantity.toFixed(4)} units * $${price} = $${amount.toFixed(2)}`);
                     amountInput.value = amount.toFixed(2);
                 } else if (action === 'buy') {
                     // Calculate quantity based on percentage of max affordable
                     const maxQuantity = playerState.cash / price;
                     const quantity = maxQuantity * (percent / 100);
+                    console.log(`Calculating ${percent}% of max affordable: ${maxQuantity.toFixed(4)} = ${quantity.toFixed(4)} units`);
                     quantityInput.value = quantity.toFixed(4);
 
                     // Update amount
                     const amount = quantity * price;
+                    console.log(`Calculating amount: ${quantity.toFixed(4)} units * $${price} = $${amount.toFixed(2)}`);
                     amountInput.value = amount.toFixed(2);
                 }
+
+                // Trigger input event to update related fields
+                quantityInput.dispatchEvent(new Event('input'));
             });
         });
     }
@@ -169,23 +193,33 @@ document.addEventListener('DOMContentLoaded', function() {
     if (tradeForm) {
         tradeForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            console.log('Trade form submitted');
 
             const asset = assetSelect.value;
             const action = actionSelect.value;
             const amount = parseFloat(amountInput.value) || 0;
             const quantity = parseFloat(quantityInput.value) || 0;
 
+            console.log(`Trade details: Asset=${asset}, Action=${action}, Amount=${amount}, Quantity=${quantity}`);
+
             if (asset && action && (amount > 0 || quantity > 0)) {
-                // Execute the trade
-                const success = executeTrade(asset, action, amount, quantity);
+                try {
+                    // Execute the trade
+                    const success = executeTrade(asset, action, amount, quantity);
 
-                if (success) {
-                    // Reset form
-                    amountInput.value = '';
-                    quantityInput.value = '';
+                    if (success) {
+                        // Reset form
+                        amountInput.value = '';
+                        quantityInput.value = '';
 
-                    // Show success message
-                    alert(`Successfully ${action === 'buy' ? 'bought' : 'sold'} ${quantity.toFixed(4)} ${asset} for $${amount.toFixed(2)}`);
+                        // Show success message
+                        alert(`Successfully ${action === 'buy' ? 'bought' : 'sold'} ${quantity.toFixed(4)} ${asset} for $${amount.toFixed(2)}`);
+                    } else {
+                        console.error('Trade execution failed');
+                    }
+                } catch (error) {
+                    console.error('Error executing trade:', error);
+                    alert('An error occurred while executing the trade. Please try again.');
                 }
             } else {
                 alert('Please enter a valid amount or quantity');
@@ -196,27 +230,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Diversify portfolio function
 function diversifyPortfolio() {
-    if (!playerState || !gameState) {
-        console.error('Game state not initialized');
-        return false;
-    }
-
-    // Check if player has cash
-    if (playerState.cash <= 0) {
-        alert('You need cash to diversify your portfolio');
-        return false;
-    }
-
     try {
-        // Get all available assets
+        console.log('Diversifying portfolio...');
+        console.log(`Current cash: ${playerState.cash}`);
+        console.log(`Current portfolio:`, playerState.portfolio);
+
+        // Check if there are assets to buy
         const assetNames = Object.keys(gameState.assetPrices);
 
-        // Calculate amount to allocate to each asset
-        const cashToInvest = playerState.cash * 0.9; // Keep 10% as cash
-        const amountPerAsset = cashToInvest / assetNames.length;
+        if (assetNames.length === 0) {
+            console.log('No assets available to buy.');
+            alert('No assets available to buy.');
+            return false;
+        }
 
-        // Update player cash
-        playerState.cash -= cashToInvest;
+        // Check if player has cash
+        if (playerState.cash <= 0) {
+            console.log('No cash available to buy assets.');
+            alert('No cash available to buy assets.');
+            return false;
+        }
+
+        // Calculate amount per asset
+        const amountPerAsset = playerState.cash / assetNames.length;
+
+        if (amountPerAsset <= 0) {
+            console.log('Not enough cash to distribute.');
+            alert('Not enough cash to distribute.');
+            return false;
+        }
+
+        console.log(`Distributing $${playerState.cash.toFixed(2)} across ${assetNames.length} assets ($${amountPerAsset.toFixed(2)} per asset)`);
 
         // Buy assets
         for (const asset of assetNames) {
@@ -241,15 +285,19 @@ function diversifyPortfolio() {
 
                 // Add to trade history
                 playerState.tradeHistory.push({
+                    round: gameState.roundNumber,
                     asset: asset,
                     action: 'buy',
                     quantity: quantity,
                     price: price,
-                    cost: amountPerAsset,
-                    timestamp: new Date()
+                    total: amountPerAsset,
+                    timestamp: new Date().toISOString()
                 });
             }
         }
+
+        // Set cash to 0
+        playerState.cash = 0;
 
         // Update UI
         updateUI();
@@ -257,26 +305,30 @@ function diversifyPortfolio() {
         // Save game state
         saveGameState();
 
+        console.log('Distributed cash evenly across all assets');
+        console.log(`Updated cash: ${playerState.cash}`);
+        console.log(`Updated portfolio:`, playerState.portfolio);
+
         alert('Portfolio diversified successfully!');
         return true;
     } catch (error) {
-        console.error('Error diversifying portfolio:', error);
+        console.error('Error in diversifyPortfolio:', error);
+        alert('Error diversifying portfolio. Please try again.');
         return false;
     }
 }
 
 // Sell all assets function
 function sellAllAssets() {
-    if (!playerState || !gameState) {
-        console.error('Game state not initialized');
-        return false;
-    }
-
     try {
+        console.log('Selling all assets...');
+        console.log(`Current portfolio:`, playerState.portfolio);
+
         // Check if there are assets to sell
         const assetNames = Object.keys(playerState.portfolio);
 
         if (assetNames.length === 0) {
+            console.log('No assets in portfolio to sell.');
             alert('No assets in portfolio to sell.');
             return false;
         }
@@ -294,14 +346,17 @@ function sellAllAssets() {
             const value = price * quantity;
             totalValue += value;
 
+            console.log(`Selling ${asset}: Quantity=${quantity.toFixed(4)}, Price=${price.toFixed(2)}, Value=${value.toFixed(2)}`);
+
             // Add to trade history
             playerState.tradeHistory.push({
+                round: gameState.roundNumber,
                 asset: asset,
                 action: 'sell',
                 quantity: quantity,
                 price: price,
-                value: value,
-                timestamp: new Date()
+                total: value,
+                timestamp: new Date().toISOString()
             });
         }
 
@@ -317,10 +372,14 @@ function sellAllAssets() {
         // Save game state
         saveGameState();
 
+        console.log(`All assets sold for $${totalValue.toFixed(2)}`);
+        console.log(`Updated cash: ${playerState.cash}`);
+
         alert(`All assets sold for $${totalValue.toFixed(2)}`);
         return true;
     } catch (error) {
         console.error('Error selling all assets:', error);
+        alert('Error selling all assets. Please try again.');
         return false;
     }
 }

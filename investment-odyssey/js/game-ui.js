@@ -130,10 +130,28 @@ function updateMarketData() {
             <td>${quantity.toFixed(4)}</td>
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(1)}%</td>
+            <td>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-success btn-sm buy-asset-btn" data-asset="${asset}">Buy</button>
+                    ${quantity > 0 ? `<button type="button" class="btn btn-outline-danger btn-sm sell-asset-btn" data-asset="${asset}">Sell</button>` : ''}
+                </div>
+            </td>
         `;
 
         marketDataBody.appendChild(row);
     }
+
+    // Add event listeners to the buy/sell buttons
+    const buyButtons = document.querySelectorAll('.buy-asset-btn');
+    const sellButtons = document.querySelectorAll('.sell-asset-btn');
+
+    buyButtons.forEach(button => {
+        button.addEventListener('click', handleBuyAssetClick);
+    });
+
+    sellButtons.forEach(button => {
+        button.addEventListener('click', handleSellAssetClick);
+    });
 }
 
 // Update portfolio table
@@ -602,6 +620,112 @@ function updateCPIChart() {
                 }
             }
         });
+    }
+}
+
+// Handle buy asset button click
+function handleBuyAssetClick(event) {
+    const asset = event.currentTarget.getAttribute('data-asset');
+    console.log(`Buy button clicked for ${asset}`);
+
+    // Set the asset in the trade form
+    const assetSelect = document.getElementById('asset-select');
+    if (assetSelect) {
+        assetSelect.value = asset;
+        assetSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Set action to buy
+    const actionSelect = document.getElementById('action-select');
+    if (actionSelect) {
+        actionSelect.value = 'buy';
+        actionSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Update radio buttons
+    const actionBuy = document.getElementById('action-buy');
+    if (actionBuy) {
+        actionBuy.checked = true;
+    }
+
+    // Show buy button, hide sell button
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
+    if (buyBtn && sellBtn) {
+        buyBtn.style.display = 'inline-block';
+        sellBtn.style.display = 'none';
+    }
+
+    // Focus on the amount input
+    const amountInput = document.getElementById('amount-input');
+    if (amountInput) {
+        amountInput.focus();
+        amountInput.value = '';
+    }
+
+    // Clear quantity input
+    const quantityInput = document.getElementById('quantity-input');
+    if (quantityInput) {
+        quantityInput.value = '';
+    }
+
+    // Scroll to the trade form
+    const tradeForm = document.getElementById('trade-form');
+    if (tradeForm) {
+        tradeForm.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+// Handle sell asset button click
+function handleSellAssetClick(event) {
+    const asset = event.currentTarget.getAttribute('data-asset');
+    console.log(`Sell button clicked for ${asset}`);
+
+    // Set the asset in the trade form
+    const assetSelect = document.getElementById('asset-select');
+    if (assetSelect) {
+        assetSelect.value = asset;
+        assetSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Set action to sell
+    const actionSelect = document.getElementById('action-select');
+    if (actionSelect) {
+        actionSelect.value = 'sell';
+        actionSelect.dispatchEvent(new Event('change'));
+    }
+
+    // Update radio buttons
+    const actionSell = document.getElementById('action-sell');
+    if (actionSell) {
+        actionSell.checked = true;
+    }
+
+    // Show sell button, hide buy button
+    const buyBtn = document.getElementById('buy-btn');
+    const sellBtn = document.getElementById('sell-btn');
+    if (buyBtn && sellBtn) {
+        buyBtn.style.display = 'none';
+        sellBtn.style.display = 'inline-block';
+    }
+
+    // Focus on the amount input
+    const amountInput = document.getElementById('amount-input');
+    if (amountInput) {
+        amountInput.focus();
+        amountInput.value = '';
+    }
+
+    // Clear quantity input
+    const quantityInput = document.getElementById('quantity-input');
+    if (quantityInput) {
+        quantityInput.value = '';
+    }
+
+    // Scroll to the trade form
+    const tradeForm = document.getElementById('trade-form');
+    if (tradeForm) {
+        tradeForm.scrollIntoView({ behavior: 'smooth' });
     }
 }
 

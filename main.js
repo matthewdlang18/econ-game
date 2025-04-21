@@ -141,7 +141,7 @@ async function showDashboard(profile) {
           <div class="game-card">
             <h5>Investment Odyssey</h5>
             <p>Practice your investment skills in this market simulation game.</p>
-            <a href="investment-odyssey/index.html" class="game-link">Play Game</a>
+            <a href="investment-odyssey/about.html" class="game-link">Play Game</a>
           </div>
         </div>
       </div>
@@ -195,6 +195,6 @@ async function showDashboard(profile) {
   if (profile.role === 'ta') {
     roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
   } else {
-    roleDashboard.innerHTML = '<div id="student-games"><h4>Available Games</h4><div class="game-card"><h5>Investment Odyssey</h5><p>Practice your investment skills in this market simulation game.</p><a href="investment-odyssey/index.html" class="game-link">Play Game</a></div></div>';
+    roleDashboard.innerHTML = '<div id="student-games"><h4>Available Games</h4><div class="game-card"><h5>Investment Odyssey</h5><p>Practice your investment skills in this market simulation game.</p><a href="investment-odyssey/about.html" class="game-link">Play Game</a></div></div>';
   }
 }
