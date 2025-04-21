@@ -113,6 +113,23 @@ const Service = {
 
             console.log(`Saving game round: gameId=${gameId}, roundNumber=${roundNumber}`);
 
+            // First check if the game exists
+            const { data: existingGame, error: checkError } = await window.supabase
+                .from('games')
+                .select('id')
+                .eq('id', gameId)
+                .maybeSingle();
+
+            if (checkError) {
+                console.error('Error checking if game exists:', checkError);
+                return { success: false, error: checkError };
+            }
+
+            if (!existingGame) {
+                console.error('Game does not exist in database, cannot save round');
+                return { success: false, error: 'Game does not exist' };
+            }
+
             const { data, error } = await window.supabase
                 .from('game_rounds')
                 .upsert({
@@ -149,6 +166,23 @@ const Service = {
 
             console.log(`Saving player state: gameId=${gameId}, userId=${userId}, roundNumber=${roundNumber}`);
 
+            // First check if the game exists
+            const { data: existingGame, error: checkError } = await window.supabase
+                .from('games')
+                .select('id')
+                .eq('id', gameId)
+                .maybeSingle();
+
+            if (checkError) {
+                console.error('Error checking if game exists:', checkError);
+                return { success: false, error: checkError };
+            }
+
+            if (!existingGame) {
+                console.error('Game does not exist in database, cannot save player state');
+                return { success: false, error: 'Game does not exist' };
+            }
+
             const { data, error } = await window.supabase
                 .from('player_states')
                 .upsert({
@@ -173,6 +207,60 @@ const Service = {
             return { success: true, data: data };
         } catch (error) {
             console.error('Exception in savePlayerState:', error);
+            return { success: false, error: error };
+        }
+    },
+
+    // Create game
+    createGame: async function(gameId, userId, gameType, gameMode, maxRounds) {
+        try {
+            if (!window.supabase) {
+                console.error('Supabase not available');
+                return { success: false, error: 'Supabase not available' };
+            }
+
+            console.log(`Creating game: gameId=${gameId}, userId=${userId}, gameType=${gameType}, gameMode=${gameMode}`);
+
+            // First check if the game already exists
+            const { data: existingGame, error: checkError } = await window.supabase
+                .from('games')
+                .select('id')
+                .eq('id', gameId)
+                .maybeSingle();
+
+            if (checkError) {
+                console.error('Error checking if game exists:', checkError);
+                return { success: false, error: checkError };
+            }
+
+            if (existingGame) {
+                console.log('Game already exists, skipping creation');
+                return { success: true, data: existingGame };
+            }
+
+            // Create the game
+            const { data, error } = await window.supabase
+                .from('games')
+                .insert({
+                    id: gameId,
+                    user_id: userId,
+                    game_type: gameType,
+                    game_mode: gameMode,
+                    max_rounds: maxRounds,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .select();
+
+            if (error) {
+                console.error('Error creating game:', error);
+                return { success: false, error: error };
+            }
+
+            console.log('Game created successfully:', data);
+            return { success: true, data: data };
+        } catch (error) {
+            console.error('Exception in createGame:', error);
             return { success: false, error: error };
         }
     },

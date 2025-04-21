@@ -126,8 +126,8 @@ function initializeGame() {
             console.log('Guest user created:', playerState.userId);
         }
 
-        // Create game record in Supabase first
-        createGameInSupabase();
+        // We'll create the game record in Supabase in the startGame function
+        // This ensures we have all the necessary data before creating the game
 
         console.log('Game initialized with ID:', gameState.gameId);
         return true;
@@ -139,20 +139,33 @@ function initializeGame() {
 
 // Start game
 async function startGame() {
-    // Reset game
-    initializeGame();
+    try {
+        console.log('Starting game...');
 
-    // Generate initial prices
-    generateNewPrices();
+        // Reset game
+        initializeGame();
 
-    // Save initial state
-    saveGameState();
+        // Create game in Supabase first
+        const gameCreated = await createGameInSupabase();
+        if (!gameCreated) {
+            console.warn('Failed to create game in Supabase, but continuing with local game');
+        }
 
-    // Update UI
-    updateUI();
+        // Generate initial prices
+        generateNewPrices();
 
-    console.log('Game started');
-    return true;
+        // Save initial state
+        saveGameState();
+
+        // Update UI
+        updateUI();
+
+        console.log('Game started successfully');
+        return true;
+    } catch (error) {
+        console.error('Error starting game:', error);
+        return false;
+    }
 }
 
 // Generate new prices for all assets
@@ -571,9 +584,9 @@ function loadGameState() {
 // Create game in Supabase
 async function createGameInSupabase() {
     try {
-        // Check if Supabase is available
-        if (!window.supabase) {
-            console.log('Supabase not available for creating game');
+        // Check if Service is available
+        if (!window.Service) {
+            console.log('Service not available for creating game');
             return false;
         }
 
@@ -583,28 +596,37 @@ async function createGameInSupabase() {
             return false;
         }
 
+        // Make sure we have a valid user ID
+        if (!playerState.userId) {
+            // Try to get user info from auth service
+            const user = window.Service ? window.Service.getCurrentUser() : null;
+            if (user) {
+                playerState.userId = user.id;
+                playerState.userName = user.name;
+            } else {
+                // Generate a guest ID if not logged in
+                playerState.userId = 'guest_' + Date.now();
+                playerState.userName = 'Guest';
+            }
+        }
+
         console.log('Creating game in Supabase with ID:', gameState.gameId);
 
-        // Create game record in Supabase
-        const { data, error } = await window.supabase
-            .from('games')
-            .upsert({
-                id: gameState.gameId,
-                user_id: playerState.userId,
-                game_type: 'investment-odyssey',
-                game_mode: gameState.gameMode,
-                max_rounds: gameState.maxRounds,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' })
-            .select();
+        // Create game record in Supabase using Service
+        const result = await window.Service.createGame(
+            gameState.gameId,
+            playerState.userId,
+            'investment-odyssey',
+            gameState.gameMode,
+            gameState.maxRounds
+        );
 
-        if (error) {
-            console.error('Error creating game in Supabase:', error);
+        if (!result.success) {
+            console.error('Error creating game in Supabase:', result.error);
             return false;
         }
 
-        console.log('Game created successfully in Supabase:', data);
+        console.log('Game created successfully in Supabase:', result.data);
         return true;
     } catch (error) {
         console.error('Exception creating game in Supabase:', error);
@@ -642,7 +664,11 @@ async function saveGameToSupabase() {
         }
 
         // Make sure the game exists in Supabase
-        await createGameInSupabase();
+        const gameCreated = await createGameInSupabase();
+        if (!gameCreated) {
+            console.warn('Failed to create game in Supabase, skipping save');
+            return false;
+        }
 
         // Try to save game round
         try {
@@ -736,8 +762,18 @@ function resetGame() {
         // Initialize new game
         initializeGame();
 
+        // Create game in Supabase
+        createGameInSupabase().then(success => {
+            if (!success) {
+                console.warn('Failed to create game in Supabase during reset');
+            }
+        });
+
         // Generate initial prices
         generateNewPrices();
+
+        // Save game state
+        saveGameState();
 
         // Update UI
         updateUI();
