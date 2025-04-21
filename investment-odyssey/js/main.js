@@ -665,7 +665,7 @@ async function loadGameState() {
 }
 
 // Handle trade
-function handleTrade(event) {
+async function handleTrade(event) {
   event.preventDefault();
 
   const asset = window.UIController.elements.assetSelect.value;
