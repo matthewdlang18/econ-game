@@ -8,27 +8,27 @@ const uiElements = {
   gameDashboard: document.getElementById('game-dashboard'),
   gameResults: document.getElementById('game-results'),
   waitingRoom: document.getElementById('waiting-room'),
-  
+
   // User Info
   userInfo: document.getElementById('user-info'),
   userName: document.getElementById('user-name'),
   logoutBtn: document.getElementById('logout-btn'),
-  
+
   // Login Form
   loginForm: document.getElementById('login-form'),
   loginError: document.getElementById('login-error'),
-  
+
   // Introduction Tabs
   tabBtns: document.querySelectorAll('.tab-btn'),
   tabContents: document.querySelectorAll('.tab-content'),
-  
+
   // Game Mode Buttons
   startSinglePlayerBtn: document.getElementById('start-single-player'),
   joinClassGameBtn: document.getElementById('join-class-game'),
   createClassGameBtn: document.getElementById('create-class-game'),
   studentJoinGame: document.getElementById('student-join-game'),
   instructorCreateGame: document.getElementById('instructor-create-game'),
-  
+
   // Dashboard Elements
   currentRound: document.getElementById('current-round'),
   maxRounds: document.getElementById('max-rounds'),
@@ -37,7 +37,7 @@ const uiElements = {
   totalValue: document.getElementById('total-value'),
   cpiValue: document.getElementById('cpi-value'),
   assetPriceTable: document.getElementById('asset-price-table'),
-  
+
   // Trading Interface
   tradeForm: document.getElementById('trade-form'),
   assetSelect: document.getElementById('asset-select'),
@@ -46,21 +46,21 @@ const uiElements = {
   amountInput: document.getElementById('amount-input'),
   percentageBtns: document.querySelectorAll('.percentage-btn'),
   tradeMessage: document.getElementById('trade-message'),
-  
+
   // Chart Tabs
   chartTabBtns: document.querySelectorAll('.chart-tab-btn'),
   charts: document.querySelectorAll('.chart'),
-  
+
   // Game Controls
   nextRoundBtn: document.getElementById('next-round-btn'),
   resetGameBtn: document.getElementById('reset-game-btn'),
   saveGameBtn: document.getElementById('save-game-btn'),
   endGameBtn: document.getElementById('end-game-btn'),
   gameMessage: document.getElementById('game-message'),
-  
+
   // Trade History
   tradeHistoryTable: document.getElementById('trade-history-table'),
-  
+
   // Game Results
   startingValue: document.getElementById('starting-value'),
   finalValue: document.getElementById('final-value'),
@@ -70,13 +70,13 @@ const uiElements = {
   submitScoreBtn: document.getElementById('submit-score-btn'),
   playAgainBtn: document.getElementById('play-again-btn'),
   returnIntroBtn: document.getElementById('return-intro-btn'),
-  
+
   // Waiting Room
   participantsList: document.getElementById('participants-list'),
   instructorControls: document.getElementById('instructor-controls'),
   startClassGameBtn: document.getElementById('start-class-game-btn'),
   cancelClassGameBtn: document.getElementById('cancel-class-game-btn'),
-  
+
   // Notification
   notification: document.getElementById('notification')
 };
@@ -90,7 +90,7 @@ function showSection(sectionId) {
     uiElements.gameResults,
     uiElements.waitingRoom
   ];
-  
+
   sections.forEach(section => {
     if (section.id === sectionId) {
       section.classList.remove('hidden');
@@ -104,7 +104,7 @@ function showSection(sectionId) {
 function showUserInfo(profile) {
   uiElements.userInfo.classList.remove('hidden');
   uiElements.userName.textContent = profile.name;
-  
+
   // Show appropriate game mode controls based on user role
   if (profile.role === 'student') {
     uiElements.studentJoinGame.classList.remove('hidden');
@@ -122,7 +122,7 @@ function setupTabs() {
       // Remove active class from all buttons and contents
       uiElements.tabBtns.forEach(b => b.classList.remove('active'));
       uiElements.tabContents.forEach(c => c.classList.remove('active'));
-      
+
       // Add active class to clicked button and corresponding content
       btn.classList.add('active');
       const tabId = btn.getAttribute('data-tab');
@@ -138,7 +138,7 @@ function setupChartTabs() {
       // Remove active class from all buttons and charts
       uiElements.chartTabBtns.forEach(b => b.classList.remove('active'));
       uiElements.charts.forEach(c => c.classList.remove('active-chart'));
-      
+
       // Add active class to clicked button and corresponding chart
       btn.classList.add('active');
       const chartId = btn.getAttribute('data-chart');
@@ -151,24 +151,24 @@ function setupChartTabs() {
 function updateDashboard(gameState, playerState) {
   // Update round information
   uiElements.currentRound.textContent = gameState.roundNumber;
-  
+
   // Update portfolio summary
   uiElements.cashValue.textContent = formatCurrency(playerState.cash);
-  
+
   const portfolioValue = window.GameState.calculatePortfolioValue(playerState, gameState.assetPrices);
   uiElements.portfolioValue.textContent = formatCurrency(portfolioValue);
-  
+
   const totalValue = window.GameState.calculateTotalValue(playerState, gameState.assetPrices);
   uiElements.totalValue.textContent = formatCurrency(totalValue);
-  
+
   uiElements.cpiValue.textContent = gameState.cpi.toFixed(2);
-  
+
   // Update asset price table
   updateAssetPriceTable(gameState, playerState);
-  
+
   // Update trade history table
   updateTradeHistoryTable(playerState);
-  
+
   // Update charts
   window.Charts.updateCharts(gameState, playerState);
 }
@@ -177,18 +177,18 @@ function updateDashboard(gameState, playerState) {
 function updateAssetPriceTable(gameState, playerState) {
   const tbody = uiElements.assetPriceTable.querySelector('tbody');
   tbody.innerHTML = '';
-  
+
   for (const asset in gameState.assetPrices) {
     const currentPrice = gameState.assetPrices[asset];
     const priceHistory = gameState.priceHistory[asset];
     const previousPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : currentPrice;
-    
+
     const priceChange = currentPrice - previousPrice;
     const percentChange = (priceChange / previousPrice) * 100;
-    
+
     const holdings = playerState.portfolio[asset] || 0;
     const value = holdings * currentPrice;
-    
+
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${asset}</td>
@@ -199,7 +199,7 @@ function updateAssetPriceTable(gameState, playerState) {
       <td>${holdings.toFixed(2)}</td>
       <td>${formatCurrency(value)}</td>
     `;
-    
+
     tbody.appendChild(row);
   }
 }
@@ -208,10 +208,10 @@ function updateAssetPriceTable(gameState, playerState) {
 function updateTradeHistoryTable(playerState) {
   const tbody = uiElements.tradeHistoryTable.querySelector('tbody');
   tbody.innerHTML = '';
-  
+
   // Sort trade history by timestamp (newest first)
   const sortedHistory = [...playerState.tradeHistory].reverse();
-  
+
   for (const trade of sortedHistory) {
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -222,7 +222,7 @@ function updateTradeHistoryTable(playerState) {
       <td>${formatCurrency(trade.price)}</td>
       <td>${formatCurrency(trade.action === 'buy' ? trade.cost : trade.value)}</td>
     `;
-    
+
     tbody.appendChild(row);
   }
 }
@@ -234,12 +234,47 @@ function updateGameResults(playerState) {
   const totalReturnValue = ((finalValue - startingValue) / startingValue) * 100;
   const rounds = playerState.portfolioValueHistory.length - 1;
   const annualizedReturnValue = Math.pow((1 + totalReturnValue / 100), (4 / rounds)) - 1;
-  
+
+  // Update summary stats
   uiElements.startingValue.textContent = formatCurrency(startingValue);
   uiElements.finalValue.textContent = formatCurrency(finalValue);
   uiElements.totalReturn.textContent = `${totalReturnValue >= 0 ? '+' : ''}${totalReturnValue.toFixed(2)}%`;
   uiElements.annualizedReturn.textContent = `${annualizedReturnValue >= 0 ? '+' : ''}${(annualizedReturnValue * 100).toFixed(2)}%`;
-  
+
+  // Update insights
+  document.getElementById('insight-final-value').textContent = formatCurrency(finalValue);
+  document.getElementById('insight-return').textContent = `${totalReturnValue >= 0 ? '+' : ''}${totalReturnValue.toFixed(2)}%`;
+  document.getElementById('insight-annual').textContent = `${annualizedReturnValue >= 0 ? '+' : ''}${(annualizedReturnValue * 100).toFixed(2)}%`;
+
+  // Add performance feedback based on return
+  let performanceMessage = '';
+  if (totalReturnValue >= 20) {
+    performanceMessage = 'Excellent job! Your investment strategy was highly successful.';
+  } else if (totalReturnValue >= 10) {
+    performanceMessage = 'Good job! Your returns are solid and comparable to market averages.';
+  } else if (totalReturnValue >= 0) {
+    performanceMessage = 'You preserved your capital, but might want to consider more growth-oriented strategies.';
+  } else if (totalReturnValue >= -10) {
+    performanceMessage = 'You lost some money. Consider reviewing your investment decisions.';
+  } else {
+    performanceMessage = 'Your strategy resulted in significant losses. Review what went wrong and try again.';
+  }
+
+  // Add the performance message if it doesn't exist
+  const insightsList = document.querySelector('.performance-insights');
+  if (insightsList) {
+    // Check if we already have a performance message
+    const existingMessage = insightsList.querySelector('.performance-feedback');
+    if (!existingMessage) {
+      const messageLi = document.createElement('li');
+      messageLi.className = 'performance-feedback';
+      messageLi.innerHTML = `<strong>Feedback:</strong> ${performanceMessage}`;
+      insightsList.appendChild(messageLi);
+    } else {
+      existingMessage.innerHTML = `<strong>Feedback:</strong> ${performanceMessage}`;
+    }
+  }
+
   // Update results chart
   window.Charts.createResultsChart(playerState.portfolioValueHistory);
 }
@@ -248,20 +283,74 @@ function updateGameResults(playerState) {
 function updateLeaderboardTable(leaderboardData) {
   const tbody = uiElements.leaderboardTable.querySelector('tbody');
   tbody.innerHTML = '';
-  
+
+  // Check if we have data
+  if (!leaderboardData || leaderboardData.length === 0) {
+    // Create a message row
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td colspan="4" class="leaderboard-message">
+        No leaderboard data available. Be the first to submit your score!
+      </td>
+    `;
+    tbody.appendChild(row);
+    return;
+  }
+
+  // Add a header for the current player's score
+  if (window.currentUser) {
+    const currentPlayerEntry = leaderboardData.find(entry =>
+      entry.user_id === window.currentUser.id || entry.user_name === window.currentUser.name
+    );
+
+    if (currentPlayerEntry) {
+      const returnValue = ((currentPlayerEntry.final_value - 10000) / 10000) * 100;
+      const yourScoreRow = document.createElement('tr');
+      yourScoreRow.className = 'your-score';
+      yourScoreRow.innerHTML = `
+        <td colspan="4" class="your-score-header">Your Score</td>
+      `;
+      tbody.appendChild(yourScoreRow);
+
+      const yourScoreDataRow = document.createElement('tr');
+      yourScoreDataRow.className = 'your-score-data';
+      yourScoreDataRow.innerHTML = `
+        <td>★</td>
+        <td>${currentPlayerEntry.user_name} <span class="you-label">(You)</span></td>
+        <td>${formatCurrency(currentPlayerEntry.final_value)}</td>
+        <td class="${returnValue >= 0 ? 'positive' : 'negative'}">
+          ${returnValue >= 0 ? '+' : ''}${returnValue.toFixed(2)}%
+        </td>
+      `;
+      tbody.appendChild(yourScoreDataRow);
+
+      // Add a separator
+      const separatorRow = document.createElement('tr');
+      separatorRow.className = 'leaderboard-separator';
+      separatorRow.innerHTML = `<td colspan="4">Leaderboard</td>`;
+      tbody.appendChild(separatorRow);
+    }
+  }
+
+  // Add all entries
   leaderboardData.forEach((entry, index) => {
     const row = document.createElement('tr');
     const returnValue = ((entry.final_value - 10000) / 10000) * 100;
-    
+
+    // Highlight the current user's entry
+    if (window.currentUser && (entry.user_id === window.currentUser.id || entry.user_name === window.currentUser.name)) {
+      row.className = 'current-user-entry';
+    }
+
     row.innerHTML = `
       <td>${index + 1}</td>
-      <td>${entry.user_name}</td>
+      <td>${entry.user_name}${window.currentUser && (entry.user_id === window.currentUser.id || entry.user_name === window.currentUser.name) ? ' <span class="you-label">(You)</span>' : ''}</td>
       <td>${formatCurrency(entry.final_value)}</td>
       <td class="${returnValue >= 0 ? 'positive' : 'negative'}">
         ${returnValue >= 0 ? '+' : ''}${returnValue.toFixed(2)}%
       </td>
     `;
-    
+
     tbody.appendChild(row);
   });
 }
@@ -269,7 +358,7 @@ function updateLeaderboardTable(leaderboardData) {
 // Update participants list in waiting room
 function updateParticipantsList(participants) {
   uiElements.participantsList.innerHTML = '';
-  
+
   participants.forEach(participant => {
     const li = document.createElement('li');
     li.textContent = participant.name;
@@ -282,7 +371,7 @@ function showNotification(message, type = 'info', duration = 3000) {
   uiElements.notification.textContent = message;
   uiElements.notification.className = `notification ${type}`;
   uiElements.notification.classList.remove('hidden');
-  
+
   setTimeout(() => {
     uiElements.notification.classList.add('hidden');
   }, duration);
@@ -303,19 +392,19 @@ function setupPercentageButtons(gameState, playerState) {
       const percentage = parseInt(btn.getAttribute('data-percentage')) / 100;
       const action = uiElements.actionSelect.value;
       const asset = uiElements.assetSelect.value;
-      
+
       if (action === 'buy') {
         const maxCash = playerState.cash;
         const price = gameState.assetPrices[asset];
         const maxQuantity = Math.floor((maxCash * percentage) / price);
-        
+
         uiElements.quantityInput.value = maxQuantity;
         uiElements.amountInput.value = (maxQuantity * price).toFixed(2);
       } else if (action === 'sell') {
         const currentQuantity = playerState.portfolio[asset] || 0;
         const sellQuantity = currentQuantity * percentage;
         const price = gameState.assetPrices[asset];
-        
+
         uiElements.quantityInput.value = sellQuantity.toFixed(2);
         uiElements.amountInput.value = (sellQuantity * price).toFixed(2);
       }
@@ -329,23 +418,23 @@ function setupInputSynchronization(gameState) {
     const quantity = parseFloat(uiElements.quantityInput.value) || 0;
     const asset = uiElements.assetSelect.value;
     const price = gameState.assetPrices[asset];
-    
+
     uiElements.amountInput.value = (quantity * price).toFixed(2);
   });
-  
+
   uiElements.amountInput.addEventListener('input', () => {
     const amount = parseFloat(uiElements.amountInput.value) || 0;
     const asset = uiElements.assetSelect.value;
     const price = gameState.assetPrices[asset];
-    
+
     uiElements.quantityInput.value = (amount / price).toFixed(2);
   });
-  
+
   uiElements.assetSelect.addEventListener('change', () => {
     const quantity = parseFloat(uiElements.quantityInput.value) || 0;
     const asset = uiElements.assetSelect.value;
     const price = gameState.assetPrices[asset];
-    
+
     uiElements.amountInput.value = (quantity * price).toFixed(2);
   });
 }

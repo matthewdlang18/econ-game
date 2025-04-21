@@ -352,7 +352,7 @@
 
     <!-- Game Results Section -->
     <section id="game-results" class="hidden">
-      <h2>Game Results</h2>
+      <h2>Game Complete!</h2>
       <div class="results-summary">
         <h3>Your Performance</h3>
         <div class="summary-stats">
@@ -375,6 +375,17 @@
         </div>
         <div class="results-chart-container">
           <canvas id="results-chart"></canvas>
+        </div>
+
+        <div class="performance-message">
+          <h4>Investment Analysis</h4>
+          <p>Your investment strategy has been analyzed. Here's how you did:</p>
+          <ul class="performance-insights">
+            <li>You started with <strong>$10,000</strong> and ended with <span id="insight-final-value">$0.00</span>.</li>
+            <li>Your investment decisions resulted in a <span id="insight-return">0.00%</span> total return.</li>
+            <li>If this were an annual return, it would be equivalent to <span id="insight-annual">0.00%</span> per year.</li>
+            <li>The S&P 500 historically returns about 10% annually (7% adjusted for inflation).</li>
+          </ul>
         </div>
       </div>
 
