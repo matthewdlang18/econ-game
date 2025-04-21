@@ -28,17 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Error initializing charts:', error);
   }
 
-  // Initialize Supabase if needed
-  try {
-    // Create Supabase client if it doesn't exist yet
-    if (!window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-      console.log('Creating Supabase client in main.js');
-      window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-    }
-  } catch (error) {
-    console.error('Error initializing Supabase:', error);
-  }
-
   // Check if we have a user from the parent window
   if (window.parentHasUser && window.currentUser) {
     // Use the parent's user
@@ -51,6 +40,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.UIController.showSection('intro-section');
 
     console.log('Using parent session for user:', currentUser.name);
+  } else {
+    // Check if we have a stored user in localStorage
+    const storedUser = localStorage.getItem('investmentOdyssey_user');
+    if (storedUser) {
+      try {
+        currentUser = JSON.parse(storedUser);
+        console.log('Using stored user:', currentUser.name);
+
+        // Show user info
+        window.UIController.showUserInfo(currentUser);
+
+        // Show introduction section
+        window.UIController.showSection('intro-section');
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        // Show login section
+        window.UIController.showSection('login-section');
+      }
+    } else {
+      // Show login section
+      window.UIController.showSection('login-section');
+    }
   }
 });
 
@@ -124,20 +135,26 @@ async function fetchProfile(name, passcode) {
       return await window.dbHelpers.fetchProfile(name, passcode);
     }
 
-    // Fallback to direct query
-    console.log('Using direct query for profile');
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('name', name)
-      .eq('passcode', passcode)
-      .maybeSingle();
+    // Fallback to direct query if we have a working Supabase client
+    if (window.supabase && typeof window.supabase.from === 'function') {
+      console.log('Using direct query for profile');
+      const { data, error } = await window.supabase
+        .from('profiles')
+        .select('*')
+        .eq('name', name)
+        .eq('passcode', passcode)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Profile query error:', error);
+      if (error) {
+        console.error('Profile query error:', error);
+      }
+
+      return { data, error };
     }
 
-    return { data, error };
+    // No working Supabase client available
+    console.error('No working Supabase client available');
+    return { data: null, error: { message: 'Database connection not available' } };
   } catch (error) {
     console.error('Error fetching profile:', error);
     return { data: null, error };
@@ -153,21 +170,27 @@ async function fetchTASections(taId) {
       return await window.dbHelpers.fetchTASections(taId);
     }
 
-    // Fallback to direct query
-    console.log('Using direct query for TA sections');
-    const { data, error } = await supabaseClient
-      .from('sections')
-      .select('*')
-      .eq('ta_id', taId);
+    // Fallback to direct query if we have a working Supabase client
+    if (window.supabase && typeof window.supabase.from === 'function') {
+      console.log('Using direct query for TA sections');
+      const { data, error } = await window.supabase
+        .from('sections')
+        .select('*')
+        .eq('ta_id', taId);
 
-    if (error) {
-      console.error('TA sections query error:', error);
+      if (error) {
+        console.error('TA sections query error:', error);
+      }
+
+      return { data, error };
     }
 
-    return { data, error };
+    // No working Supabase client available
+    console.error('No working Supabase client available for TA sections');
+    return { data: [], error: { message: 'Database connection not available' } };
   } catch (error) {
     console.error('Error fetching TA sections:', error);
-    return { data: null, error };
+    return { data: [], error };
   }
 }
 
@@ -180,22 +203,28 @@ async function fetchStudentsBySection(sectionId) {
       return await window.dbHelpers.fetchStudentsBySection(sectionId);
     }
 
-    // Fallback to direct query
-    console.log('Using direct query for students');
-    const { data, error } = await supabaseClient
-      .from('profiles')
-      .select('*')
-      .eq('section_id', sectionId)
-      .eq('role', 'student');
+    // Fallback to direct query if we have a working Supabase client
+    if (window.supabase && typeof window.supabase.from === 'function') {
+      console.log('Using direct query for students');
+      const { data, error } = await window.supabase
+        .from('profiles')
+        .select('*')
+        .eq('section_id', sectionId)
+        .eq('role', 'student');
 
-    if (error) {
-      console.error('Students query error:', error);
+      if (error) {
+        console.error('Students query error:', error);
+      }
+
+      return { data, error };
     }
 
-    return { data, error };
+    // No working Supabase client available
+    console.error('No working Supabase client available for students');
+    return { data: [], error: { message: 'Database connection not available' } };
   } catch (error) {
     console.error('Error fetching students:', error);
-    return { data: null, error };
+    return { data: [], error };
   }
 }
 
@@ -238,6 +267,9 @@ async function handleLogin(event) {
 
       // Set current user
       currentUser = testUser;
+
+      // Store user in localStorage
+      localStorage.setItem('investmentOdyssey_user', JSON.stringify(testUser));
 
       // Show user info
       window.UIController.showUserInfo(testUser);
@@ -283,6 +315,9 @@ async function handleLogin(event) {
     // Set current user
     currentUser = profile;
 
+    // Store user in localStorage
+    localStorage.setItem('investmentOdyssey_user', JSON.stringify(profile));
+
     // Show user info
     window.UIController.showUserInfo(profile);
 
@@ -304,6 +339,9 @@ async function handleLogin(event) {
 function handleLogout() {
   // Clear current user
   currentUser = null;
+
+  // Remove stored user from localStorage
+  localStorage.removeItem('investmentOdyssey_user');
 
   // Clear game state
   gameState = null;

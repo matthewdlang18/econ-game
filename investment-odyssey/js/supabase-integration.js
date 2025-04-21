@@ -1,35 +1,34 @@
 // Investment Odyssey - Supabase Integration
 
-// Use the existing Supabase client or create a new one
-// This ensures we have a working Supabase client
+// Always use the global Supabase client
+// This ensures we're using the same client throughout the application
 let supabaseClient;
 
 // Check if we have a working Supabase client
 if (window.supabase && typeof window.supabase.from === 'function') {
-  console.log('Using existing Supabase client');
+  console.log('Using global Supabase client in supabase-integration.js');
   supabaseClient = window.supabase;
-} else if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-  console.log('Creating new Supabase client with:', window.SUPABASE_URL);
-  supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 } else {
-  console.error('Supabase configuration not found. Authentication will not work.');
+  console.error('No working Supabase client available in supabase-integration.js');
   // Create a dummy client to prevent errors
   supabaseClient = {
     from: () => ({
       select: () => ({
         eq: () => ({
           eq: () => ({
-            single: () => ({ data: null, error: { message: 'Supabase not configured' } })
+            single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+            maybeSingle: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
           }),
-          single: () => ({ data: null, error: { message: 'Supabase not configured' } })
+          single: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+          maybeSingle: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
         }),
         order: () => ({
-          limit: () => ({ data: [], error: null })
+          limit: () => Promise.resolve({ data: [], error: null })
         })
       }),
-      insert: () => ({ data: null, error: { message: 'Supabase not configured' } }),
-      update: () => ({ data: null, error: { message: 'Supabase not configured' } }),
-      upsert: () => ({ data: null, error: { message: 'Supabase not configured' } })
+      insert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      update: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      upsert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
     }),
     channel: () => ({
       on: () => ({

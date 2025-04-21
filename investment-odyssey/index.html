@@ -430,41 +430,87 @@
   <!-- Load Supabase first -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-  <!-- Session sharing script -->
+  <!-- Supabase Configuration -->
   <script>
-    // Global variables for session sharing
+    // Supabase configuration
+    const SUPABASE_URL = 'https://bvvkevmqnnlecghyraao.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dmtldm1xbm5sZWNnaHlyYWFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5MDAzNDEsImV4cCI6MjA2MDQ3NjM0MX0.UY_H91jIbbZWq6A-l7XbdyF6s3rSoBVcJfawhZ2CyVg';
+
+    // Initialize Supabase client
+    try {
+      console.log('Initializing Supabase client');
+      window.supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (error) {
+      console.error('Failed to initialize Supabase client:', error);
+      // Create a dummy client as fallback
+      window.supabase = {
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+              }),
+              maybeSingle: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+            })
+          })
+        })
+      };
+    }
+
+    // Session sharing variables
     window.isEmbedded = window.parent !== window;
     window.parentHasUser = false;
 
-    // Try to get Supabase config and user from parent window if embedded
-    if (window.isEmbedded) {
-      // Get Supabase config from parent
-      if (window.parent.SUPABASE_URL && window.parent.SUPABASE_ANON_KEY) {
-        window.SUPABASE_URL = window.parent.SUPABASE_URL;
-        window.SUPABASE_ANON_KEY = window.parent.SUPABASE_ANON_KEY;
-        console.log('Using parent Supabase config');
-
-        // Use parent's Supabase client if available
-        if (window.parent.supabase && typeof window.parent.supabase.from === 'function') {
-          window.supabase = window.parent.supabase;
-          console.log('Using parent Supabase client');
-        }
-      } else {
-        // Fallback to local config
-        console.log('Parent Supabase config not found, using local config');
-      }
-
-      // Get user from parent
-      if (window.parent.currentUser) {
-        window.parentHasUser = true;
-        window.currentUser = window.parent.currentUser;
-        console.log('Using parent session for user:', window.currentUser.name);
-      }
+    // Try to get user from parent window if embedded
+    if (window.isEmbedded && window.parent.currentUser) {
+      window.parentHasUser = true;
+      window.currentUser = window.parent.currentUser;
+      console.log('Using parent session for user:', window.currentUser.name);
     }
   </script>
 
-  <!-- Always load local Supabase config for fallback -->
-  <script src="supabase.js"></script>
+  <!-- Helper functions -->
+  <script>
+    // Database helper functions
+    window.dbHelpers = {
+      // Fetch user profile by name and passcode
+      async fetchProfile(name, passcode) {
+        try {
+          console.log('dbHelpers.fetchProfile called with:', name);
+
+          if (!window.supabase || typeof window.supabase.from !== 'function') {
+            console.error('Supabase client not properly initialized');
+            return { data: null, error: { message: 'Database connection not available' } };
+          }
+
+          const { data, error } = await window.supabase
+            .from('profiles')
+            .select('*')
+            .eq('name', name)
+            .eq('passcode', passcode)
+            .maybeSingle();
+
+          console.log('Profile fetch result:', data ? 'Found' : 'Not found');
+          return { data, error };
+        } catch (error) {
+          console.error('Error in dbHelpers.fetchProfile:', error);
+          return { data: null, error: { message: error.message } };
+        }
+      }
+    };
+
+    // Create a dummy user for testing
+    window.createDummyUser = function() {
+      return {
+        id: 'dummy-id',
+        name: 'Test User',
+        role: 'student',
+        section_id: null,
+        custom_id: 'test-user',
+        passcode: '12345'
+      };
+    };
+  </script>
 
   <!-- Chart.js and plugins -->
   <script>
