@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Odyssey</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Investment Odyssey</h1>
+      <div id="user-info" class="hidden">
+        <span id="user-name"></span>
+        <button id="logout-btn">Logout</button>
+      </div>
+    </header>
+
+    <!-- Login Section -->
+    <section id="login-section">
+      <h2>Login</h2>
+      <form id="login-form">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="password" id="passcode" placeholder="Passcode" required>
+        <button type="submit">Login</button>
+      </form>
+      <div id="login-error" class="error"></div>
+    </section>
+
+    <!-- Introduction Section -->
+    <section id="intro-section" class="hidden">
+      <h2>Welcome to Investment Odyssey</h2>
+      
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="overview">Overview</button>
+        <button class="tab-btn" data-tab="how-to-play">How to Play</button>
+        <button class="tab-btn" data-tab="asset-info">Asset Information</button>
+        <button class="tab-btn" data-tab="correlation">Correlation Matrix</button>
+        <button class="tab-btn" data-tab="bitcoin">Bitcoin Mechanics</button>
+      </div>
+      
+      <div id="overview" class="tab-content active">
+        <h3>Game Overview</h3>
+        <p>Investment Odyssey is a financial market simulation game designed to help you understand investment strategies, risk management, and portfolio diversification through hands-on experience.</p>
+        <p>The game simulates real market behavior using correlation-based asset price generation and includes special mechanics like Bitcoin's 4-year cycle to provide an educational yet engaging experience.</p>
+        <div class="game-modes">
+          <div class="game-mode">
+            <h4>Single Player Mode</h4>
+            <p>Play at your own pace, making investment decisions and advancing through rounds to see how your portfolio performs over time.</p>
+            <button id="start-single-player" class="primary-btn">Start Single Player Game</button>
+          </div>
+          <div class="game-mode">
+            <h4>Class Mode</h4>
+            <p>Join a game session created by your instructor. All students in the class advance through rounds together, competing for the highest returns.</p>
+            <div id="class-game-controls">
+              <!-- For students -->
+              <div id="student-join-game" class="hidden">
+                <button id="join-class-game" class="primary-btn">Join Class Game</button>
+              </div>
+              <!-- For instructors -->
+              <div id="instructor-create-game" class="hidden">
+                <button id="create-class-game" class="primary-btn">Create Class Game</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="how-to-play" class="tab-content">
+        <h3>How to Play</h3>
+        <ol class="instructions">
+          <li>
+            <strong>Start a Game:</strong> Choose between Single Player or Class Mode.
+          </li>
+          <li>
+            <strong>Initial Capital:</strong> You start with $10,000 in cash.
+          </li>
+          <li>
+            <strong>Buy Assets:</strong> Use the trading interface to purchase assets.
+          </li>
+          <li>
+            <strong>Advance Rounds:</strong> Each round represents a time period where asset prices change.
+          </li>
+          <li>
+            <strong>Monitor Performance:</strong> Track your portfolio value and asset allocation.
+          </li>
+          <li>
+            <strong>Diversify:</strong> Spread your investments across different asset classes to manage risk.
+          </li>
+          <li>
+            <strong>Adapt to Market Changes:</strong> Adjust your strategy as market conditions evolve.
+          </li>
+          <li>
+            <strong>Complete the Game:</strong> After all rounds, see your final performance and compare with others.
+          </li>
+        </ol>
+      </div>
+      
+      <div id="asset-info" class="tab-content">
+        <h3>Asset Classes Information</h3>
+        <table class="asset-table">
+          <thead>
+            <tr>
+              <th>Asset Class</th>
+              <th>Average Return</th>
+              <th>Standard Deviation</th>
+              <th>Min Return</th>
+              <th>Max Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>S&P 500</td>
+              <td>11.51%</td>
+              <td>19.49%</td>
+              <td>-43%</td>
+              <td>50%</td>
+            </tr>
+            <tr>
+              <td>Bonds</td>
+              <td>3.34%</td>
+              <td>3.01%</td>
+              <td>0.03%</td>
+              <td>14%</td>
+            </tr>
+            <tr>
+              <td>Real Estate</td>
+              <td>4.39%</td>
+              <td>6.20%</td>
+              <td>-12%</td>
+              <td>24%</td>
+            </tr>
+            <tr>
+              <td>Gold</td>
+              <td>6.48%</td>
+              <td>20.76%</td>
+              <td>-32%</td>
+              <td>125%</td>
+            </tr>
+            <tr>
+              <td>Commodities</td>
+              <td>8.15%</td>
+              <td>15.22%</td>
+              <td>-25%</td>
+              <td>200%</td>
+            </tr>
+            <tr>
+              <td>Bitcoin</td>
+              <td>50.0%</td>
+              <td>100.0%</td>
+              <td>-73%</td>
+              <td>250%</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="info-box">
+          <h4>Understanding Risk and Return</h4>
+          <p><strong>Average Return:</strong> The expected annual return of the asset.</p>
+          <p><strong>Standard Deviation:</strong> A measure of volatility or risk. Higher values indicate more unpredictable price movements.</p>
+          <p><strong>Min/Max Return:</strong> The historical extremes of annual returns for each asset.</p>
+        </div>
+      </div>
+      
+      <div id="correlation" class="tab-content">
+        <h3>Correlation Matrix</h3>
+        <p>This heatmap shows how different assets move in relation to each other. Values close to 1 indicate assets that move together, while values close to -1 indicate assets that move in opposite directions.</p>
+        <div class="correlation-container">
+          <canvas id="correlation-heatmap"></canvas>
+        </div>
+        <div class="info-box">
+          <h4>Why Correlation Matters</h4>
+          <p>Diversification works best when assets have low or negative correlation with each other. This helps reduce overall portfolio risk.</p>
+          <p>For example, Bonds (-0.5169) and Gold (0.0199) have different correlations with the S&P 500, making them useful diversification tools in different market conditions.</p>
+        </div>
+      </div>
+      
+      <div id="bitcoin" class="tab-content">
+        <h3>Bitcoin Special Mechanics</h3>
+        <div class="bitcoin-mechanics">
+          <div class="mechanic">
+            <h4>4-Year Market Cycle</h4>
+            <p>Bitcoin has a 50% chance of experiencing a significant crash every 4 rounds, simulating the historical 4-year market cycles observed in cryptocurrency markets.</p>
+          </div>
+          <div class="mechanic">
+            <h4>Price-Dependent Returns</h4>
+            <ul>
+              <li><strong>Low Price Range (< $10,000):</strong> 200-400% potential returns, reflecting early adoption phase.</li>
+              <li><strong>Normal Price Range:</strong> Correlated with other assets but with high volatility.</li>
+              <li><strong>Very High Price (≥ $1,000,000):</strong> -30% to -50% returns, simulating market correction after extreme growth.</li>
+            </ul>
+          </div>
+          <div class="mechanic">
+            <h4>Adaptive Volatility</h4>
+            <p>As Bitcoin's price increases, its volatility gradually decreases, simulating the maturation of the asset class over time.</p>
+          </div>
+        </div>
+        <div class="info-box">
+          <h4>Risk vs. Reward</h4>
+          <p>Bitcoin offers the highest potential returns but also comes with the highest risk. Its special behavior makes it both an opportunity and a challenge for portfolio management.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game Dashboard Section -->
+    <section id="game-dashboard" class="hidden">
+      <div class="dashboard-header">
+        <h2>Investment Dashboard</h2>
+        <div class="round-info">
+          <span>Round: <span id="current-round">0</span>/<span id="max-rounds">20</span></span>
+        </div>
+      </div>
+      
+      <div class="dashboard-grid">
+        <!-- Portfolio Summary Panel -->
+        <div class="panel portfolio-summary">
+          <h3>Portfolio Summary</h3>
+          <div class="summary-stats">
+            <div class="stat">
+              <span class="label">Cash:</span>
+              <span id="cash-value" class="value">$10,000.00</span>
+            </div>
+            <div class="stat">
+              <span class="label">Portfolio Value:</span>
+              <span id="portfolio-value" class="value">$0.00</span>
+            </div>
+            <div class="stat">
+              <span class="label">Total Value:</span>
+              <span id="total-value" class="value">$10,000.00</span>
+            </div>
+            <div class="stat">
+              <span class="label">CPI:</span>
+              <span id="cpi-value" class="value">100.00</span>
+            </div>
+          </div>
+          <div class="portfolio-chart-container">
+            <canvas id="portfolio-chart"></canvas>
+          </div>
+        </div>
+        
+        <!-- Asset Prices Panel -->
+        <div class="panel asset-prices">
+          <h3>Asset Prices</h3>
+          <table id="asset-price-table" class="price-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Price</th>
+                <th>Change</th>
+                <th>Holdings</th>
+                <th>Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Asset rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Trading Interface Panel -->
+        <div class="panel trading-interface">
+          <h3>Trading</h3>
+          <form id="trade-form">
+            <div class="form-group">
+              <label for="asset-select">Asset:</label>
+              <select id="asset-select" required>
+                <option value="S&P 500">S&P 500</option>
+                <option value="Bonds">Bonds</option>
+                <option value="Real Estate">Real Estate</option>
+                <option value="Gold">Gold</option>
+                <option value="Commodities">Commodities</option>
+                <option value="Bitcoin">Bitcoin</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="action-select">Action:</label>
+              <select id="action-select" required>
+                <option value="buy">Buy</option>
+                <option value="sell">Sell</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="quantity-input">Quantity:</label>
+              <input type="number" id="quantity-input" min="0" step="0.01" required>
+              <div class="percentage-buttons">
+                <button type="button" class="percentage-btn" data-percentage="25">25%</button>
+                <button type="button" class="percentage-btn" data-percentage="50">50%</button>
+                <button type="button" class="percentage-btn" data-percentage="75">75%</button>
+                <button type="button" class="percentage-btn" data-percentage="100">100%</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="amount-input">Amount ($):</label>
+              <input type="number" id="amount-input" min="0" step="0.01">
+            </div>
+            <button type="submit" class="primary-btn">Execute Trade</button>
+          </form>
+          <div id="trade-message" class="message"></div>
+        </div>
+        
+        <!-- Charts Panel -->
+        <div class="panel charts">
+          <h3>Market Charts</h3>
+          <div class="chart-tabs">
+            <button class="chart-tab-btn active" data-chart="price-history">Price History</button>
+            <button class="chart-tab-btn" data-chart="allocation">Asset Allocation</button>
+            <button class="chart-tab-btn" data-chart="performance">Performance</button>
+          </div>
+          <div class="chart-container">
+            <canvas id="price-history-chart" class="active-chart"></canvas>
+            <canvas id="allocation-chart" class="chart"></canvas>
+            <canvas id="performance-chart" class="chart"></canvas>
+          </div>
+        </div>
+        
+        <!-- Game Controls Panel -->
+        <div class="panel game-controls">
+          <h3>Game Controls</h3>
+          <div class="controls-container">
+            <button id="next-round-btn" class="control-btn">Next Round</button>
+            <button id="reset-game-btn" class="control-btn">Reset Game</button>
+            <button id="save-game-btn" class="control-btn">Save Game</button>
+            <button id="end-game-btn" class="control-btn">End Game</button>
+          </div>
+          <div id="game-message" class="message"></div>
+        </div>
+        
+        <!-- Trade History Panel -->
+        <div class="panel trade-history">
+          <h3>Trade History</h3>
+          <div class="history-container">
+            <table id="trade-history-table" class="history-table">
+              <thead>
+                <tr>
+                  <th>Round</th>
+                  <th>Action</th>
+                  <th>Asset</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Trade history rows will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Game Results Section -->
+    <section id="game-results" class="hidden">
+      <h2>Game Results</h2>
+      <div class="results-summary">
+        <h3>Your Performance</h3>
+        <div class="summary-stats">
+          <div class="stat">
+            <span class="label">Starting Value:</span>
+            <span id="starting-value" class="value">$10,000.00</span>
+          </div>
+          <div class="stat">
+            <span class="label">Final Value:</span>
+            <span id="final-value" class="value">$0.00</span>
+          </div>
+          <div class="stat">
+            <span class="label">Total Return:</span>
+            <span id="total-return" class="value">0.00%</span>
+          </div>
+          <div class="stat">
+            <span class="label">Annualized Return:</span>
+            <span id="annualized-return" class="value">0.00%</span>
+          </div>
+        </div>
+        <div class="results-chart-container">
+          <canvas id="results-chart"></canvas>
+        </div>
+      </div>
+      
+      <div class="leaderboard">
+        <h3>Leaderboard</h3>
+        <table id="leaderboard-table" class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Final Value</th>
+              <th>Return</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Leaderboard rows will be populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="results-actions">
+        <button id="submit-score-btn" class="primary-btn">Submit to Leaderboard</button>
+        <button id="play-again-btn" class="primary-btn">Play Again</button>
+        <button id="return-intro-btn" class="secondary-btn">Return to Introduction</button>
+      </div>
+    </section>
+
+    <!-- Waiting Room Section (for Class Mode) -->
+    <section id="waiting-room" class="hidden">
+      <h2>Class Game Waiting Room</h2>
+      <div class="waiting-info">
+        <p>Waiting for the instructor to start the game...</p>
+        <div class="spinner"></div>
+      </div>
+      <div class="participants">
+        <h3>Participants</h3>
+        <ul id="participants-list">
+          <!-- Participants will be populated by JavaScript -->
+        </ul>
+      </div>
+      <!-- For instructors only -->
+      <div id="instructor-controls" class="hidden">
+        <button id="start-class-game-btn" class="primary-btn">Start Game</button>
+        <button id="cancel-class-game-btn" class="secondary-btn">Cancel Game</button>
+      </div>
+    </section>
+
+    <!-- Notifications -->
+    <div id="notification" class="notification hidden"></div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../supabase.js"></script>
+  <script src="js/game-state.js"></script>
+  <script src="js/trading.js"></script>
+  <script src="js/supabase-integration.js"></script>
+  <script src="js/ui-controller.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

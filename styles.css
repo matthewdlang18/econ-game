@@ -71,7 +71,7 @@ body {
   font-size: 1em;
 }
 #app {
-  max-width: 400px;
+  max-width: 800px;
   margin: 40px auto;
   background: #fff;
   padding: 2rem;
@@ -98,4 +98,65 @@ button {
 }
 button:hover {
   background: #005fa3;
+}
+
+/* Game Cards */
+.games-section {
+  margin-top: 1.5em;
+}
+
+.game-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1em;
+  margin-top: 1em;
+}
+
+.game-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.25em;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 100%;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.game-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.game-card h5 {
+  margin: 0 0 0.5em 0;
+  font-size: 1.2em;
+  color: #2e7be4;
+}
+
+.game-card p {
+  margin: 0 0 1em 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.game-link {
+  display: inline-block;
+  background: #2e7be4;
+  color: white;
+  text-decoration: none;
+  padding: 0.5em 1em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  transition: background 0.2s;
+}
+
+.game-link:hover {
+  background: #1956a3;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  .game-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
 }

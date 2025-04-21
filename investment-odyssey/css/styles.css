@@ -1,0 +1,662 @@
+/* Investment Odyssey - Main Styles */
+
+/* Base Styles */
+:root {
+  --primary-color: #2e7be4;
+  --primary-dark: #1956a3;
+  --secondary-color: #6c757d;
+  --success-color: #28a745;
+  --danger-color: #dc3545;
+  --warning-color: #ffc107;
+  --info-color: #17a2b8;
+  --light-color: #f8f9fa;
+  --dark-color: #343a40;
+  --body-bg: #f4f4f4;
+  --card-bg: #ffffff;
+  --border-color: #dee2e6;
+  --text-color: #212529;
+  --text-muted: #6c757d;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: var(--text-color);
+  background-color: var(--body-bg);
+}
+
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+/* Header */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+#user-name {
+  font-weight: 600;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.secondary-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border-color: var(--secondary-color);
+}
+
+.secondary-btn:hover {
+  background-color: #5a6268;
+  border-color: #5a6268;
+}
+
+.control-btn {
+  background-color: var(--light-color);
+  color: var(--dark-color);
+  border-color: var(--border-color);
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.control-btn:hover {
+  background-color: #e2e6ea;
+  border-color: #dae0e5;
+}
+
+#logout-btn {
+  background-color: var(--secondary-color);
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+}
+
+#logout-btn:hover {
+  background-color: #5a6268;
+}
+
+/* Forms */
+form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+input, select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(46, 123, 228, 0.25);
+}
+
+/* Login Section */
+#login-section {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.error {
+  color: var(--danger-color);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Introduction Section */
+#intro-section {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  color: var(--secondary-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tab-btn:hover {
+  color: var(--primary-color);
+}
+
+.tab-btn.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.tab-content {
+  display: none;
+  padding: 1rem 0;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.game-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.game-mode {
+  flex: 1;
+  min-width: 250px;
+  padding: 1.5rem;
+  background-color: var(--light-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.instructions {
+  padding-left: 1.5rem;
+}
+
+.instructions li {
+  margin-bottom: 1rem;
+}
+
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.asset-table th, .asset-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.asset-table th {
+  background-color: var(--light-color);
+  font-weight: 600;
+}
+
+.asset-table tr:nth-child(even) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.correlation-container {
+  height: 400px;
+  margin-bottom: 1.5rem;
+}
+
+.bitcoin-mechanics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.mechanic {
+  flex: 1;
+  min-width: 250px;
+  padding: 1.25rem;
+  background-color: var(--light-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.info-box {
+  background-color: rgba(23, 162, 184, 0.1);
+  border-left: 4px solid var(--info-color);
+  padding: 1rem;
+  margin-top: 1.5rem;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Game Dashboard */
+#game-dashboard {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.round-info {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.panel {
+  background-color: var(--light-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.portfolio-summary, .asset-prices, .trading-interface, .charts, .game-controls, .trade-history {
+  grid-column: span 1;
+}
+
+@media (min-width: 992px) {
+  .portfolio-summary, .charts {
+    grid-column: span 2;
+  }
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.portfolio-chart-container, .chart-container {
+  height: 250px;
+}
+
+.price-table, .history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.price-table th, .price-table td, .history-table th, .history-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.price-table th, .history-table th {
+  background-color: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+}
+
+.percentage-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.percentage-btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  background-color: var(--light-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+}
+
+.percentage-btn:hover {
+  background-color: var(--border-color);
+}
+
+.chart-tabs {
+  display: flex;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.chart-tab-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+  cursor: pointer;
+}
+
+.chart-tab-btn:hover {
+  color: var(--primary-color);
+}
+
+.chart-tab-btn.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.chart {
+  display: none;
+}
+
+.active-chart {
+  display: block;
+}
+
+.controls-container {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.message {
+  padding: 0.75rem;
+  margin-top: 1rem;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.success {
+  background-color: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+  color: var(--success-color);
+}
+
+.error {
+  background-color: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  color: var(--danger-color);
+}
+
+.history-container {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Game Results */
+#game-results {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.results-summary {
+  margin-bottom: 2rem;
+}
+
+.results-chart-container {
+  height: 300px;
+  margin-top: 1.5rem;
+}
+
+.leaderboard {
+  margin-bottom: 2rem;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.leaderboard-table th, .leaderboard-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.leaderboard-table th {
+  background-color: rgba(0, 0, 0, 0.03);
+  font-weight: 600;
+}
+
+.results-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* Waiting Room */
+#waiting-room {
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.waiting-info {
+  margin-bottom: 2rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(46, 123, 228, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--primary-color);
+  animation: spin 1s ease-in-out infinite;
+  margin: 1rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.participants {
+  max-width: 400px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+#participants-list {
+  list-style: none;
+  padding: 0;
+}
+
+#participants-list li {
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#instructor-controls {
+  margin-top: 2rem;
+}
+
+/* Notifications */
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 1rem;
+  background-color: var(--dark-color);
+  color: white;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  max-width: 300px;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none !important;
+}
+
+.positive {
+  color: var(--success-color);
+}
+
+.negative {
+  color: var(--danger-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  #app {
+    padding: 10px;
+  }
+  
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .portfolio-summary, .charts {
+    grid-column: span 1;
+  }
+  
+  .game-modes {
+    flex-direction: column;
+  }
+  
+  .bitcoin-mechanics {
+    flex-direction: column;
+  }
+  
+  .results-actions {
+    flex-direction: column;
+  }
+  
+  .results-actions button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  .tabs {
+    flex-direction: column;
+  }
+  
+  .tab-btn {
+    width: 100%;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+  }
+  
+  .tab-btn.active {
+    border-bottom: 2px solid var(--primary-color);
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+}
