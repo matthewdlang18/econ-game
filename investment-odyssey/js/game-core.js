@@ -61,63 +61,80 @@ const assetReturns = {
 
 // Initialize game
 function initializeGame() {
-    // Reset game state
-    gameState.gameId = crypto.randomUUID ? crypto.randomUUID() :
-        'game_' + Math.random().toString(36).substring(2, 15);
-    gameState.roundNumber = 0;
-    gameState.maxRounds = 20;
-    gameState.assetPrices = {
-        'S&P 500': 100.00,
-        'Small Caps': 100.00,
-        'Corporate Bonds': 100.00,
-        'Treasury Bonds': 100.00,
-        'Gold': 100.00,
-        'Bitcoin': 50000.00 // Bitcoin starts at a higher price to match real-world scale
-    };
-    gameState.priceHistory = {
-        'S&P 500': [],
-        'Small Caps': [],
-        'Corporate Bonds': [],
-        'Treasury Bonds': [],
-        'Gold': [],
-        'Bitcoin': []
-    };
-    gameState.CPI = 100.00;
-    gameState.CPIHistory = [];
-    gameState.lastBitcoinCrashRound = 0;
-    gameState.bitcoinShockRange = [-0.5, -0.75];
+    try {
+        console.log('Initializing game...');
 
-    // Get game mode from local storage or default to single
-    gameState.gameMode = localStorage.getItem('game_mode') || 'single';
+        // Check if we have a saved game ID in localStorage
+        const savedGameId = localStorage.getItem('investment_odyssey_game_id');
 
-    // Reset player state
-    playerState.cash = 10000.00;
-    playerState.portfolio = {
-        'S&P 500': 0,
-        'Small Caps': 0,
-        'Corporate Bonds': 0,
-        'Treasury Bonds': 0,
-        'Gold': 0,
-        'Bitcoin': 0
-    };
-    playerState.tradeHistory = [];
-    playerState.portfolioHistory = [];
+        // Reset game state
+        gameState.gameId = savedGameId || (crypto.randomUUID ? crypto.randomUUID() :
+            'game_' + Math.random().toString(36).substring(2, 15));
 
-    // Get user info from auth service
-    const user = window.Service ? window.Service.getCurrentUser() : null;
-    if (user) {
-        playerState.userId = user.id;
-        playerState.userName = user.name;
-    } else {
-        // Generate a guest ID if not logged in
-        playerState.userId = 'guest_' + Date.now();
-        playerState.userName = 'Guest';
+        // Save game ID to localStorage
+        localStorage.setItem('investment_odyssey_game_id', gameState.gameId);
+
+        gameState.roundNumber = 0;
+        gameState.maxRounds = 20;
+        gameState.assetPrices = {
+            'S&P 500': 100.00,
+            'Small Caps': 100.00,
+            'Corporate Bonds': 100.00,
+            'Treasury Bonds': 100.00,
+            'Gold': 100.00,
+            'Bitcoin': 50000.00 // Bitcoin starts at a higher price to match real-world scale
+        };
+        gameState.priceHistory = {
+            'S&P 500': [],
+            'Small Caps': [],
+            'Corporate Bonds': [],
+            'Treasury Bonds': [],
+            'Gold': [],
+            'Bitcoin': []
+        };
+        gameState.CPI = 100.00;
+        gameState.CPIHistory = [];
+        gameState.lastBitcoinCrashRound = 0;
+        gameState.bitcoinShockRange = [-0.5, -0.75];
+
+        // Get game mode from local storage or default to single
+        gameState.gameMode = localStorage.getItem('game_mode') || 'single';
+
+        // Reset player state
+        playerState.cash = 10000.00;
+        playerState.portfolio = {
+            'S&P 500': 0,
+            'Small Caps': 0,
+            'Corporate Bonds': 0,
+            'Treasury Bonds': 0,
+            'Gold': 0,
+            'Bitcoin': 0
+        };
+        playerState.tradeHistory = [];
+        playerState.portfolioHistory = [];
+
+        // Get user info from auth service
+        const user = window.Service ? window.Service.getCurrentUser() : null;
+        if (user) {
+            playerState.userId = user.id;
+            playerState.userName = user.name;
+            console.log('User info loaded:', playerState.userId, playerState.userName);
+        } else {
+            // Generate a guest ID if not logged in
+            playerState.userId = 'guest_' + Date.now();
+            playerState.userName = 'Guest';
+            console.log('Guest user created:', playerState.userId);
+        }
+
+        // Create game record in Supabase first
+        createGameInSupabase();
+
+        console.log('Game initialized with ID:', gameState.gameId);
+        return true;
+    } catch (error) {
+        console.error('Error initializing game:', error);
+        return false;
     }
-
-    // Save initial game state to Supabase if available
-    saveGameToSupabase();
-
-    console.log('Game initialized with ID:', gameState.gameId);
 }
 
 // Start game
@@ -551,6 +568,50 @@ function loadGameState() {
     }
 }
 
+// Create game in Supabase
+async function createGameInSupabase() {
+    try {
+        // Check if Supabase is available
+        if (!window.supabase) {
+            console.log('Supabase not available for creating game');
+            return false;
+        }
+
+        // Make sure we have a valid game ID
+        if (!gameState.gameId) {
+            console.error('No game ID available for creating in Supabase');
+            return false;
+        }
+
+        console.log('Creating game in Supabase with ID:', gameState.gameId);
+
+        // Create game record in Supabase
+        const { data, error } = await window.supabase
+            .from('games')
+            .upsert({
+                id: gameState.gameId,
+                user_id: playerState.userId,
+                game_type: 'investment-odyssey',
+                game_mode: gameState.gameMode,
+                max_rounds: gameState.maxRounds,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' })
+            .select();
+
+        if (error) {
+            console.error('Error creating game in Supabase:', error);
+            return false;
+        }
+
+        console.log('Game created successfully in Supabase:', data);
+        return true;
+    } catch (error) {
+        console.error('Exception creating game in Supabase:', error);
+        return false;
+    }
+}
+
 // Save game to Supabase
 async function saveGameToSupabase() {
     try {
@@ -579,6 +640,9 @@ async function saveGameToSupabase() {
                 playerState.userName = 'Guest';
             }
         }
+
+        // Make sure the game exists in Supabase
+        await createGameInSupabase();
 
         // Try to save game round
         try {
@@ -649,25 +713,53 @@ async function saveGameToSupabase() {
 
 // Reset game
 function resetGame() {
-    // Reset all charts first
-    resetAllCharts();
+    try {
+        console.log('Resetting game...');
 
-    // Initialize new game
-    initializeGame();
+        // Clear localStorage to ensure a fresh start
+        localStorage.removeItem('investment_odyssey_game_state');
+        localStorage.removeItem('investment_odyssey_player_state');
+        localStorage.removeItem('investment_odyssey_game_id');
 
-    // Enable start game button
-    const startGameBtn = document.getElementById('start-game');
-    if (startGameBtn) startGameBtn.disabled = false;
+        // Reset all charts first
+        resetAllCharts();
 
-    // Disable next round button
-    const nextRoundBtn = document.getElementById('next-round');
-    if (nextRoundBtn) nextRoundBtn.disabled = true;
+        // Generate a new game ID
+        gameState.gameId = crypto.randomUUID ? crypto.randomUUID() :
+            'game_' + Math.random().toString(36).substring(2, 15);
 
-    // Hide sticky next round button
-    const stickyNextRoundBtn = document.getElementById('sticky-next-round');
-    if (stickyNextRoundBtn) stickyNextRoundBtn.style.display = 'none';
+        // Save new game ID to localStorage
+        localStorage.setItem('investment_odyssey_game_id', gameState.gameId);
 
-    console.log('Game has been reset.');
+        console.log('New game ID generated:', gameState.gameId);
+
+        // Initialize new game
+        initializeGame();
+
+        // Generate initial prices
+        generateNewPrices();
+
+        // Update UI
+        updateUI();
+
+        // Enable start game button
+        const startGameBtn = document.getElementById('start-game');
+        if (startGameBtn) startGameBtn.disabled = false;
+
+        // Disable next round button
+        const nextRoundBtn = document.getElementById('next-round');
+        if (nextRoundBtn) nextRoundBtn.disabled = true;
+
+        // Hide sticky next round button
+        const stickyNextRoundBtn = document.getElementById('sticky-next-round');
+        if (stickyNextRoundBtn) stickyNextRoundBtn.style.display = 'none';
+
+        console.log('Game has been reset.');
+        return true;
+    } catch (error) {
+        console.error('Error resetting game:', error);
+        return false;
+    }
 }
 
 // Make functions available globally
@@ -686,10 +778,21 @@ window.resetGame = resetGame;
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Document loaded, initializing game...');
 
-    // Try to load saved game state
-    if (!loadGameState()) {
-        // If no saved state, initialize a new game
-        initializeGame();
+    // Check if we need to force a reset
+    const urlParams = new URLSearchParams(window.location.search);
+    const forceReset = urlParams.get('reset') === 'true';
+
+    if (forceReset) {
+        console.log('Force reset requested, resetting game...');
+        resetGame();
+        // Remove the reset parameter from the URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+        // Try to load saved game state
+        if (!loadGameState()) {
+            // If no saved state, initialize a new game
+            initializeGame();
+        }
     }
 
     // Set up event listeners

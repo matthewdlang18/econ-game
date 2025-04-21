@@ -101,6 +101,23 @@
     font-weight: 500;
 }
 
+.reset-link {
+    background: none;
+    border: none;
+    color: #ffc107;
+    cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    transition: opacity 0.3s;
+    text-decoration: none;
+    margin-right: 10px;
+}
+
+.reset-link:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
 .sign-out-btn {
     background: none;
     border: none;
@@ -120,43 +137,43 @@
     .banner-container {
         height: 150px;
     }
-    
+
     .activity-title {
         font-size: 1.8rem;
     }
-    
+
     .activity-date {
         font-size: 1rem;
     }
-    
+
     .nav-links {
         flex-direction: column;
         align-items: center;
     }
-    
+
     .nav-links-left, .nav-links-right {
         margin-bottom: 10px;
     }
-    
+
     .nav-link {
         margin: 0 5px;
         padding: 3px 6px;
         font-size: 0.9rem;
     }
-    
+
     .user-info {
         padding: 3px 8px;
     }
-    
+
     .user-avatar {
         width: 25px;
         height: 25px;
     }
-    
+
     .user-name {
         font-size: 0.9rem;
     }
-    
+
     .sign-out-btn {
         font-size: 0.8rem;
     }
