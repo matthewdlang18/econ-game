@@ -82,10 +82,16 @@ function updateElementText(elementId, text) {
 
 // Update market data table
 function updateMarketData() {
-    const marketDataBody = document.getElementById('market-data-body');
+    const marketDataBody = document.getElementById('asset-prices-table');
     if (!marketDataBody) return;
 
     marketDataBody.innerHTML = '';
+
+    // Update the round display in the market data header
+    const marketRoundDisplay = document.getElementById('market-round-display');
+    if (marketRoundDisplay) {
+        marketRoundDisplay.textContent = gameState.roundNumber;
+    }
 
     for (const asset in gameState.assetPrices) {
         const row = document.createElement('tr');

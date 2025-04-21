@@ -560,19 +560,44 @@ async function saveGameToSupabase() {
             return false;
         }
 
+        // Make sure we have a valid game ID
+        if (!gameState.gameId) {
+            console.error('No game ID available for saving to Supabase');
+            return false;
+        }
+
+        // Make sure we have a valid user ID
+        if (!playerState.userId) {
+            // Try to get user info from auth service
+            const user = window.Service ? window.Service.getCurrentUser() : null;
+            if (user) {
+                playerState.userId = user.id;
+                playerState.userName = user.name;
+            } else {
+                // Generate a guest ID if not logged in
+                playerState.userId = 'guest_' + Date.now();
+                playerState.userName = 'Guest';
+            }
+        }
+
         // Try to save game round
         try {
-            const roundResult = await window.Service.saveGameRound(
-                gameState.gameId,
-                gameState.roundNumber,
-                gameState.assetPrices,
-                gameState.priceHistory,
-                gameState.CPI,
-                gameState.CPIHistory
-            );
+            // Only save if we have a valid round number and asset prices
+            if (gameState.roundNumber !== undefined && gameState.assetPrices) {
+                const roundResult = await window.Service.saveGameRound(
+                    gameState.gameId,
+                    gameState.roundNumber,
+                    gameState.assetPrices,
+                    gameState.priceHistory,
+                    gameState.CPI,
+                    gameState.CPIHistory
+                );
 
-            if (!roundResult.success) {
-                console.error('Error saving game round to Supabase:', roundResult.error);
+                if (!roundResult.success) {
+                    console.error('Error saving game round to Supabase:', roundResult.error);
+                }
+            } else {
+                console.log('Skipping game round save - invalid round number or asset prices');
             }
         } catch (roundError) {
             console.error('Exception saving game round to Supabase:', roundError);
@@ -580,20 +605,34 @@ async function saveGameToSupabase() {
 
         // Try to save player state
         try {
-            const portfolioValue = calculatePortfolioValue();
-            const playerResult = await window.Service.savePlayerState(
-                gameState.gameId,
-                playerState.userId,
-                gameState.roundNumber,
-                playerState.cash,
-                playerState.portfolio,
-                playerState.tradeHistory,
-                portfolioValue,
-                playerState.portfolioHistory
-            );
+            // Only save if we have valid game ID, user ID, round number, cash, and portfolio
+            if (gameState.gameId && playerState.userId && gameState.roundNumber !== undefined &&
+                playerState.cash !== undefined && playerState.portfolio) {
 
-            if (!playerResult.success) {
-                console.error('Error saving player state to Supabase:', playerResult.error);
+                const portfolioValue = calculatePortfolioValue();
+                const playerResult = await window.Service.savePlayerState(
+                    gameState.gameId,
+                    playerState.userId,
+                    gameState.roundNumber,
+                    playerState.cash,
+                    playerState.portfolio,
+                    playerState.tradeHistory || [],
+                    portfolioValue,
+                    playerState.portfolioHistory || []
+                );
+
+                if (!playerResult.success) {
+                    console.error('Error saving player state to Supabase:', playerResult.error);
+                } else {
+                    console.log('Player state saved to Supabase successfully');
+                }
+            } else {
+                console.log('Skipping player state save - missing required data');
+                console.log('Game ID:', gameState.gameId);
+                console.log('User ID:', playerState.userId);
+                console.log('Round:', gameState.roundNumber);
+                console.log('Cash:', playerState.cash);
+                console.log('Portfolio:', playerState.portfolio ? 'Valid' : 'Invalid');
             }
         } catch (playerError) {
             console.error('Exception saving player state to Supabase:', playerError);

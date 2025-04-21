@@ -14,16 +14,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <!-- Chart.js and Chart.js Zoom plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- Chart.js Zoom plugin is optional, only include if needed -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1"></script>
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
     <header>
         <div class="banner-container">
-            <!-- Use a background color instead of an image -->
-            <div style="background: linear-gradient(135deg, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); width: 100%; height: 100%;" class="banner-image"></div>
+            <img src="../images/banner15.png" alt="Investment Odyssey Banner" class="banner-image">
             <div class="banner-overlay">
                 <div class="container mx-auto">
                     <div class="nav-links">
@@ -93,35 +92,39 @@
             </div>
         </div>
 
-        <!-- Portfolio Summary -->
+        <!-- Market Data - Full Width -->
         <div class="row mb-3">
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Cash</h5>
+            <div class="col-12">
+                <div class="card market-data-card">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center" style="padding: 1rem; border-bottom: 3px solid #dc3545;">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-chart-line mr-2" style="font-size: 1.8rem;"></i>
+                            <h3 class="mb-0" style="font-size: 1.5rem;">Market Data & Portfolio</h3>
+                        </div>
+                        <div>
+                            <span class="badge badge-danger" style="font-size: 1rem; padding: 0.5rem;">
+                                <i class="fas fa-clock mr-1"></i> Round <span id="market-round-display">0</span>
+                            </span>
+                        </div>
                     </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <h3 class="text-success mb-0">$<span id="cash-display">10000.00</span></h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4 mb-3 mb-md-0">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Portfolio Value</h5>
-                    </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <h3 class="text-primary mb-0">$<span id="portfolio-value-display">0.00</span></h3>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card h-100">
-                    <div class="card-header">
-                        <h5 class="mb-0">Total Value</h5>
-                    </div>
-                    <div class="card-body d-flex align-items-center justify-content-center">
-                        <h3 class="text-info mb-0">$<span id="total-value-display">10000.00</span></h3>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0" id="market-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change</th>
+                                        <th>Quantity</th>
+                                        <th>Value</th>
+                                        <th>%</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="asset-prices-table">
+                                    <!-- Asset prices will be populated here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
