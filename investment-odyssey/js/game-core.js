@@ -29,7 +29,7 @@ let gameState = {
     CPIHistory: [],
     lastBitcoinCrashRound: 0,
     bitcoinShockRange: [-0.5, -0.75], // Initial shock range for Bitcoin crashes
-    gameMode: 'single' // 'single' or 'class'
+    gameMode: 1 // 1 for single player, 2 for class mode
 };
 
 // Player state
@@ -97,8 +97,17 @@ function initializeGame() {
         gameState.lastBitcoinCrashRound = 0;
         gameState.bitcoinShockRange = [-0.5, -0.75];
 
-        // Get game mode from local storage or default to single
-        gameState.gameMode = localStorage.getItem('game_mode') || 'single';
+        // Get game mode from local storage or default to single (1)
+        const storedGameMode = localStorage.getItem('game_mode');
+        if (storedGameMode) {
+            if (storedGameMode.toLowerCase() === 'class') {
+                gameState.gameMode = 2; // Class mode
+            } else {
+                gameState.gameMode = 1; // Single player mode
+            }
+        } else {
+            gameState.gameMode = 1; // Default to single player
+        }
 
         // Reset player state
         playerState.cash = 10000.00;

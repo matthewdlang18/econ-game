@@ -219,7 +219,19 @@ const Service = {
                 return { success: false, error: 'Supabase not available' };
             }
 
-            console.log(`Creating game: gameId=${gameId}, userId=${userId}, gameType=${gameType}, gameMode=${gameMode}`);
+            // Convert gameMode to integer (1 for single, 2 for class)
+            let gameModeInt = 1; // Default to single player (1)
+            if (typeof gameMode === 'string') {
+                if (gameMode.toLowerCase() === 'class') {
+                    gameModeInt = 2;
+                } else {
+                    gameModeInt = 1; // Default to single player
+                }
+            } else if (typeof gameMode === 'number') {
+                gameModeInt = gameMode;
+            }
+
+            console.log(`Creating game: gameId=${gameId}, userId=${userId}, gameType=${gameType}, gameMode=${gameModeInt} (converted from ${gameMode})`);
 
             // First check if the game already exists
             const { data: existingGame, error: checkError } = await window.supabase
@@ -245,7 +257,7 @@ const Service = {
                     id: gameId,
                     user_id: userId,
                     game_type: gameType,
-                    game_mode: gameMode,
+                    game_mode: gameModeInt, // Use the integer value
                     max_rounds: maxRounds,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -273,7 +285,19 @@ const Service = {
                 return { success: false, error: 'Supabase not available' };
             }
 
-            console.log(`Saving game score: userId=${userId}, gameId=${gameId}, score=${score}`);
+            // Convert gameMode to integer (1 for single, 2 for class)
+            let gameModeInt = 1; // Default to single player (1)
+            if (typeof gameMode === 'string') {
+                if (gameMode.toLowerCase() === 'class') {
+                    gameModeInt = 2;
+                } else {
+                    gameModeInt = 1; // Default to single player
+                }
+            } else if (typeof gameMode === 'number') {
+                gameModeInt = gameMode;
+            }
+
+            console.log(`Saving game score: userId=${userId}, gameId=${gameId}, score=${score}, gameMode=${gameModeInt}`);
 
             const { data, error } = await window.supabase
                 .from('game_scores')
@@ -282,7 +306,7 @@ const Service = {
                     user_name: userName,
                     game_id: gameId,
                     game_type: gameType,
-                    game_mode: gameMode,
+                    game_mode: gameModeInt, // Use the integer value
                     score: score,
                     ta_name: taName,
                     section_id: sectionId,
