@@ -364,29 +364,55 @@ function handleLogout() {
 }
 
 // Start single player game
-function startSinglePlayerGame() {
-  // Set game mode
-  gameMode = 'single';
+async function startSinglePlayerGame() {
+  try {
+    // Set game mode
+    gameMode = 'single';
 
-  // Initialize game state
-  gameState = window.GameState.createInitialGameState();
-  playerState = window.GameState.createInitialPlayerState();
+    // Generate a unique game ID for this session
+    gameId = 'single-' + currentUser.id + '-' + Date.now();
+    console.log('Created single player game with ID:', gameId);
 
-  // Set max rounds
-  window.UIController.elements.maxRounds.textContent = '20';
+    // Initialize game state
+    gameState = window.GameState.createInitialGameState();
+    playerState = window.GameState.createInitialPlayerState();
 
-  // Setup trading interface
-  window.UIController.setupPercentageButtons(gameState, playerState);
-  window.UIController.setupInputSynchronization(gameState);
+    // Advance to first round
+    gameState = window.GameState.advanceToNextRound(gameState);
 
-  // Update dashboard
-  window.UIController.updateDashboard(gameState, playerState);
+    // Set max rounds
+    window.UIController.elements.maxRounds.textContent = '20';
 
-  // Show game dashboard
-  window.UIController.showSection('game-dashboard');
+    // Setup trading interface
+    window.UIController.setupPercentageButtons(gameState, playerState);
+    window.UIController.setupInputSynchronization(gameState);
 
-  // Show notification
-  window.UIController.showNotification('Single player game started!', 'success');
+    // Update dashboard
+    window.UIController.updateDashboard(gameState, playerState);
+
+    // Save initial game state to database
+    if (window.SupabaseIntegration && typeof window.SupabaseIntegration.saveGameState === 'function') {
+      try {
+        console.log('Saving initial single player game state to database');
+        await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
+        await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
+      } catch (saveError) {
+        console.error('Error saving initial game state:', saveError);
+        // Non-critical error, continue with game
+      }
+    } else {
+      console.warn('Supabase integration not available, game will not be saved to database');
+    }
+
+    // Show game dashboard
+    window.UIController.showSection('game-dashboard');
+
+    // Show notification
+    window.UIController.showNotification('Single player game started!', 'success');
+  } catch (error) {
+    console.error('Error starting single player game:', error);
+    window.UIController.showNotification('Failed to start game: ' + error.message, 'error');
+  }
 }
 
 // Join class game
@@ -639,9 +665,21 @@ function handleTrade(event) {
     window.UIController.elements.tradeMessage.textContent = result.message;
     window.UIController.elements.tradeMessage.className = 'message success';
 
-    // Save player state if in class mode
-    if (gameMode === 'class' && gameId) {
-      window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
+    // Save player state to database
+    if (gameId && window.SupabaseIntegration) {
+      try {
+        console.log('Saving player state after trade for game:', gameId);
+        window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
+      } catch (error) {
+        console.error('Error saving player state after trade:', error);
+      }
+    } else {
+      // Save to localStorage as fallback
+      try {
+        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+      } catch (error) {
+        console.error('Error saving to localStorage:', error);
+      }
     }
   } else {
     // Show error message
@@ -680,20 +718,29 @@ async function handleNextRound() {
     return;
   }
 
-  // Save game state if in class mode
-  if (gameMode === 'class' && gameId) {
+  // Save game state to database
+  if (gameId && window.SupabaseIntegration) {
     try {
+      console.log('Saving game state to database for game:', gameId);
       await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
       await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
 
-      // Update game session round if instructor
-      if (currentUser.role === 'ta') {
+      // Update game session round if in class mode and user is an instructor
+      if (gameMode === 'class' && currentUser.role === 'ta') {
         await window.SupabaseIntegration.updateGameSessionRound(gameId, gameState.roundNumber);
       }
 
     } catch (error) {
       console.error('Save game state error:', error);
-      window.UIController.showNotification('Failed to save game state: ' + error.message, 'error');
+      window.UIController.showNotification('Failed to save game state to database, but game will continue.', 'warning');
+    }
+  } else {
+    // Save to localStorage as fallback
+    try {
+      localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
     }
   }
 
@@ -860,7 +907,16 @@ async function handleSubmitScore() {
     }
 
     // Submit to online leaderboard
-    await window.SupabaseIntegration.submitToLeaderboard(
+    console.log('Submitting score to leaderboard:', {
+      userId: currentUser.id,
+      userName: currentUser.name,
+      gameMode,
+      gameId,
+      sectionId,
+      finalValue: playerState.totalValue
+    });
+
+    const { data, error } = await window.SupabaseIntegration.submitToLeaderboard(
       currentUser.id,
       currentUser.name,
       gameMode,
@@ -868,6 +924,13 @@ async function handleSubmitScore() {
       sectionId,
       playerState.totalValue
     );
+
+    if (error) {
+      console.error('Error submitting score to leaderboard:', error);
+      throw new Error(error.message || 'Failed to submit score');
+    }
+
+    console.log('Score submitted successfully:', data);
 
     // Reload leaderboard
     await loadLeaderboard();
@@ -976,10 +1039,22 @@ async function handleCancelClassGame() {
 
   try {
     // Update game session to inactive
-    await supabase
-      .from('game_sessions')
-      .update({ active: false })
-      .eq('id', gameId);
+    if (window.SupabaseIntegration && typeof window.SupabaseIntegration.updateGameSessionActive === 'function') {
+      const { error } = await window.SupabaseIntegration.updateGameSessionActive(gameId, false);
+      if (error) {
+        console.error('Error deactivating game session:', error);
+      }
+    } else if (window.supabase) {
+      const { error } = await window.supabase
+        .from('game_sessions')
+        .update({ active: false })
+        .eq('id', gameId);
+      if (error) {
+        console.error('Error deactivating game session:', error);
+      }
+    } else {
+      console.error('No Supabase client available');
+    }
 
     // Clear game state
     gameState = null;
