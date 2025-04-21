@@ -1,8 +1,43 @@
 // Investment Odyssey - Supabase Integration
 
-// Use the existing Supabase client
-// This avoids creating a duplicate client
-const supabaseClient = window.supabase;
+// Use the existing Supabase client or create a new one
+// This ensures we have a working Supabase client
+let supabaseClient;
+
+// Check if we have a working Supabase client
+if (window.supabase && typeof window.supabase.from === 'function') {
+  console.log('Using existing Supabase client');
+  supabaseClient = window.supabase;
+} else if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+  console.log('Creating new Supabase client with:', window.SUPABASE_URL);
+  supabaseClient = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+} else {
+  console.error('Supabase configuration not found. Authentication will not work.');
+  // Create a dummy client to prevent errors
+  supabaseClient = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            single: () => ({ data: null, error: { message: 'Supabase not configured' } })
+          }),
+          single: () => ({ data: null, error: { message: 'Supabase not configured' } })
+        }),
+        order: () => ({
+          limit: () => ({ data: [], error: null })
+        })
+      }),
+      insert: () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      update: () => ({ data: null, error: { message: 'Supabase not configured' } }),
+      upsert: () => ({ data: null, error: { message: 'Supabase not configured' } })
+    }),
+    channel: () => ({
+      on: () => ({
+        subscribe: () => ({})
+      })
+    })
+  };
+}
 
 // Create a new game session
 async function createGameSession(sectionId, maxRounds = 20) {

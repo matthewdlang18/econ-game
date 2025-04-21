@@ -28,6 +28,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('Error initializing charts:', error);
   }
 
+  // Initialize Supabase if needed
+  try {
+    // Create Supabase client if it doesn't exist yet
+    if (!window.supabase && window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+      console.log('Creating Supabase client in main.js');
+      window.supabase = supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+    }
+  } catch (error) {
+    console.error('Error initializing Supabase:', error);
+  }
+
   // Check if we have a user from the parent window
   if (window.parentHasUser && window.currentUser) {
     // Use the parent's user

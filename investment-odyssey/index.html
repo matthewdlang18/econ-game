@@ -429,7 +429,6 @@
   <!-- Scripts -->
   <!-- Load Supabase first -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="../supabase.js"></script>
 
   <!-- Session sharing script -->
   <script>
@@ -437,11 +436,31 @@
     window.isEmbedded = window.parent !== window;
     window.parentHasUser = false;
 
-    // Try to get user from parent window if embedded
-    if (window.isEmbedded && window.parent.currentUser) {
-      window.parentHasUser = true;
-      window.currentUser = window.parent.currentUser;
-      console.log('Using parent session for user:', window.currentUser.name);
+    // Try to get Supabase config and user from parent window if embedded
+    if (window.isEmbedded) {
+      // Get Supabase config from parent
+      if (window.parent.SUPABASE_URL && window.parent.SUPABASE_ANON_KEY) {
+        window.SUPABASE_URL = window.parent.SUPABASE_URL;
+        window.SUPABASE_ANON_KEY = window.parent.SUPABASE_ANON_KEY;
+        console.log('Using parent Supabase config');
+      } else {
+        // Fallback to local config
+        console.log('Parent Supabase config not found, using local config');
+      }
+
+      // Get user from parent
+      if (window.parent.currentUser) {
+        window.parentHasUser = true;
+        window.currentUser = window.parent.currentUser;
+        console.log('Using parent session for user:', window.currentUser.name);
+      }
+    }
+  </script>
+
+  <!-- Load local Supabase config if needed -->
+  <script>
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      document.write('<script src="supabase.js"><\/script>');
     }
   </script>
 
