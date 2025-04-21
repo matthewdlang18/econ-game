@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Odyssey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/header-styles.css">
+    <link rel="stylesheet" href="css/responsive.css">
+    <link rel="stylesheet" href="../styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Chart.js and Chart.js Zoom plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header>
+        <div class="banner-container">
+            <img src="../images/banner15.png" alt="Investment Odyssey Banner" class="banner-image">
+            <div class="banner-overlay">
+                <div class="container mx-auto">
+                    <div class="nav-links">
+                        <div class="nav-links-left">
+                            <a href="../index.html" class="nav-link">Home</a>
+                            <a href="index.html" class="nav-link active">Play Game</a>
+                            <a href="leaderboard.html" class="nav-link">Leaderboard</a>
+                        </div>
+                        <div class="nav-links-right">
+                            <!-- User info (shown when logged in) -->
+                            <div class="user-info" id="user-info-container">
+                                <div class="user-avatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span class="user-name" id="user-name-display">Guest</span>
+                                <button class="sign-out-btn" id="sign-out-btn">Sign Out</button>
+                            </div>
+
+                            <!-- Sign in link (shown when not logged in) -->
+                            <a href="../index.html" class="nav-link" id="sign-in-link">Sign In</a>
+
+                            <!-- Guest link (shown when not logged in) -->
+                            <a href="#" class="nav-link" id="guest-link">Continue as Guest</a>
+                        </div>
+                    </div>
+                    <h1 class="activity-title">Investment Odyssey</h1>
+                    <p class="activity-date">Practice your investment skills in this simulation</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- Asset Price Ticker -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="ticker-container">
+                    <div class="ticker-wrap">
+                        <div class="ticker" id="price-ticker">
+                            <!-- Asset prices will be populated here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Progress -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="mb-0">Game Progress: Round <span id="current-round-display">0</span> of 20</h5>
+                            </div>
+                            <div>
+                                <button id="start-game" class="btn btn-success">Start Game</button>
+                                <button id="restart-game" class="btn btn-danger ml-2">Start Over <i class="fas fa-redo"></i></button>
+                            </div>
+                        </div>
+                        <div class="progress mt-2">
+                            <div id="round-progress" class="progress-bar bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Summary -->
+        <div class="row mb-3">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cash</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <h3 class="text-success mb-0">$<span id="cash-display">10000.00</span></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3 mb-md-0">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Portfolio Value</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <h3 class="text-primary mb-0">$<span id="portfolio-value-display">0.00</span></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">Total Value</h5>
+                    </div>
+                    <div class="card-body d-flex align-items-center justify-content-center">
+                        <h3 class="text-info mb-0">$<span id="total-value-display">10000.00</span></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row">
+            <!-- Left Column: Market Data and Trading -->
+            <div class="col-lg-4 mb-4">
+                <!-- Market Data -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Market Data</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="market-data-body">
+                                    <!-- Market data will be populated here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <span class="text-muted">CPI: <span id="cpi-display">100.00</span></span>
+                            <button id="next-round" class="btn btn-primary">Next Round <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trading Form -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Trade Assets</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="trade-form" class="trading-form">
+                            <div class="form-group">
+                                <label for="asset-select">Select Asset</label>
+                                <select id="asset-select" class="form-control">
+                                    <option value="S&P 500">S&P 500</option>
+                                    <option value="Small Caps">Small Caps</option>
+                                    <option value="Corporate Bonds">Corporate Bonds</option>
+                                    <option value="Treasury Bonds">Treasury Bonds</option>
+                                    <option value="Gold">Gold</option>
+                                    <option value="Bitcoin">Bitcoin</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="action-select">Action</label>
+                                <select id="action-select" class="form-control">
+                                    <option value="buy">Buy</option>
+                                    <option value="sell">Sell</option>
+                                </select>
+                            </div>
+                            <div class="price-display">
+                                Current Price: $<span id="asset-price-display">100.00</span>
+                            </div>
+                            <div class="cash-display">
+                                Available Cash: $<span id="available-cash-display">10000.00</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="amount-input">Amount ($)</label>
+                                <input type="number" id="amount-input" class="form-control" placeholder="Enter amount" step="0.01" min="0">
+                                <div class="btn-group mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary amount-percent-btn" data-percent="25">25%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary amount-percent-btn" data-percent="50">50%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary amount-percent-btn" data-percent="75">75%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary amount-percent-btn" data-percent="100">100%</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="quantity-input">Quantity</label>
+                                <div class="input-group">
+                                    <input type="number" id="quantity-input" class="form-control" placeholder="Enter quantity" step="0.0001" min="0">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" id="quantity-unit">units</span>
+                                    </div>
+                                </div>
+                                <div class="btn-group mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-percent-btn" data-percent="25">25%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-percent-btn" data-percent="50">50%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-percent-btn" data-percent="75">75%</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary quantity-percent-btn" data-percent="100">100%</button>
+                                </div>
+                            </div>
+                            <div class="form-group mb-0">
+                                <button type="submit" id="buy-btn" class="btn btn-success btn-block">Buy</button>
+                                <button type="submit" id="sell-btn" class="btn btn-danger btn-block" style="display: none;">Sell</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Portfolio and Charts -->
+            <div class="col-lg-8">
+                <!-- Portfolio -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Your Portfolio</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change</th>
+                                        <th>Quantity</th>
+                                        <th>Value</th>
+                                        <th>% of Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="portfolio-body">
+                                    <!-- Portfolio data will be populated here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Chart -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Portfolio Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="portfolio-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Allocation Chart -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Portfolio Allocation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="portfolio-allocation-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Asset Price Charts -->
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">S&P 500</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="S-P-500-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Small Caps</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="Small-Caps-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Corporate Bonds</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="Corporate-Bonds-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Treasury Bonds</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="Treasury-Bonds-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Gold</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="Gold-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Bitcoin</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="Bitcoin-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CPI Chart -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Inflation (CPI)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="cpi-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparative Returns Chart -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Comparative Returns</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="comparative-returns-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
+
+    <!-- Supabase Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- Service Scripts -->
+    <script type="module" src="js/services/supabase-config.js"></script>
+    <script type="module" src="js/services/base-service.js"></script>
+    <script type="module" src="js/services/auth-service.js"></script>
+    <script type="module" src="js/services/game-service.js"></script>
+    <script type="module" src="js/services/leaderboard-service.js"></script>
+    <script type="module" src="js/services/section-service.js"></script>
+    <script type="module" src="js/service-bridge.js"></script>
+
+    <!-- Header Authentication Script -->
+    <script src="js/header-auth.js"></script>
+
+    <!-- Game Scripts -->
+    <script src="js/game-core.js"></script>
+    <script src="js/game-ui.js"></script>
+    <script src="js/game-trading.js"></script>
+
+    <!-- Sticky Next Round Button -->
+    <div class="sticky-button-container">
+        <button id="sticky-next-round" class="sticky-button">Next Round <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <script>
+        // Ensure the sticky button is properly initialized
+        document.addEventListener('DOMContentLoaded', function() {
+            const stickyBtn = document.getElementById('sticky-next-round');
+            if (stickyBtn) {
+                // Initially hide the button
+                stickyBtn.style.display = 'none';
+
+                // Show the button when the game starts
+                const startBtn = document.getElementById('start-game');
+                if (startBtn) {
+                    startBtn.addEventListener('click', function() {
+                        stickyBtn.style.display = 'flex';
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
