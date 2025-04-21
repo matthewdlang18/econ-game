@@ -4,14 +4,14 @@
  * This file initializes Supabase and exports the client.
  */
 
-// Import the Supabase client
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm';
+// Use the global Supabase client from the UMD bundle
+// This assumes the Supabase UMD script is loaded in the HTML
 
 // Import environment variables
 import { supabaseUrl, supabaseKey } from './env.js';
 
-// Create Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Create Supabase client using the global supabaseClient
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // Export the client
 export default supabase;

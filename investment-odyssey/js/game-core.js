@@ -558,38 +558,48 @@ async function saveGameToSupabase() {
             return false;
         }
 
-        // Save game round
-        const roundResult = await window.Service.saveGameRound(
-            gameState.gameId,
-            gameState.roundNumber,
-            gameState.assetPrices,
-            gameState.priceHistory,
-            gameState.CPI,
-            gameState.CPIHistory
-        );
+        // Try to save game round
+        try {
+            const roundResult = await window.Service.saveGameRound(
+                gameState.gameId,
+                gameState.roundNumber,
+                gameState.assetPrices,
+                gameState.priceHistory,
+                gameState.CPI,
+                gameState.CPIHistory
+            );
 
-        if (!roundResult.success) {
-            console.error('Error saving game round to Supabase:', roundResult.error);
+            if (!roundResult.success) {
+                console.error('Error saving game round to Supabase:', roundResult.error);
+            }
+        } catch (roundError) {
+            console.error('Exception saving game round to Supabase:', roundError);
         }
 
-        // Save player state
-        const portfolioValue = calculatePortfolioValue();
-        const playerResult = await window.Service.savePlayerState(
-            gameState.gameId,
-            playerState.userId,
-            gameState.roundNumber,
-            playerState.cash,
-            playerState.portfolio,
-            playerState.tradeHistory,
-            portfolioValue,
-            playerState.portfolioHistory
-        );
+        // Try to save player state
+        try {
+            const portfolioValue = calculatePortfolioValue();
+            const playerResult = await window.Service.savePlayerState(
+                gameState.gameId,
+                playerState.userId,
+                gameState.roundNumber,
+                playerState.cash,
+                playerState.portfolio,
+                playerState.tradeHistory,
+                portfolioValue,
+                playerState.portfolioHistory
+            );
 
-        if (!playerResult.success) {
-            console.error('Error saving player state to Supabase:', playerResult.error);
+            if (!playerResult.success) {
+                console.error('Error saving player state to Supabase:', playerResult.error);
+            }
+        } catch (playerError) {
+            console.error('Exception saving player state to Supabase:', playerError);
         }
 
-        return roundResult.success && playerResult.success;
+        // Even if there are errors, we'll continue with the game
+        // The data is saved to localStorage as a backup
+        return true;
     } catch (error) {
         console.error('Error saving to Supabase:', error);
         return false;

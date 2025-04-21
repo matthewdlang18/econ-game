@@ -14,14 +14,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
     <!-- Chart.js and Chart.js Zoom plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <!-- Chart.js Zoom plugin is optional, only include if needed -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script> -->
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
     <header>
         <div class="banner-container">
-            <img src="../images/banner15.png" alt="Investment Odyssey Banner" class="banner-image">
+            <!-- Use a background color instead of an image -->
+            <div style="background: linear-gradient(135deg, #1e5799 0%,#2989d8 50%,#207cca 51%,#7db9e8 100%); width: 100%; height: 100%;" class="banner-image"></div>
             <div class="banner-overlay">
                 <div class="container mx-auto">
                     <div class="nav-links">
@@ -381,25 +383,102 @@
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.min.js"></script>
 
-    <!-- Supabase Script -->
+    <!-- Supabase Script - Load this first -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
-    <!-- Service Scripts -->
-    <script type="module" src="js/services/supabase-config.js"></script>
-    <script type="module" src="js/services/base-service.js"></script>
-    <script type="module" src="js/services/auth-service.js"></script>
-    <script type="module" src="js/services/game-service.js"></script>
-    <script type="module" src="js/services/leaderboard-service.js"></script>
-    <script type="module" src="js/services/section-service.js"></script>
-    <script type="module" src="js/service-bridge.js"></script>
+    <!-- Service Scripts - Load after Supabase is available -->
+    <script>
+        // Wait for Supabase to be available
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof window.supabase === 'undefined') {
+                console.error('Supabase client not available');
+            } else {
+                console.log('Supabase client available, loading service scripts');
+
+                // Load service scripts in sequence
+                const scripts = [
+                    'js/services/supabase-config.js',
+                    'js/services/base-service.js',
+                    'js/services/auth-service.js',
+                    'js/services/game-service.js',
+                    'js/services/leaderboard-service.js',
+                    'js/services/section-service.js',
+                    'js/service-bridge.js'
+                ];
+
+                // Function to load scripts sequentially
+                function loadScripts(index) {
+                    if (index >= scripts.length) return;
+
+                    const script = document.createElement('script');
+                    script.type = 'module';
+                    script.src = scripts[index];
+                    script.onload = function() {
+                        loadScripts(index + 1);
+                    };
+                    script.onerror = function() {
+                        console.error('Error loading script:', scripts[index]);
+                        loadScripts(index + 1);
+                    };
+                    document.body.appendChild(script);
+                }
+
+                // Start loading scripts
+                loadScripts(0);
+            }
+        });
+    </script>
 
     <!-- Header Authentication Script -->
     <script src="js/header-auth.js"></script>
 
-    <!-- Game Scripts -->
-    <script src="js/game-core.js"></script>
-    <script src="js/game-ui.js"></script>
-    <script src="js/game-trading.js"></script>
+    <!-- Game Scripts - Load these after service scripts are loaded -->
+    <script>
+        // Wait for service scripts to be loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Service is available every 100ms
+            const checkInterval = setInterval(function() {
+                if (typeof window.Service !== 'undefined') {
+                    clearInterval(checkInterval);
+                    console.log('Service is available, loading game scripts');
+
+                    // Load game scripts
+                    const gameScripts = [
+                        'js/game-core.js',
+                        'js/game-ui.js',
+                        'js/game-trading.js'
+                    ];
+
+                    gameScripts.forEach(function(src) {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        document.body.appendChild(script);
+                    });
+                }
+            }, 100);
+
+            // Set a timeout to prevent infinite checking
+            setTimeout(function() {
+                clearInterval(checkInterval);
+                if (typeof window.Service === 'undefined') {
+                    console.error('Service not available after timeout, loading game scripts anyway');
+
+                    // Load game scripts anyway
+                    const gameScripts = [
+                        'js/game-core.js',
+                        'js/game-ui.js',
+                        'js/game-trading.js'
+                    ];
+
+                    gameScripts.forEach(function(src) {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        document.body.appendChild(script);
+                    });
+                }
+            }, 5000); // 5 second timeout
+        });
+    </script>
 
     <!-- Sticky Next Round Button -->
     <div class="sticky-button-container">
