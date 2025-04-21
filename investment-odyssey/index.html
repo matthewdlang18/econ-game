@@ -465,6 +465,19 @@
   </script>
 
   <!-- Chart.js and plugins -->
+  <script>
+    // Suppress source map warnings
+    const originalConsoleError = console.error;
+    console.error = function(msg) {
+      // Filter out source map warnings
+      if (typeof msg === 'string' &&
+          (msg.includes('chart.umd.js.map') ||
+           msg.includes('chartjs-chart-matrix.min.js.map'))) {
+        return;
+      }
+      originalConsoleError.apply(console, arguments);
+    };
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js"></script>
 
