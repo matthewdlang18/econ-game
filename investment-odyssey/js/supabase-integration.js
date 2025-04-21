@@ -227,6 +227,21 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
   try {
     console.log('Submitting to leaderboard:', { userId, userName, gameMode, gameId, sectionId, finalValue });
 
+    // Skip database operations for local IDs
+    if (gameId && gameId.startsWith('local-')) {
+      console.log('Using local storage for leaderboard (local game ID)');
+      return {
+        data: {
+          user_id: userId,
+          user_name: userName,
+          game_mode: gameMode,
+          final_value: finalValue,
+          created_at: new Date().toISOString()
+        },
+        error: null
+      };
+    }
+
     // Check if there's an existing entry
     const { data: existingEntry, error: checkError } = await supabaseClient
       .from('leaderboard')
