@@ -443,6 +443,12 @@
         window.SUPABASE_URL = window.parent.SUPABASE_URL;
         window.SUPABASE_ANON_KEY = window.parent.SUPABASE_ANON_KEY;
         console.log('Using parent Supabase config');
+
+        // Use parent's Supabase client if available
+        if (window.parent.supabase && typeof window.parent.supabase.from === 'function') {
+          window.supabase = window.parent.supabase;
+          console.log('Using parent Supabase client');
+        }
       } else {
         // Fallback to local config
         console.log('Parent Supabase config not found, using local config');
@@ -457,12 +463,8 @@
     }
   </script>
 
-  <!-- Load local Supabase config if needed -->
-  <script>
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
-      document.write('<script src="supabase.js"><\/script>');
-    }
-  </script>
+  <!-- Always load local Supabase config for fallback -->
+  <script src="supabase.js"></script>
 
   <!-- Chart.js and plugins -->
   <script>
