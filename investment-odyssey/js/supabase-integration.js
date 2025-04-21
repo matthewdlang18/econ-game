@@ -1,22 +1,12 @@
 // Investment Odyssey - Supabase Integration
 
-// Initialize Supabase client
-let supabase;
-
-// Check if Supabase is already initialized (from parent window)
-if (window.supabase && typeof window.supabase.from === 'function') {
-  console.log('Using existing Supabase client');
-  supabase = window.supabase;
-} else if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
-  console.log('Creating new Supabase client');
-  supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-} else {
-  console.error('Supabase configuration not found');
-}
+// Use the existing Supabase client
+// This avoids creating a duplicate client
+const supabaseClient = window.supabase;
 
 // Create a new game session
 async function createGameSession(sectionId, maxRounds = 20) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('game_sessions')
     .insert({
       section_id: sectionId,
@@ -32,7 +22,7 @@ async function createGameSession(sectionId, maxRounds = 20) {
 
 // Get active game session for a section
 async function getActiveGameSession(sectionId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('game_sessions')
     .select('*')
     .eq('section_id', sectionId)
@@ -45,7 +35,7 @@ async function getActiveGameSession(sectionId) {
 
 // Save game state to Supabase
 async function saveGameState(gameId, userId, gameState) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('game_states')
     .upsert({
       game_id: gameId,
@@ -65,7 +55,7 @@ async function saveGameState(gameId, userId, gameState) {
 
 // Load game state from Supabase
 async function loadGameState(gameId, userId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('game_states')
     .select('*')
     .eq('game_id', gameId)
@@ -78,7 +68,7 @@ async function loadGameState(gameId, userId) {
 
 // Save player state to Supabase
 async function savePlayerState(gameId, userId, playerState) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('player_states')
     .upsert({
       game_id: gameId,
@@ -96,7 +86,7 @@ async function savePlayerState(gameId, userId, playerState) {
 
 // Load player state from Supabase
 async function loadPlayerState(gameId, userId) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('player_states')
     .select('*')
     .eq('game_id', gameId)
@@ -108,7 +98,7 @@ async function loadPlayerState(gameId, userId) {
 
 // Update game session round
 async function updateGameSessionRound(gameId, roundNumber) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('game_sessions')
     .update({ current_round: roundNumber, updated_at: new Date().toISOString() })
     .eq('id', gameId)
@@ -120,7 +110,7 @@ async function updateGameSessionRound(gameId, roundNumber) {
 
 // Submit score to leaderboard
 async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId, finalValue) {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from('leaderboard')
     .upsert({
       user_id: userId,
@@ -137,7 +127,7 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
 
 // Get leaderboard entries
 async function getLeaderboard(gameMode = null, sectionId = null, limit = 10) {
-  let query = supabase
+  let query = supabaseClient
     .from('leaderboard')
     .select('*')
     .order('final_value', { ascending: false })
@@ -158,7 +148,7 @@ async function getLeaderboard(gameMode = null, sectionId = null, limit = 10) {
 
 // Subscribe to game session updates
 function subscribeToGameSession(gameId, callback) {
-  return supabase
+  return supabaseClient
     .channel(`game_session:${gameId}`)
     .on('postgres_changes', {
       event: 'UPDATE',

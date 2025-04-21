@@ -427,26 +427,27 @@
   </div>
 
   <!-- Scripts -->
-  <!-- Use the parent's Supabase instance to avoid duplicate login -->
-  <script>
-    // Check if we're in an iframe (embedded) or standalone
-    const isEmbedded = window.parent !== window;
+  <!-- Load Supabase first -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="../supabase.js"></script>
 
-    // If we're embedded and parent has Supabase, use it
-    if (isEmbedded && window.parent.supabase) {
-      window.supabase = window.parent.supabase;
-      window.SUPABASE_URL = window.parent.SUPABASE_URL;
-      window.SUPABASE_ANON_KEY = window.parent.SUPABASE_ANON_KEY;
-    } else {
-      // Otherwise load Supabase directly
-      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
-      document.write('<script src="../supabase.js"><\/script>');
+  <!-- Session sharing script -->
+  <script>
+    // Global variables for session sharing
+    window.isEmbedded = window.parent !== window;
+    window.parentHasUser = false;
+
+    // Try to get user from parent window if embedded
+    if (window.isEmbedded && window.parent.currentUser) {
+      window.parentHasUser = true;
+      window.currentUser = window.parent.currentUser;
+      console.log('Using parent session for user:', window.currentUser.name);
     }
   </script>
 
   <!-- Chart.js and plugins -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@1.3.0/dist/chartjs-chart-matrix.min.js"></script>
 
   <!-- Game scripts -->
   <script src="js/game-state.js"></script>

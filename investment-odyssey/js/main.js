@@ -10,25 +10,28 @@ let sectionId = null;
 let gameSubscription = null;
 
 // Initialize application
-document.addEventListener('DOMContentLoaded', () => {
-  // Check if we're embedded and parent has a logged-in user
-  checkParentSession();
-
+document.addEventListener('DOMContentLoaded', async () => {
   // Setup UI event listeners
   setupEventListeners();
 
   // Initialize charts
-  window.Charts.initializeCharts();
-});
+  try {
+    // Register the matrix controller plugin
+    if (Chart.registry && typeof Chart.registry.addControllers === 'function') {
+      if (window.MatrixController) {
+        Chart.registry.addControllers([window.MatrixController]);
+      }
+    }
 
-// Check for parent session (to avoid double login)
-async function checkParentSession() {
-  // Check if we're in an iframe and parent has a logged-in user
-  const isEmbedded = window.parent !== window;
+    window.Charts.initializeCharts();
+  } catch (error) {
+    console.error('Error initializing charts:', error);
+  }
 
-  if (isEmbedded && window.parent.currentUser) {
+  // Check if we have a user from the parent window
+  if (window.parentHasUser && window.currentUser) {
     // Use the parent's user
-    currentUser = window.parent.currentUser;
+    currentUser = window.currentUser;
 
     // Show user info
     window.UIController.showUserInfo(currentUser);
@@ -38,7 +41,7 @@ async function checkParentSession() {
 
     console.log('Using parent session for user:', currentUser.name);
   }
-}
+});
 
 // Setup event listeners
 function setupEventListeners() {
@@ -101,9 +104,65 @@ function setupEventListeners() {
   cancelClassGameBtn.addEventListener('click', handleCancelClassGame);
 }
 
+// Fetch profile by name and passcode
+async function fetchProfile(name, passcode) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('name', name)
+      .eq('passcode', passcode)
+      .single();
+
+    return { data, error };
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return { data: null, error };
+  }
+}
+
+// Fetch TA sections
+async function fetchTASections(taId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('sections')
+      .select('*')
+      .eq('ta_id', taId);
+
+    return { data, error };
+  } catch (error) {
+    console.error('Error fetching TA sections:', error);
+    return { data: null, error };
+  }
+}
+
+// Fetch students by section
+async function fetchStudentsBySection(sectionId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('section_id', sectionId)
+      .eq('role', 'student');
+
+    return { data, error };
+  } catch (error) {
+    console.error('Error fetching students:', error);
+    return { data: null, error };
+  }
+}
+
 // Handle login
 async function handleLogin(event) {
   event.preventDefault();
+
+  // If we already have a user from the parent window, skip login
+  if (window.parentHasUser && window.currentUser) {
+    currentUser = window.currentUser;
+    window.UIController.showUserInfo(currentUser);
+    window.UIController.showSection('intro-section');
+    return;
+  }
 
   const nameInput = document.getElementById('name');
   const passcodeInput = document.getElementById('passcode');
@@ -126,7 +185,7 @@ async function handleLogin(event) {
     }
 
     // Update last_login timestamp
-    await supabase
+    await supabaseClient
       .from('profiles')
       .update({ last_login: new Date().toISOString() })
       .eq('id', profile.id);

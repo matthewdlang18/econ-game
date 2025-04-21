@@ -65,7 +65,7 @@ function initializeCharts() {
       }
     }
   });
-  
+
   // Create price history chart
   const priceHistoryCtx = document.getElementById('price-history-chart').getContext('2d');
   priceHistoryChart = new Chart(priceHistoryCtx, {
@@ -100,7 +100,7 @@ function initializeCharts() {
       }
     }
   });
-  
+
   // Create allocation chart
   const allocationCtx = document.getElementById('allocation-chart').getContext('2d');
   allocationChart = new Chart(allocationCtx, {
@@ -133,7 +133,7 @@ function initializeCharts() {
       }
     }
   });
-  
+
   // Create performance chart
   const performanceCtx = document.getElementById('performance-chart').getContext('2d');
   performanceChart = new Chart(performanceCtx, {
@@ -172,98 +172,173 @@ function initializeCharts() {
       }
     }
   });
-  
+
   // Create correlation heatmap
   createCorrelationHeatmap();
 }
 
 // Create correlation heatmap
 function createCorrelationHeatmap() {
-  const correlationCtx = document.getElementById('correlation-heatmap').getContext('2d');
-  
-  // Correlation matrix data
-  const assets = ['S&P 500', 'Bonds', 'Real Estate', 'Gold', 'Commodities', 'Bitcoin'];
-  const correlationMatrix = [
-    [1.0000, -0.5169, 0.3425, 0.0199, 0.1243, 0.4057],  // S&P 500
-    [-0.5169, 1.0000, 0.0176, 0.0289, -0.0235, -0.2259], // Bonds
-    [0.3425, 0.0176, 1.0000, -0.4967, -0.0334, 0.1559],  // Real Estate
-    [0.0199, 0.0289, -0.4967, 1.0000, 0.0995, -0.5343],  // Gold
-    [0.1243, -0.0235, -0.0334, 0.0995, 1.0000, 0.0436],  // Commodities
-    [0.4057, -0.2259, 0.1559, -0.5343, 0.0436, 1.0000]   // Bitcoin
-  ];
-  
-  // Prepare data for heatmap
-  const data = [];
-  for (let i = 0; i < assets.length; i++) {
-    for (let j = 0; j < assets.length; j++) {
-      data.push({
-        x: assets[j],
-        y: assets[i],
-        v: correlationMatrix[i][j]
-      });
+  try {
+    // Check if matrix chart type is available
+    if (!Chart.controllers.matrix) {
+      console.error('Matrix chart type not available. Skipping correlation heatmap.');
+      return;
     }
-  }
-  
-  // Create heatmap
-  correlationHeatmap = new Chart(correlationCtx, {
-    type: 'matrix',
-    data: {
-      datasets: [{
-        data: data,
-        backgroundColor: function(context) {
-          const value = context.dataset.data[context.dataIndex].v;
-          
-          // Color scale: red for negative, white for zero, blue for positive
+
+    const correlationCtx = document.getElementById('correlation-heatmap').getContext('2d');
+
+    // Correlation matrix data
+    const assets = ['S&P 500', 'Bonds', 'Real Estate', 'Gold', 'Commodities', 'Bitcoin'];
+    const correlationMatrix = [
+      [1.0000, -0.5169, 0.3425, 0.0199, 0.1243, 0.4057],  // S&P 500
+      [-0.5169, 1.0000, 0.0176, 0.0289, -0.0235, -0.2259], // Bonds
+      [0.3425, 0.0176, 1.0000, -0.4967, -0.0334, 0.1559],  // Real Estate
+      [0.0199, 0.0289, -0.4967, 1.0000, 0.0995, -0.5343],  // Gold
+      [0.1243, -0.0235, -0.0334, 0.0995, 1.0000, 0.0436],  // Commodities
+      [0.4057, -0.2259, 0.1559, -0.5343, 0.0436, 1.0000]   // Bitcoin
+    ];
+
+    // Create a simple table instead of matrix chart if not available
+    if (!Chart.controllers.matrix) {
+      const container = document.querySelector('.correlation-container');
+      container.innerHTML = '';
+
+      const table = document.createElement('table');
+      table.className = 'correlation-table';
+
+      // Create header row
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headerRow.appendChild(document.createElement('th')); // Empty corner cell
+
+      for (const asset of assets) {
+        const th = document.createElement('th');
+        th.textContent = asset;
+        headerRow.appendChild(th);
+      }
+
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      // Create body rows
+      const tbody = document.createElement('tbody');
+
+      for (let i = 0; i < assets.length; i++) {
+        const row = document.createElement('tr');
+
+        // Row header
+        const th = document.createElement('th');
+        th.textContent = assets[i];
+        row.appendChild(th);
+
+        // Correlation values
+        for (let j = 0; j < assets.length; j++) {
+          const td = document.createElement('td');
+          td.textContent = correlationMatrix[i][j].toFixed(4);
+
+          // Add color coding
+          const value = correlationMatrix[i][j];
           if (value < 0) {
             const intensity = Math.min(Math.abs(value) * 2, 1);
-            return `rgba(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 1)`;
-          } else {
+            td.style.backgroundColor = `rgba(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 1)`;
+          } else if (value > 0) {
             const intensity = Math.min(value * 2, 1);
-            return `rgba(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255, 1)`;
+            td.style.backgroundColor = `rgba(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255, 1)`;
           }
-        },
-        borderColor: 'rgba(0, 0, 0, 0.1)',
-        borderWidth: 1,
-        width: function(context) {
-          return 30;
-        },
-        height: function(context) {
-          return 30;
+
+          row.appendChild(td);
         }
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            title: function() {
-              return '';
-            },
-            label: function(context) {
-              const data = context.dataset.data[context.dataIndex];
-              return `${data.y} to ${data.x}: ${data.v.toFixed(4)}`;
-            }
-          }
-        },
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        x: {
-          ticks: {
-            maxRotation: 90,
-            minRotation: 0
-          }
-        },
-        y: {
-          reverse: true
-        }
+
+        tbody.appendChild(row);
+      }
+
+      table.appendChild(tbody);
+      container.appendChild(table);
+      return;
+    }
+
+    // Prepare data for heatmap
+    const data = [];
+    for (let i = 0; i < assets.length; i++) {
+      for (let j = 0; j < assets.length; j++) {
+        data.push({
+          x: assets[j],
+          y: assets[i],
+          v: correlationMatrix[i][j]
+        });
       }
     }
-  });
+
+    // Create heatmap
+    correlationHeatmap = new Chart(correlationCtx, {
+      type: 'matrix',
+      data: {
+        datasets: [{
+          data: data,
+          backgroundColor: function(context) {
+            const value = context.dataset.data[context.dataIndex].v;
+
+            // Color scale: red for negative, white for zero, blue for positive
+            if (value < 0) {
+              const intensity = Math.min(Math.abs(value) * 2, 1);
+              return `rgba(255, ${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 1)`;
+            } else {
+              const intensity = Math.min(value * 2, 1);
+              return `rgba(${Math.round(255 * (1 - intensity))}, ${Math.round(255 * (1 - intensity))}, 255, 1)`;
+            }
+          },
+          borderColor: 'rgba(0, 0, 0, 0.1)',
+          borderWidth: 1,
+          width: function(context) {
+            return 30;
+          },
+          height: function(context) {
+            return 30;
+          }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: function() {
+                return '';
+              },
+              label: function(context) {
+                const data = context.dataset.data[context.dataIndex];
+                return `${data.y} to ${data.x}: ${data.v.toFixed(4)}`;
+              }
+            }
+          },
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              maxRotation: 90,
+              minRotation: 0
+            }
+          },
+          y: {
+            reverse: true
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error creating correlation heatmap:', error);
+
+    // Fallback to a simple message if chart creation fails
+    const container = document.querySelector('.correlation-container');
+    if (container) {
+      container.innerHTML = '<div class="error-message">Unable to display correlation matrix. Please check the console for details.</div>';
+    }
+  }
 }
 
 // Update charts with game state and player state
@@ -277,7 +352,7 @@ function updateCharts(gameState, playerState) {
 // Update portfolio chart
 function updatePortfolioChart(playerState) {
   const labels = Array.from({ length: playerState.portfolioValueHistory.length }, (_, i) => i === 0 ? 'Start' : `Round ${i}`);
-  
+
   portfolioChart.data.labels = labels;
   portfolioChart.data.datasets[0].data = playerState.portfolioValueHistory;
   portfolioChart.update();
@@ -286,10 +361,10 @@ function updatePortfolioChart(playerState) {
 // Update price history chart
 function updatePriceHistoryChart(gameState) {
   const labels = Array.from({ length: gameState.roundNumber + 1 }, (_, i) => i === 0 ? 'Start' : `Round ${i}`);
-  
+
   // Clear existing datasets
   priceHistoryChart.data.datasets = [];
-  
+
   // Add dataset for each asset
   for (const asset in gameState.priceHistory) {
     priceHistoryChart.data.datasets.push({
@@ -301,7 +376,7 @@ function updatePriceHistoryChart(gameState) {
       tension: 0.4
     });
   }
-  
+
   priceHistoryChart.data.labels = labels;
   priceHistoryChart.update();
 }
@@ -311,7 +386,7 @@ function updateAllocationChart(gameState, playerState) {
   const labels = ['Cash'];
   const data = [playerState.cash];
   const backgroundColor = [chartColors.cash];
-  
+
   // Add data for each asset in portfolio
   for (const asset in playerState.portfolio) {
     const quantity = playerState.portfolio[asset];
@@ -322,7 +397,7 @@ function updateAllocationChart(gameState, playerState) {
       backgroundColor.push(chartColors[asset]);
     }
   }
-  
+
   allocationChart.data.labels = labels;
   allocationChart.data.datasets[0].data = data;
   allocationChart.data.datasets[0].backgroundColor = backgroundColor;
@@ -334,7 +409,7 @@ function updatePerformanceChart(playerState) {
   const initialValue = playerState.portfolioValueHistory[0];
   const currentValue = playerState.portfolioValueHistory[playerState.portfolioValueHistory.length - 1];
   const totalReturn = ((currentValue - initialValue) / initialValue) * 100;
-  
+
   performanceChart.data.datasets[0].data = [totalReturn];
   performanceChart.update();
 }
@@ -342,13 +417,13 @@ function updatePerformanceChart(playerState) {
 // Create results chart
 function createResultsChart(portfolioValueHistory) {
   const resultsCtx = document.getElementById('results-chart').getContext('2d');
-  
+
   if (resultsChart) {
     resultsChart.destroy();
   }
-  
+
   const labels = Array.from({ length: portfolioValueHistory.length }, (_, i) => i === 0 ? 'Start' : `Round ${i}`);
-  
+
   resultsChart = new Chart(resultsCtx, {
     type: 'line',
     data: {

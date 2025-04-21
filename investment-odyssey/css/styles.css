@@ -288,6 +288,34 @@ input:focus, select:focus {
 .correlation-container {
   height: 400px;
   margin-bottom: 1.5rem;
+  overflow: auto;
+}
+
+.correlation-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.85rem;
+}
+
+.correlation-table th, .correlation-table td {
+  padding: 0.5rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+}
+
+.correlation-table th {
+  background-color: var(--light-color);
+  font-weight: 600;
+}
+
+.error-message {
+  color: var(--danger-color);
+  padding: 1rem;
+  text-align: center;
+  border: 1px solid var(--danger-color);
+  border-radius: 4px;
+  background-color: rgba(220, 53, 69, 0.1);
 }
 
 .bitcoin-mechanics {
@@ -606,27 +634,27 @@ input:focus, select:focus {
   #app {
     padding: 10px;
   }
-  
+
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .portfolio-summary, .charts {
     grid-column: span 1;
   }
-  
+
   .game-modes {
     flex-direction: column;
   }
-  
+
   .bitcoin-mechanics {
     flex-direction: column;
   }
-  
+
   .results-actions {
     flex-direction: column;
   }
-  
+
   .results-actions button {
     width: 100%;
     margin-bottom: 0.5rem;
@@ -637,25 +665,25 @@ input:focus, select:focus {
   h1 {
     font-size: 2rem;
   }
-  
+
   h2 {
     font-size: 1.75rem;
   }
-  
+
   .tabs {
     flex-direction: column;
   }
-  
+
   .tab-btn {
     width: 100%;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
   }
-  
+
   .tab-btn.active {
     border-bottom: 2px solid var(--primary-color);
   }
-  
+
   .summary-stats {
     grid-template-columns: 1fr;
   }
