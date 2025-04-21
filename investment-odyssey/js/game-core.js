@@ -499,7 +499,7 @@ function saveGameState() {
         // Save player state
         localStorage.setItem('investment_odyssey_player_state', JSON.stringify(playerState));
 
-        // Save to Supabase if available
+        // Save to Supabase
         saveGameToSupabase();
 
         return true;
@@ -508,6 +508,8 @@ function saveGameState() {
         return false;
     }
 }
+
+
 
 // Load game state from local storage
 function loadGameState() {
