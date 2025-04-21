@@ -2,22 +2,6 @@
 const loginForm = document.getElementById('login-form');
 const loginError = document.getElementById('login-error');
 const dashboard = document.getElementById('dashboard');
-const quickAccess = document.getElementById('quick-access');
-
-// Check if user is already logged in
-async function checkLoggedInStatus() {
-  // Check localStorage for user ID - try both the main app keys and the game-specific keys
-  const userId = localStorage.getItem('student_id') || localStorage.getItem('investment_odyssey_user_id');
-  const userName = localStorage.getItem('student_name') || localStorage.getItem('investment_odyssey_user_name');
-
-  if (userId && userName) {
-    // User appears to be logged in, show quick access
-    quickAccess.style.display = 'block';
-  }
-}
-
-// Run the check when page loads
-checkLoggedInStatus();
 
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -137,13 +121,7 @@ async function showDashboard(profile) {
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
         <h4>Student Dashboard</h4>
-        <div id="student-games-list">
-          <div class="game-card">
-            <h5>Investment Odyssey</h5>
-            <p>Practice your investment skills in this market simulation game.</p>
-            <a href="investment-odyssey/about.html" class="game-link">Play Game</a>
-          </div>
-        </div>
+        <div id="student-games-list"><em>(No games available yet)</em></div>
       </div>
     </div>
     <button id="logout-btn">Logout</button>
@@ -195,6 +173,6 @@ async function showDashboard(profile) {
   if (profile.role === 'ta') {
     roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
   } else {
-    roleDashboard.innerHTML = '<div id="student-games"><h4>Available Games</h4><div class="game-card"><h5>Investment Odyssey</h5><p>Practice your investment skills in this market simulation game.</p><a href="investment-odyssey/about.html" class="game-link">Play Game</a></div></div>';
+    roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
   }
 }
