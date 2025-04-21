@@ -32,7 +32,7 @@
     <!-- Introduction Section -->
     <section id="intro-section" class="hidden">
       <h2>Welcome to Investment Odyssey</h2>
-      
+
       <div class="tabs">
         <button class="tab-btn active" data-tab="overview">Overview</button>
         <button class="tab-btn" data-tab="how-to-play">How to Play</button>
@@ -40,7 +40,7 @@
         <button class="tab-btn" data-tab="correlation">Correlation Matrix</button>
         <button class="tab-btn" data-tab="bitcoin">Bitcoin Mechanics</button>
       </div>
-      
+
       <div id="overview" class="tab-content active">
         <h3>Game Overview</h3>
         <p>Investment Odyssey is a financial market simulation game designed to help you understand investment strategies, risk management, and portfolio diversification through hands-on experience.</p>
@@ -67,7 +67,7 @@
           </div>
         </div>
       </div>
-      
+
       <div id="how-to-play" class="tab-content">
         <h3>How to Play</h3>
         <ol class="instructions">
@@ -97,7 +97,7 @@
           </li>
         </ol>
       </div>
-      
+
       <div id="asset-info" class="tab-content">
         <h3>Asset Classes Information</h3>
         <table class="asset-table">
@@ -162,7 +162,7 @@
           <p><strong>Min/Max Return:</strong> The historical extremes of annual returns for each asset.</p>
         </div>
       </div>
-      
+
       <div id="correlation" class="tab-content">
         <h3>Correlation Matrix</h3>
         <p>This heatmap shows how different assets move in relation to each other. Values close to 1 indicate assets that move together, while values close to -1 indicate assets that move in opposite directions.</p>
@@ -175,7 +175,7 @@
           <p>For example, Bonds (-0.5169) and Gold (0.0199) have different correlations with the S&P 500, making them useful diversification tools in different market conditions.</p>
         </div>
       </div>
-      
+
       <div id="bitcoin" class="tab-content">
         <h3>Bitcoin Special Mechanics</h3>
         <div class="bitcoin-mechanics">
@@ -211,7 +211,7 @@
           <span>Round: <span id="current-round">0</span>/<span id="max-rounds">20</span></span>
         </div>
       </div>
-      
+
       <div class="dashboard-grid">
         <!-- Portfolio Summary Panel -->
         <div class="panel portfolio-summary">
@@ -238,7 +238,7 @@
             <canvas id="portfolio-chart"></canvas>
           </div>
         </div>
-        
+
         <!-- Asset Prices Panel -->
         <div class="panel asset-prices">
           <h3>Asset Prices</h3>
@@ -257,7 +257,7 @@
             </tbody>
           </table>
         </div>
-        
+
         <!-- Trading Interface Panel -->
         <div class="panel trading-interface">
           <h3>Trading</h3>
@@ -298,7 +298,7 @@
           </form>
           <div id="trade-message" class="message"></div>
         </div>
-        
+
         <!-- Charts Panel -->
         <div class="panel charts">
           <h3>Market Charts</h3>
@@ -313,7 +313,7 @@
             <canvas id="performance-chart" class="chart"></canvas>
           </div>
         </div>
-        
+
         <!-- Game Controls Panel -->
         <div class="panel game-controls">
           <h3>Game Controls</h3>
@@ -325,7 +325,7 @@
           </div>
           <div id="game-message" class="message"></div>
         </div>
-        
+
         <!-- Trade History Panel -->
         <div class="panel trade-history">
           <h3>Trade History</h3>
@@ -377,7 +377,7 @@
           <canvas id="results-chart"></canvas>
         </div>
       </div>
-      
+
       <div class="leaderboard">
         <h3>Leaderboard</h3>
         <table id="leaderboard-table" class="leaderboard-table">
@@ -394,7 +394,7 @@
           </tbody>
         </table>
       </div>
-      
+
       <div class="results-actions">
         <button id="submit-score-btn" class="primary-btn">Submit to Leaderboard</button>
         <button id="play-again-btn" class="primary-btn">Play Again</button>
@@ -427,8 +427,28 @@
   </div>
 
   <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-  <script src="../supabase.js"></script>
+  <!-- Use the parent's Supabase instance to avoid duplicate login -->
+  <script>
+    // Check if we're in an iframe (embedded) or standalone
+    const isEmbedded = window.parent !== window;
+
+    // If we're embedded and parent has Supabase, use it
+    if (isEmbedded && window.parent.supabase) {
+      window.supabase = window.parent.supabase;
+      window.SUPABASE_URL = window.parent.SUPABASE_URL;
+      window.SUPABASE_ANON_KEY = window.parent.SUPABASE_ANON_KEY;
+    } else {
+      // Otherwise load Supabase directly
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
+      document.write('<script src="../supabase.js"><\/script>');
+    }
+  </script>
+
+  <!-- Chart.js and plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix"></script>
+
+  <!-- Game scripts -->
   <script src="js/game-state.js"></script>
   <script src="js/trading.js"></script>
   <script src="js/supabase-integration.js"></script>

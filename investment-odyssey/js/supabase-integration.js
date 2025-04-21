@@ -1,7 +1,18 @@
 // Investment Odyssey - Supabase Integration
 
 // Initialize Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let supabase;
+
+// Check if Supabase is already initialized (from parent window)
+if (window.supabase && typeof window.supabase.from === 'function') {
+  console.log('Using existing Supabase client');
+  supabase = window.supabase;
+} else if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY) {
+  console.log('Creating new Supabase client');
+  supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+} else {
+  console.error('Supabase configuration not found');
+}
 
 // Create a new game session
 async function createGameSession(sectionId, maxRounds = 20) {
@@ -15,7 +26,7 @@ async function createGameSession(sectionId, maxRounds = 20) {
     })
     .select()
     .single();
-  
+
   return { data, error };
 }
 
@@ -28,7 +39,7 @@ async function getActiveGameSession(sectionId) {
     .eq('active', true)
     .order('created_at', { ascending: false })
     .maybeSingle();
-  
+
   return { data, error };
 }
 
@@ -48,7 +59,7 @@ async function saveGameState(gameId, userId, gameState) {
       bitcoin_shock_range: gameState.bitcoinShockRange
     })
     .select();
-  
+
   return { data, error };
 }
 
@@ -61,7 +72,7 @@ async function loadGameState(gameId, userId) {
     .eq('user_id', userId)
     .order('round_number', { ascending: false })
     .maybeSingle();
-  
+
   return { data, error };
 }
 
@@ -79,7 +90,7 @@ async function savePlayerState(gameId, userId, playerState) {
       total_value: playerState.totalValue
     })
     .select();
-  
+
   return { data, error };
 }
 
@@ -91,7 +102,7 @@ async function loadPlayerState(gameId, userId) {
     .eq('game_id', gameId)
     .eq('user_id', userId)
     .maybeSingle();
-  
+
   return { data, error };
 }
 
@@ -103,7 +114,7 @@ async function updateGameSessionRound(gameId, roundNumber) {
     .eq('id', gameId)
     .select()
     .single();
-  
+
   return { data, error };
 }
 
@@ -120,7 +131,7 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
       final_value: finalValue
     })
     .select();
-  
+
   return { data, error };
 }
 
@@ -131,17 +142,17 @@ async function getLeaderboard(gameMode = null, sectionId = null, limit = 10) {
     .select('*')
     .order('final_value', { ascending: false })
     .limit(limit);
-  
+
   if (gameMode) {
     query = query.eq('game_mode', gameMode);
   }
-  
+
   if (sectionId) {
     query = query.eq('section_id', sectionId);
   }
-  
+
   const { data, error } = await query;
-  
+
   return { data, error };
 }
 
