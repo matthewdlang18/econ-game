@@ -61,31 +61,25 @@ async function checkExistingGameSession() {
 async function createSinglePlayerGame() {
   if (!currentUser) return null;
 
-  // For this simplified version, we'll use a direct API call with headers
-  // This is a workaround for the RLS policies
   try {
     // Create a game session with 5 rounds
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/game_sessions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        section_id: currentUser.section_id,
-        current_round: 0,
-        max_rounds: 5, // Simplified to 5 rounds
-        active: true
-      })
-    });
+    const { data: gameSession, error: sessionError } = await supabase
+      .from('game_sessions')
+      .insert([
+        {
+          section_id: currentUser.section_id,
+          current_round: 0,
+          max_rounds: 5, // Simplified to 5 rounds
+          active: true
+        }
+      ])
+      .select()
+      .single();
 
-    if (!response.ok) {
-      console.error('Error creating game session:', await response.text());
+    if (sessionError) {
+      console.error('Error creating game session:', sessionError);
       return null;
     }
-
-    const gameSession = (await response.json())[0];
 
     // Initialize game state with starting asset prices
     const initialGameState = {
@@ -114,26 +108,15 @@ async function createSinglePlayerGame() {
       bitcoin_shock_range: [-0.5, -0.75]
     };
 
-    // Save initial game state to Supabase using direct API call
-    const gameStateResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_states`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(initialGameState)
-    });
+    // Save initial game state to Supabase
+    const { error: gameStateError } = await supabase
+      .from('game_states')
+      .insert([initialGameState]);
 
-    if (!gameStateResponse.ok) {
-      console.error('Error creating initial game state:', await gameStateResponse.text());
+    if (gameStateError) {
+      console.error('Error creating initial game state:', gameStateError);
       // Delete the game session if we couldn't create the game state
-      await fetch(`${SUPABASE_URL}/rest/v1/game_sessions?id=eq.${gameSession.id}`, {
-        method: 'DELETE',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY
-        }
-      });
+      await supabase.from('game_sessions').delete().eq('id', gameSession.id);
       return null;
     }
 
@@ -150,43 +133,37 @@ async function joinGameSession(gameId) {
 
   try {
     // Check if player already exists
-    const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/player_states?game_id=eq.${gameId}&user_id=eq.${currentUser.id}`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data: existingPlayers } = await supabase
+      .from('player_states')
+      .select('id')
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id);
 
-    const existingPlayers = await checkResponse.json();
     if (existingPlayers && existingPlayers.length > 0) {
       return true; // Player already joined
     }
 
-    // Initialize player state for this game using direct API call
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/player_states`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify({
-        game_id: gameId,
-        user_id: currentUser.id,
-        cash: 10000,
-        portfolio: {},
-        trade_history: [],
-        portfolio_value_history: [10000],
-        total_value: 10000
-      })
-    });
+    // Initialize player state for this game
+    const { error } = await supabase
+      .from('player_states')
+      .insert([
+        {
+          game_id: gameId,
+          user_id: currentUser.id,
+          cash: 10000,
+          portfolio: {},
+          trade_history: [],
+          portfolio_value_history: [10000],
+          total_value: 10000
+        }
+      ]);
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (error) {
       // Check if error is because player already exists (unique violation)
-      if (errorText.includes('duplicate key value violates unique constraint')) {
+      if (error.code === '23505') { // Unique violation
         return true; // Player already joined
       }
-      console.error('Error joining game session:', errorText);
+      console.error('Error joining game session:', error);
       return false;
     }
 
@@ -202,19 +179,19 @@ async function getPlayerState(gameId) {
   if (!currentUser) return null;
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/player_states?game_id=eq.${gameId}&user_id=eq.${currentUser.id}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data, error } = await supabase
+      .from('player_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
 
-    if (!response.ok) {
-      console.error('Error getting player state:', await response.text());
+    if (error) {
+      console.error('Error getting player state:', error);
       return null;
     }
 
-    const data = await response.json();
-    return data.length > 0 ? data[0] : null;
+    return data;
   } catch (error) {
     console.error('Error in getPlayerState:', error);
     return null;
@@ -224,19 +201,19 @@ async function getPlayerState(gameId) {
 // Get game state for the current round
 async function getGameState(gameId, roundNumber) {
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/game_states?game_id=eq.${gameId}&round_number=eq.${roundNumber}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data, error } = await supabase
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('round_number', roundNumber)
+      .maybeSingle();
 
-    if (!response.ok) {
-      console.error('Error getting game state:', await response.text());
+    if (error) {
+      console.error('Error getting game state:', error);
       return null;
     }
 
-    const data = await response.json();
-    return data.length > 0 ? data[0] : null;
+    return data;
   } catch (error) {
     console.error('Error in getGameState:', error);
     return null;
@@ -248,18 +225,14 @@ async function updatePlayerState(gameId, updatedState) {
   if (!currentUser) return false;
 
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/player_states?game_id=eq.${gameId}&user_id=eq.${currentUser.id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(updatedState)
-    });
+    const { error } = await supabase
+      .from('player_states')
+      .update(updatedState)
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id);
 
-    if (!response.ok) {
-      console.error('Error updating player state:', await response.text());
+    if (error) {
+      console.error('Error updating player state:', error);
       return false;
     }
 
@@ -276,24 +249,16 @@ async function createNextRoundState(gameId, previousState) {
 
   try {
     // Get the current game session
-    const sessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_sessions?id=eq.${gameId}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data: gameSession, error: sessionError } = await supabase
+      .from('game_sessions')
+      .select('*')
+      .eq('id', gameId)
+      .single();
 
-    if (!sessionResponse.ok) {
-      console.error('Error getting game session:', await sessionResponse.text());
+    if (sessionError) {
+      console.error('Error getting game session:', sessionError);
       return null;
     }
-
-    const sessions = await sessionResponse.json();
-    if (sessions.length === 0) {
-      console.error('Game session not found');
-      return null;
-    }
-
-    const gameSession = sessions[0];
 
     // Calculate new round number
     const newRoundNumber = gameSession.current_round + 1;
@@ -348,35 +313,25 @@ async function createNextRoundState(gameId, previousState) {
     }
 
     // Save new game state to Supabase
-    const gameStateResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_states`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(newGameState)
-    });
+    const { data, error: gameStateError } = await supabase
+      .from('game_states')
+      .insert([newGameState])
+      .select()
+      .single();
 
-    if (!gameStateResponse.ok) {
-      console.error('Error creating new game state:', await gameStateResponse.text());
+    if (gameStateError) {
+      console.error('Error creating new game state:', gameStateError);
       return null;
     }
 
-    const data = (await gameStateResponse.json())[0];
-
     // Update game session with new round number
-    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_sessions?id=eq.${gameId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ current_round: newRoundNumber })
-    });
+    const { error: updateError } = await supabase
+      .from('game_sessions')
+      .update({ current_round: newRoundNumber })
+      .eq('id', gameId);
 
-    if (!updateResponse.ok) {
-      console.error('Error updating game session:', await updateResponse.text());
+    if (updateError) {
+      console.error('Error updating game session:', updateError);
     }
 
     return data;
@@ -441,79 +396,57 @@ async function completeGame(gameId) {
 
   try {
     // Get final player state
-    const playerResponse = await fetch(`${SUPABASE_URL}/rest/v1/player_states?game_id=eq.${gameId}&user_id=eq.${currentUser.id}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data: playerState, error: playerError } = await supabase
+      .from('player_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id)
+      .single();
 
-    if (!playerResponse.ok) {
-      console.error('Error getting player state:', await playerResponse.text());
+    if (playerError) {
+      console.error('Error getting player state:', playerError);
       return false;
     }
-
-    const players = await playerResponse.json();
-    if (players.length === 0) {
-      console.error('Player state not found');
-      return false;
-    }
-
-    const playerState = players[0];
 
     // Get game session
-    const sessionResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_sessions?id=eq.${gameId}&limit=1`, {
-      headers: {
-        'apikey': SUPABASE_ANON_KEY
-      }
-    });
+    const { data: gameSession, error: sessionError } = await supabase
+      .from('game_sessions')
+      .select('*')
+      .eq('id', gameId)
+      .single();
 
-    if (!sessionResponse.ok) {
-      console.error('Error getting game session:', await sessionResponse.text());
+    if (sessionError) {
+      console.error('Error getting game session:', sessionError);
       return false;
     }
-
-    const sessions = await sessionResponse.json();
-    if (sessions.length === 0) {
-      console.error('Game session not found');
-      return false;
-    }
-
-    const gameSession = sessions[0];
 
     // Add to leaderboard
-    const leaderboardResponse = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({
-        user_id: currentUser.id,
-        user_name: currentUser.name,
-        game_mode: 'single',
-        game_id: gameId,
-        section_id: gameSession.section_id,
-        final_value: playerState.total_value
-      })
-    });
+    const { error: leaderboardError } = await supabase
+      .from('leaderboard')
+      .insert([
+        {
+          user_id: currentUser.id,
+          user_name: currentUser.name,
+          game_mode: 'single',
+          game_id: gameId,
+          section_id: gameSession.section_id,
+          final_value: playerState.total_value
+        }
+      ]);
 
-    if (!leaderboardResponse.ok) {
-      console.error('Error adding to leaderboard:', await leaderboardResponse.text());
+    if (leaderboardError) {
+      console.error('Error adding to leaderboard:', leaderboardError);
       return false;
     }
 
     // Mark game as inactive
-    const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/game_sessions?id=eq.${gameId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY
-      },
-      body: JSON.stringify({ active: false })
-    });
+    const { error: updateError } = await supabase
+      .from('game_sessions')
+      .update({ active: false })
+      .eq('id', gameId);
 
-    if (!updateResponse.ok) {
-      console.error('Error updating game session:', await updateResponse.text());
+    if (updateError) {
+      console.error('Error updating game session:', updateError);
       return false;
     }
 
