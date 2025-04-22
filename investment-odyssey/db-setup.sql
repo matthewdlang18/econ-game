@@ -1,5 +1,11 @@
 -- Investment Odyssey Database Setup
 
+-- Drop existing tables if they exist
+DROP TABLE IF EXISTS leaderboard;
+DROP TABLE IF EXISTS player_states;
+DROP TABLE IF EXISTS game_states;
+DROP TABLE IF EXISTS game_sessions;
+
 -- Game Sessions Table
 CREATE TABLE game_sessions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -15,7 +21,7 @@ CREATE TABLE game_sessions (
 CREATE TABLE game_states (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   game_id UUID REFERENCES game_sessions(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   round_number INTEGER NOT NULL,
   asset_prices JSONB NOT NULL,
   price_history JSONB NOT NULL,
@@ -32,7 +38,7 @@ CREATE TABLE game_states (
 CREATE TABLE player_states (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   game_id UUID REFERENCES game_sessions(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   cash FLOAT NOT NULL DEFAULT 10000,
   portfolio JSONB NOT NULL DEFAULT '{}',
   trade_history JSONB NOT NULL DEFAULT '[]',
@@ -46,7 +52,7 @@ CREATE TABLE player_states (
 -- Leaderboard Table
 CREATE TABLE leaderboard (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   user_name TEXT NOT NULL,
   game_mode TEXT NOT NULL CHECK (game_mode IN ('single', 'class')),
   game_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL,
