@@ -477,24 +477,25 @@ async function startSinglePlayerGame() {
     // Update dashboard
     window.UIController.updateDashboard(gameState, playerState);
 
-    // Save initial game state
-    if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+    // For single player mode, we'll always save to localStorage
+    // Only TAs can create game sessions and save to the database due to RLS policies
+    console.log('Saving game state to localStorage');
+    try {
+      localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+
+    // If user is a TA, also try to save to database
+    if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
       try {
-        console.log('Saving initial single player game state to database');
+        console.log('TA user detected, also saving to database');
         await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
         await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
       } catch (saveError) {
-        console.error('Error saving initial game state:', saveError);
+        console.error('Error saving initial game state to database:', saveError);
         // Non-critical error, continue with game
-      }
-    } else {
-      // Save to localStorage
-      console.log('Saving game state to localStorage');
-      try {
-        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
       }
     }
 
@@ -759,28 +760,24 @@ async function handleTrade(event) {
     window.UIController.elements.tradeMessage.textContent = result.message;
     window.UIController.elements.tradeMessage.className = 'message success';
 
-    // Save player state
-    if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+    // Always save to localStorage
+    try {
+      console.log('Saving player state to localStorage');
+      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+
+    // If user is a TA, also try to save to database
+    if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
       try {
-        console.log('Saving player state after trade to database for game:', gameId);
+        console.log('TA user detected, also saving player state to database');
         const { error } = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
         if (error) {
           console.error('Database error saving player state:', error);
-          // Fall back to localStorage
-          localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
         }
       } catch (error) {
-        console.error('Error saving player state after trade:', error);
-        // Fall back to localStorage
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-      }
-    } else {
-      // Save to localStorage
-      try {
-        console.log('Saving player state to localStorage');
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-      } catch (error) {
-        console.error('Error saving to localStorage:', error);
+        console.error('Error saving player state to database:', error);
       }
     }
   } else {
@@ -820,46 +817,34 @@ async function handleNextRound() {
     return;
   }
 
-  // Save game state
-  if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+  // Always save to localStorage
+  try {
+    console.log('Saving game state to localStorage');
+    localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+    localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+  }
+
+  // If user is a TA, also try to save to database
+  if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
     try {
-      console.log('Saving game state to database for game:', gameId);
+      console.log('TA user detected, also saving game state to database');
       const gameStateResult = await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
       const playerStateResult = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
 
       if (gameStateResult.error || playerStateResult.error) {
         console.error('Database error saving game state:', gameStateResult.error || playerStateResult.error);
-        // Fall back to localStorage
-        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-        window.UIController.showNotification('Game saved locally.', 'info');
+      } else {
+        console.log('Game state saved to database successfully');
       }
 
-      // Update game session round if in class mode and user is an instructor
-      if (gameMode === 'class' && currentUser.role === 'ta') {
+      // Update game session round if in class mode
+      if (gameMode === 'class') {
         await window.SupabaseIntegration.updateGameSessionRound(gameId, gameState.roundNumber);
       }
-
     } catch (error) {
-      console.error('Save game state error:', error);
-      window.UIController.showNotification('Failed to save game state to database, saving locally.', 'warning');
-
-      // Save to localStorage as fallback
-      try {
-        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-      } catch (localError) {
-        console.error('Error saving to localStorage:', localError);
-      }
-    }
-  } else {
-    // Save to localStorage
-    try {
-      console.log('Saving game state to localStorage');
-      localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      console.error('Error saving game state to database:', error);
     }
   }
 
@@ -897,41 +882,32 @@ async function handleSaveGame() {
     return;
   }
 
-  // Check if we can save to database
-  if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+  // Always save to localStorage
+  try {
+    console.log('Saving game to localStorage');
+    localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+    localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+    window.UIController.showNotification('Game saved!', 'success');
+  } catch (error) {
+    console.error('Error saving to localStorage:', error);
+    window.UIController.showNotification('Failed to save game: ' + error.message, 'error');
+    return;
+  }
+
+  // If user is a TA, also try to save to database
+  if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
     try {
-      console.log('Saving game to database');
+      console.log('TA user detected, also saving game to database');
       const gameStateResult = await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
       const playerStateResult = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
 
       if (gameStateResult.error || playerStateResult.error) {
         console.error('Database error saving game:', gameStateResult.error || playerStateResult.error);
-        // Fall back to localStorage
-        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-        window.UIController.showNotification('Game saved locally!', 'info');
       } else {
-        window.UIController.showNotification('Game saved to database!', 'success');
+        console.log('Game saved to database successfully');
       }
     } catch (error) {
-      console.error('Save game error:', error);
-
-      // Fall back to localStorage
-      localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-
-      window.UIController.showNotification('Failed to save to database, saved locally: ' + error.message, 'warning');
-    }
-  } else {
-    // Save to localStorage
-    try {
-      console.log('Saving game to localStorage');
-      localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
-      localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-      window.UIController.showNotification('Game saved locally!', 'success');
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-      window.UIController.showNotification('Failed to save game: ' + error.message, 'error');
+      console.error('Error saving game to database:', error);
     }
   }
 }
@@ -1072,58 +1048,46 @@ async function handleSubmitScore() {
       return;
     }
 
-    // Submit score to leaderboard
-    console.log('Submitting score to leaderboard:', {
-      userId: currentUser.id,
-      userName: currentUser.name,
-      gameMode,
-      gameId,
-      sectionId,
-      finalValue: playerState.totalValue
-    });
+    // Always save to localStorage first
+    console.log('Saving score to local leaderboard');
+    const leaderboardEntry = {
+      user_name: currentUser.name,
+      game_mode: gameMode,
+      final_value: playerState.totalValue,
+      timestamp: new Date().toISOString()
+    };
 
-    const { data, error } = await window.SupabaseIntegration.submitToLeaderboard(
-      currentUser.id,
-      currentUser.name,
-      gameMode,
-      gameId,
-      sectionId,
-      playerState.totalValue
-    );
+    // Get existing entries or initialize empty array
+    const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+    existingEntries.push(leaderboardEntry);
+    localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
 
-    if (error) {
-      console.error('Error submitting score to leaderboard:', error);
-      console.log('Falling back to local storage for leaderboard entry');
+    // Try to submit to online leaderboard
+    try {
+      console.log('Attempting to submit score to online leaderboard:', {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        gameMode,
+        finalValue: playerState.totalValue
+      });
 
-      // Create a local leaderboard entry
-      const leaderboardEntry = {
-        user_name: currentUser.name,
-        game_mode: gameMode,
-        final_value: playerState.totalValue,
-        timestamp: new Date().toISOString()
-      };
+      // For leaderboard, we don't need a game_id, just submit the score
+      const { data, error } = await window.SupabaseIntegration.submitToLeaderboard(
+        currentUser.id,
+        currentUser.name,
+        gameMode,
+        null, // No game_id needed
+        currentUser.section_id, // Use user's section_id
+        playerState.totalValue
+      );
 
-      // Get existing entries or initialize empty array
-      const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-      existingEntries.push(leaderboardEntry);
-      localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
-    } else {
-      console.log('Score submitted successfully:', data);
-
-      // If this was a local game, also save to localStorage for consistency
-      if (gameId.startsWith('local-')) {
-        const leaderboardEntry = {
-          user_name: currentUser.name,
-          game_mode: gameMode,
-          final_value: playerState.totalValue,
-          timestamp: new Date().toISOString()
-        };
-
-        // Get existing entries or initialize empty array
-        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-        existingEntries.push(leaderboardEntry);
-        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+      if (error) {
+        console.error('Error submitting score to online leaderboard:', error);
+      } else {
+        console.log('Score submitted to online leaderboard successfully:', data);
       }
+    } catch (error) {
+      console.error('Exception submitting score to online leaderboard:', error);
     }
 
     // Reload leaderboard

@@ -438,7 +438,7 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
           user_name: userName // Update name in case it changed
         };
 
-        // Only include game_id if it's a valid UUID
+        // Only include game_id if it's provided and is a valid UUID
         if (gameId) {
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
           if (uuidRegex.test(gameId)) {
@@ -446,6 +446,8 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
           } else {
             console.warn('Invalid UUID format for game_id, omitting from leaderboard update:', gameId);
           }
+        } else {
+          console.log('No game_id provided for update, leaving existing game reference unchanged');
         }
 
         // Include section_id if provided
@@ -474,7 +476,7 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
         final_value: finalValue
       };
 
-      // Only include game_id if it's a valid UUID
+      // Only include game_id if it's provided and is a valid UUID
       if (gameId) {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         if (uuidRegex.test(gameId)) {
@@ -482,6 +484,8 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
         } else {
           console.warn('Invalid UUID format for game_id, omitting from leaderboard entry:', gameId);
         }
+      } else {
+        console.log('No game_id provided, creating leaderboard entry without game reference');
       }
 
       // Include section_id if provided
