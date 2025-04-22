@@ -5,8 +5,8 @@ function formatCurrency(value) {
     return parseFloat(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-// Game state
-let gameState = {
+// Default game state template (used for initialization)
+const defaultGameState = {
     roundNumber: 0,
     assetPrices: {
         'S&P 500': 100,
@@ -97,33 +97,20 @@ let currentRound = 0;
 
 // Initialize game
 function initializeGame() {
-    // Reset game state
-    gameState = {
-        roundNumber: 0,
-        assetPrices: {
-            'S&P 500': 100,
-            'Bonds': 100,
-            'Real Estate': 5000,
-            'Gold': 3000,
-            'Commodities': 100,
-            'Bitcoin': 50000
-        },
-        priceHistory: {
-            'S&P 500': [],
-            'Bonds': [],
-            'Real Estate': [],
-            'Gold': [],
-            'Commodities': [],
-            'Bitcoin': []
-        },
-        lastCashInjection: 0,
-        totalCashInjected: 0,
-        maxRounds: 20,
-        CPI: 100,
-        CPIHistory: [],
-        lastBitcoinCrashRound: 0,
-        bitcoinShockRange: [-0.5, -0.75]
-    };
+    // Reset game state (if it exists)
+    if (typeof gameState !== 'undefined') {
+        // Copy properties from defaultGameState
+        gameState.roundNumber = defaultGameState.roundNumber;
+        gameState.assetPrices = JSON.parse(JSON.stringify(defaultGameState.assetPrices));
+        gameState.priceHistory = JSON.parse(JSON.stringify(defaultGameState.priceHistory));
+        gameState.lastCashInjection = defaultGameState.lastCashInjection;
+        gameState.totalCashInjected = defaultGameState.totalCashInjected;
+        gameState.maxRounds = defaultGameState.maxRounds;
+        gameState.CPI = defaultGameState.CPI;
+        gameState.CPIHistory = [];
+        gameState.lastBitcoinCrashRound = defaultGameState.lastBitcoinCrashRound;
+        gameState.bitcoinShockRange = [...defaultGameState.bitcoinShockRange];
+    }
 
     // Reset player state (if it exists)
     if (typeof playerState !== 'undefined') {
@@ -138,9 +125,6 @@ function initializeGame() {
 
     // Update UI
     updateUI();
-
-    // Save game state to local storage
-    saveGameState();
 }
 
 // Reset all charts
@@ -306,19 +290,15 @@ async function nextRound() {
         }
 
         try {
-            // Save game state to local storage and database
-            console.log('Saving game state...');
-            saveGameState();
-
             // If connected to Supabase, save to database
             if (gameSession && window.gameSupabase) {
+                console.log('Saving game state to database...');
                 await window.gameSupabase.saveGameState(gameSession.id, currentRound, gameState);
                 await window.gameSupabase.savePlayerState(gameSession.id, playerState);
+                console.log('Game state saved to database');
             }
-
-            console.log('Game state saved');
         } catch (saveError) {
-            console.error('Error saving game state:', saveError);
+            console.error('Error saving game state to database:', saveError);
         }
 
         console.log('nextRound function completed successfully');
@@ -464,9 +444,11 @@ function generateCashInjection() {
 function calculatePortfolioValue() {
     let totalValue = 0;
 
-    for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
-        const price = gameState.assetPrices[asset] || 0;
-        totalValue += price * quantity;
+    if (playerState && playerState.portfolio && gameState && gameState.assetPrices) {
+        for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
+            const price = gameState.assetPrices[asset] || 0;
+            totalValue += price * quantity;
+        }
     }
 
     return totalValue;
