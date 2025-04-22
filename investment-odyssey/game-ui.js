@@ -3,6 +3,13 @@
 // Update UI
 window.updateUI = function() {
     try {
+        console.log('Updating UI...');
+
+        // Normalize game state if available
+        if (window.normalizeGameState && window.gameState) {
+            window.gameState = window.normalizeGameState(window.gameState);
+        }
+
         // Update market data table
         updateMarketData();
 
@@ -25,6 +32,8 @@ window.updateUI = function() {
 
         // Update round progress
         updateRoundProgress();
+
+        console.log('UI updated successfully');
     } catch (error) {
         console.error('Error in updateUI function:', error);
     }
@@ -920,7 +929,16 @@ window.initializeEventListeners = function() {
         console.log('Adding event listener to next-round-btn');
         nextRoundBtn.addEventListener('click', function() {
             console.log('Next round button clicked');
-            nextRound();
+            if (typeof window.nextRound === 'function') {
+                window.nextRound();
+            } else if (typeof window.advanceToNextRound === 'function') {
+                window.advanceToNextRound();
+            } else if (typeof advanceToNextRound === 'function') {
+                advanceToNextRound();
+            } else {
+                console.error('No next round function found');
+                window.showNotification('Error: Could not advance to next round', 'danger');
+            }
         });
     } else {
         console.warn('next-round-btn not found');
@@ -932,7 +950,16 @@ window.initializeEventListeners = function() {
         console.log('Adding event listener to sticky-next-round');
         stickyNextRoundBtn.addEventListener('click', function() {
             console.log('Sticky next round button clicked');
-            nextRound();
+            if (typeof window.nextRound === 'function') {
+                window.nextRound();
+            } else if (typeof window.advanceToNextRound === 'function') {
+                window.advanceToNextRound();
+            } else if (typeof advanceToNextRound === 'function') {
+                advanceToNextRound();
+            } else {
+                console.error('No next round function found');
+                window.showNotification('Error: Could not advance to next round', 'danger');
+            }
         });
     } else {
         console.warn('sticky-next-round not found');

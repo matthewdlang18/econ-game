@@ -32,7 +32,7 @@ function generateCorrelatedReturns() {
   // Extract means and standard deviations in the same order as the correlation matrix
   const means = assetNames.map(asset => assetParams[asset].mean);
   const stdDevs = assetNames.map(asset => assetParams[asset].stdDev);
-  
+
   // Generate uncorrelated standard normal random variables
   const uncorrelatedZ = [];
   for (let i = 0; i < assetNames.length; i++) {
@@ -42,36 +42,36 @@ function generateCorrelatedReturns() {
     const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
     uncorrelatedZ.push(z);
   }
-  
+
   // Apply correlation matrix to get correlated returns
   const correlatedReturns = {};
-  
+
   // Handle Bitcoin separately
   const bitcoinReturn = generateBitcoinReturn();
   correlatedReturns['Bitcoin'] = bitcoinReturn;
-  
+
   // Generate correlated returns for other assets
   for (let i = 0; i < assetNames.length - 1; i++) {
     const asset = assetNames[i];
     if (asset === 'Bitcoin') continue;
-    
+
     let weightedReturn = 0;
     for (let j = 0; j < assetNames.length; j++) {
       weightedReturn += correlationMatrix[i][j] * uncorrelatedZ[j];
     }
-    
+
     // Convert to actual return using mean and standard deviation
     let assetReturn = means[i] + stdDevs[i] * weightedReturn;
-    
+
     // Ensure return is within bounds
     assetReturn = Math.max(
       assetParams[asset].min,
       Math.min(assetParams[asset].max, assetReturn)
     );
-    
+
     correlatedReturns[asset] = assetReturn;
   }
-  
+
   return correlatedReturns;
 }
 
@@ -85,10 +85,18 @@ function generateBitcoinReturn(gameState) {
     // If no game state is provided, generate a standard return
     return generateStandardBitcoinReturn();
   }
-  
-  const bitcoinPrice = gameState.asset_prices['Bitcoin'];
+
+  // Handle different property naming conventions
+  const assetPrices = gameState.asset_prices || gameState.assetPrices || {};
+  const bitcoinPrice = assetPrices['Bitcoin'];
+
+  if (!bitcoinPrice) {
+    console.error('Bitcoin price not found in game state');
+    return generateStandardBitcoinReturn();
+  }
+
   let bitcoinReturn;
-  
+
   // Bitcoin has special growth patterns based on its price
   if (bitcoinPrice < 10000) {
     // Low price: rapid growth
@@ -99,37 +107,44 @@ function generateBitcoinReturn(gameState) {
   } else {
     // Normal price range: correlated with other assets but with high volatility
     bitcoinReturn = generateStandardBitcoinReturn();
-    
+
     // Adjust Bitcoin's return based on its current price
     const priceThreshold = 100000;
     if (bitcoinPrice > priceThreshold) {
       // Calculate how many increments above threshold
       const incrementsAboveThreshold = Math.max(0, (bitcoinPrice - priceThreshold) / 50000);
-      
+
       // Reduce volatility as price grows (more mature asset)
       const volatilityReduction = Math.min(0.7, incrementsAboveThreshold * 0.05);
       const adjustedStdDev = assetParams['Bitcoin'].stdDev * (1 - volatilityReduction);
-      
+
       // Recalculate return with reduced volatility
       bitcoinReturn = bitcoinReturn * (1 - volatilityReduction);
     }
-    
+
     // Check for Bitcoin crash (4-year cycle)
-    if (gameState.roundNumber - gameState.last_bitcoin_crash_round >= 4) {
+    // Handle different property naming conventions
+    const roundNumber = gameState.round_number || gameState.roundNumber || 0;
+    const lastBitcoinCrashRound = gameState.last_bitcoin_crash_round || gameState.lastBitcoinCrashRound || 0;
+    const bitcoinShockRange = gameState.bitcoin_shock_range || gameState.bitcoinShockRange || [-0.5, -0.75];
+
+    if (roundNumber - lastBitcoinCrashRound >= 4) {
+      console.log('Bitcoin crash check: 4+ rounds since last crash');
       if (Math.random() < 0.5) { // 50% chance of crash after 4 rounds
+        console.log('Bitcoin crash triggered!');
         // Apply shock based on current shock range
-        bitcoinReturn = gameState.bitcoin_shock_range[0] + Math.random() * 
-          (gameState.bitcoin_shock_range[1] - gameState.bitcoin_shock_range[0]);
+        bitcoinReturn = bitcoinShockRange[0] + Math.random() *
+          (bitcoinShockRange[1] - bitcoinShockRange[0]);
       }
     }
   }
-  
+
   // Ensure Bitcoin return is within bounds
   bitcoinReturn = Math.max(
     assetParams['Bitcoin'].min,
     Math.min(assetParams['Bitcoin'].max, bitcoinReturn)
   );
-  
+
   return bitcoinReturn;
 }
 
@@ -140,12 +155,12 @@ function generateBitcoinReturn(gameState) {
 function generateStandardBitcoinReturn() {
   const mean = assetParams['Bitcoin'].mean;
   const stdDev = assetParams['Bitcoin'].stdDev;
-  
+
   // Generate random normal value
   const u1 = Math.random();
   const u2 = Math.random();
   const z = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
-  
+
   // Convert to actual return using mean and standard deviation
   return mean + stdDev * z;
 }
@@ -159,19 +174,19 @@ function generateStandardBitcoinReturn() {
 function generateNewPrices(previousPrices, gameState) {
   // Generate correlated returns
   const returns = generateCorrelatedReturns();
-  
+
   // Apply special Bitcoin behavior if game state is provided
   if (gameState) {
     returns['Bitcoin'] = generateBitcoinReturn(gameState);
   }
-  
+
   // Calculate new prices based on returns
   const newPrices = {};
   for (const asset in previousPrices) {
     const return_value = returns[asset];
     newPrices[asset] = previousPrices[asset] * (1 + return_value);
   }
-  
+
   return newPrices;
 }
 

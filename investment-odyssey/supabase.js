@@ -245,9 +245,18 @@ async function updatePlayerState(gameId, updatedState) {
 
 // Create a new game state for the next round
 async function createNextRoundState(gameId, previousState) {
-  if (!currentUser) return null;
+  if (!currentUser) {
+    console.error('No current user found');
+    return null;
+  }
 
   try {
+    console.log('Creating next round state for game:', gameId);
+
+    // Normalize previous state to handle different property naming conventions
+    const normalizedPreviousState = window.normalizeGameState ?
+      window.normalizeGameState(previousState) : previousState;
+
     // Get the current game session
     const { data: gameSession, error: sessionError } = await supabase
       .from('game_sessions')
@@ -262,24 +271,65 @@ async function createNextRoundState(gameId, previousState) {
 
     // Calculate new round number
     const newRoundNumber = gameSession.current_round + 1;
+    console.log('New round number:', newRoundNumber);
 
     // Check if we've reached the maximum number of rounds
     if (newRoundNumber > gameSession.max_rounds) {
+      console.log('Game over: reached maximum rounds');
       return { gameOver: true };
     }
 
+    // Get asset prices from previous state, handling different property names
+    const previousPrices = normalizedPreviousState.asset_prices || normalizedPreviousState.assetPrices;
+    if (!previousPrices) {
+      console.error('Previous prices not found in game state');
+      return null;
+    }
+
     // Generate new asset prices based on previous state
-    const newPrices = generateNewPrices(previousState.asset_prices, previousState);
+    let newPrices;
+    if (window.priceGenerator && typeof window.priceGenerator.generateNewPrices === 'function') {
+      console.log('Using window.priceGenerator.generateNewPrices');
+      newPrices = window.priceGenerator.generateNewPrices(previousPrices, normalizedPreviousState);
+    } else {
+      console.log('Using fallback generateNewPrices');
+      newPrices = generateNewPrices(previousPrices, normalizedPreviousState);
+    }
+
+    console.log('New prices generated:', newPrices);
+
+    // Get price history from previous state, handling different property names
+    const previousPriceHistory = normalizedPreviousState.price_history || normalizedPreviousState.priceHistory;
+    if (!previousPriceHistory) {
+      console.error('Previous price history not found in game state');
+      return null;
+    }
 
     // Create price history by copying previous history and adding new prices
     const newPriceHistory = {};
-    for (const asset in previousState.price_history) {
-      newPriceHistory[asset] = [...previousState.price_history[asset], newPrices[asset]];
+    for (const asset in previousPriceHistory) {
+      newPriceHistory[asset] = [...previousPriceHistory[asset], newPrices[asset]];
+    }
+
+    // Get CPI from previous state, handling different property names
+    const previousCPI = normalizedPreviousState.cpi || normalizedPreviousState.CPI;
+    if (!previousCPI) {
+      console.error('Previous CPI not found in game state');
+      return null;
     }
 
     // Update CPI (simplified for now)
     const cpiChange = -0.01 + Math.random() * 0.04; // Between -1% and 3%
-    const newCPI = previousState.cpi * (1 + cpiChange);
+    const newCPI = previousCPI * (1 + cpiChange);
+
+    // Get CPI history from previous state, handling different property names
+    const previousCPIHistory = normalizedPreviousState.cpi_history || normalizedPreviousState.CPIHistory || [];
+
+    // Get Bitcoin crash data from previous state, handling different property names
+    const lastBitcoinCrashRound = normalizedPreviousState.last_bitcoin_crash_round ||
+      normalizedPreviousState.lastBitcoinCrashRound || 0;
+    const bitcoinShockRange = normalizedPreviousState.bitcoin_shock_range ||
+      normalizedPreviousState.bitcoinShockRange || [-0.5, -0.75];
 
     // Create new game state
     const newGameState = {
@@ -289,24 +339,26 @@ async function createNextRoundState(gameId, previousState) {
       asset_prices: newPrices,
       price_history: newPriceHistory,
       cpi: newCPI,
-      cpi_history: [...previousState.cpi_history, newCPI],
-      last_bitcoin_crash_round: previousState.last_bitcoin_crash_round,
-      bitcoin_shock_range: previousState.bitcoin_shock_range
+      cpi_history: [...previousCPIHistory, newCPI],
+      last_bitcoin_crash_round: lastBitcoinCrashRound,
+      bitcoin_shock_range: bitcoinShockRange
     };
 
     // Check for Bitcoin crash (handled by price generator)
     // If a crash occurred, update the last crash round and shock range
-    if (newGameState.asset_prices['Bitcoin'] < previousState.asset_prices['Bitcoin'] * 0.7) {
+    if (newGameState.asset_prices['Bitcoin'] < previousPrices['Bitcoin'] * 0.7) {
+      console.log('Bitcoin crash detected (>30% drop)');
       // A significant drop occurred (more than 30%), consider it a crash
       newGameState.last_bitcoin_crash_round = newRoundNumber;
 
       // Update shock range for next crash (less severe but still negative)
       newGameState.bitcoin_shock_range = [
-        Math.min(Math.max(previousState.bitcoin_shock_range[0] + 0.1, -0.5), -0.05),
-        Math.min(Math.max(previousState.bitcoin_shock_range[1] + 0.1, -0.75), -0.15)
+        Math.min(Math.max(bitcoinShockRange[0] + 0.1, -0.5), -0.05),
+        Math.min(Math.max(bitcoinShockRange[1] + 0.1, -0.75), -0.15)
       ];
     }
 
+    console.log('Saving new game state to Supabase');
     // Save new game state to Supabase
     const { data, error: gameStateError } = await supabase
       .from('game_states')
@@ -319,6 +371,7 @@ async function createNextRoundState(gameId, previousState) {
       return null;
     }
 
+    console.log('Updating game session with new round number');
     // Update game session with new round number
     const { error: updateError } = await supabase
       .from('game_sessions')

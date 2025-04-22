@@ -882,34 +882,81 @@ function calculatePortfolioValue() {
 
 // Advance to the next round
 async function advanceToNextRound() {
-  // Create the next round's game state
-  const nextGameState = await window.gameSupabase.createNextRoundState(gameSession.id, gameState);
+  console.log('Advancing to next round...');
+  try {
+    // Create the next round's game state
+    const nextGameState = await window.gameSupabase.createNextRoundState(gameSession.id, gameState);
+    console.log('Next game state:', nextGameState);
 
-  // Check if the game is over
-  if (nextGameState && nextGameState.gameOver) {
-    // Complete the game and show results
-    const completed = await window.gameSupabase.completeGame(gameSession.id);
-    if (!completed) {
-      alert('Failed to complete the game. Please try again.');
+    // Check if the game is over
+    if (nextGameState && nextGameState.gameOver) {
+      console.log('Game over detected');
+      // Complete the game and show results
+      const completed = await window.gameSupabase.completeGame(gameSession.id);
+      if (!completed) {
+        window.showNotification('Failed to complete the game. Please try again.', 'danger');
+        return;
+      }
+
+      // Show game results
+      showGameResults();
       return;
     }
 
-    // Show game results
-    showGameResults();
-    return;
+    if (!nextGameState) {
+      window.showNotification('Failed to advance to the next round. Please try again.', 'danger');
+      return;
+    }
+
+    // Normalize the game state to ensure consistent property names
+    if (window.normalizeGameState) {
+      gameState = window.normalizeGameState(nextGameState);
+    } else {
+      gameState = nextGameState;
+    }
+
+    // Update round number
+    currentRound = gameState.round_number || gameState.roundNumber || 0;
+    console.log('Updated to round:', currentRound);
+
+    // Calculate new portfolio value
+    if (playerState) {
+      const portfolioValue = window.calculatePortfolioValue ?
+        window.calculatePortfolioValue(playerState, gameState) :
+        calculatePortfolioValue();
+
+      playerState.total_value = playerState.cash + portfolioValue;
+
+      // Update portfolio value history
+      if (!playerState.portfolio_value_history) {
+        playerState.portfolio_value_history = [playerState.total_value];
+      } else {
+        playerState.portfolio_value_history.push(playerState.total_value);
+      }
+
+      // Save updated player state
+      await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
+    }
+
+    // Reload the game interface
+    if (typeof loadGameInterface === 'function') {
+      loadGameInterface();
+    } else if (typeof window.loadGameInterface === 'function') {
+      window.loadGameInterface();
+    } else {
+      console.error('loadGameInterface function not found');
+      window.showNotification('Error: Could not reload game interface', 'warning');
+      // Try to update UI directly
+      if (typeof window.updateUI === 'function') {
+        window.updateUI();
+      }
+    }
+
+    window.showNotification('Advanced to round ' + currentRound, 'success');
+  } catch (error) {
+    console.error('Error in advanceToNextRound:', error);
+    window.showNotification('An error occurred while advancing to the next round', 'danger');
   }
-
-  if (!nextGameState) {
-    alert('Failed to advance to the next round. Please try again.');
-    return;
-  }
-
-  // Update game state and round number
-  gameState = nextGameState;
-  currentRound = gameState.round_number;
-
-  // Reload the game interface
-  loadGameInterface();
 }
 
 // Show asset information in a modal
