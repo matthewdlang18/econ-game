@@ -52,13 +52,13 @@ window.updateElementText = function(id, text) {
 // Update round progress
 window.updateRoundProgress = function() {
     // Update round displays
-    updateElementText('current-round-display', currentRound);
-    updateElementText('market-round-display', currentRound);
+    updateElementText('current-round-display', window.currentRound);
+    updateElementText('market-round-display', window.currentRound);
 
     // Update progress bar
     const progressBar = document.getElementById('round-progress');
     if (progressBar) {
-        const progress = (currentRound / gameState.maxRounds) * 100;
+        const progress = (window.currentRound / gameState.maxRounds) * 100;
         progressBar.style.width = progress + '%';
         progressBar.setAttribute('aria-valuenow', progress);
         progressBar.textContent = progress.toFixed(0) + '%';
@@ -67,7 +67,16 @@ window.updateRoundProgress = function() {
 
 // Update market data
 window.updateMarketData = function() {
-    const tableBody = document.getElementById('asset-prices-table');
+    let tableBody = document.getElementById('market-data-table');
+    if (!tableBody) {
+        console.warn('Market data table not found, trying alternative ID');
+        // Try alternative ID
+        tableBody = document.querySelector('#market-data-table tbody');
+        if (!tableBody) {
+            console.error('Could not find market data table');
+            return;
+        }
+    }
     if (!tableBody) return;
 
     // Clear existing rows
@@ -125,6 +134,10 @@ window.updateMarketData = function() {
             <td>${quantity.toFixed(6)}</td>
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(2)}%</td>
+            <td>
+                <button class="btn btn-sm btn-success trade-btn buy" data-asset="${asset}">Buy</button>
+                <button class="btn btn-sm btn-danger trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
+            </td>
         `;
 
         tableBody.appendChild(row);
@@ -346,7 +359,7 @@ window.updateRealEstateGoldChart = function() {
 
     // Create labels
     const labels = [];
-    for (let i = 0; i <= currentRound; i++) {
+    for (let i = 0; i <= window.currentRound; i++) {
         labels.push(`Round ${i}`);
     }
 
@@ -371,7 +384,7 @@ window.updateBondsCommoditiesSPChart = function() {
 
     // Create labels
     const labels = [];
-    for (let i = 0; i <= currentRound; i++) {
+    for (let i = 0; i <= window.currentRound; i++) {
         labels.push(`Round ${i}`);
     }
 
@@ -395,7 +408,7 @@ window.updateBitcoinChart = function() {
 
     // Create labels
     const labels = [];
-    for (let i = 0; i <= currentRound; i++) {
+    for (let i = 0; i <= window.currentRound; i++) {
         labels.push(`Round ${i}`);
     }
 
@@ -417,7 +430,7 @@ window.updateCPIChart = function() {
 
     // Create labels
     const labels = [];
-    for (let i = 0; i <= currentRound; i++) {
+    for (let i = 0; i <= window.currentRound; i++) {
         labels.push(`Round ${i}`);
     }
 
@@ -733,6 +746,154 @@ function updateComparativeReturnsChart() {
     // We'll implement this in a separate function to keep the file size manageable
 }
 
+// Show trade panel
+window.showTradePanel = function(asset, action = 'buy') {
+    console.log(`Showing trade panel for ${asset}, action: ${action}`);
+
+    // Get the trade panel
+    const tradePanel = document.querySelector('.trade-panel');
+    if (!tradePanel) {
+        console.error('Trade panel not found');
+        return;
+    }
+
+    // Set the asset name
+    const assetNameElement = document.getElementById('trade-asset-name');
+    if (assetNameElement) {
+        assetNameElement.textContent = asset;
+    }
+
+    // Set the action
+    const actionSelect = document.getElementById('trade-action');
+    if (actionSelect) {
+        actionSelect.value = action;
+    }
+
+    // Set the asset price
+    const price = gameState.assetPrices[asset] || 0;
+    const priceElement = document.getElementById('trade-price');
+    if (priceElement) {
+        priceElement.textContent = `$${price.toFixed(2)}`;
+    }
+
+    // Reset quantity
+    const quantityInput = document.getElementById('trade-quantity');
+    if (quantityInput) {
+        quantityInput.value = '1';
+    }
+
+    // Update trade summary
+    updateTradeSummary();
+
+    // Show the panel
+    tradePanel.style.display = 'block';
+}
+
+// Update trade summary
+window.updateTradeSummary = function() {
+    const assetName = document.getElementById('trade-asset-name').textContent;
+    const action = document.getElementById('trade-action').value;
+    const quantity = parseFloat(document.getElementById('trade-quantity').value) || 0;
+
+    const price = gameState.assetPrices[assetName] || 0;
+    const total = price * quantity;
+
+    // Update total display
+    const totalElement = document.getElementById('trade-total');
+    if (totalElement) {
+        totalElement.textContent = `$${total.toFixed(2)}`;
+    }
+
+    // Validate trade
+    const executeTradeBtn = document.getElementById('execute-trade-btn');
+    if (executeTradeBtn) {
+        if (action === 'buy') {
+            // Check if player has enough cash
+            executeTradeBtn.disabled = total > playerState.cash;
+        } else if (action === 'sell') {
+            // Check if player has enough of the asset
+            const playerQuantity = playerState.portfolio[assetName] || 0;
+            executeTradeBtn.disabled = quantity > playerQuantity;
+        }
+    }
+}
+
+// Execute trade
+window.executeTrade = function() {
+    const assetName = document.getElementById('trade-asset-name').textContent;
+    const action = document.getElementById('trade-action').value;
+    const quantity = parseFloat(document.getElementById('trade-quantity').value) || 0;
+
+    if (quantity <= 0) {
+        showNotification('Please enter a valid quantity.', 'warning');
+        return;
+    }
+
+    const price = gameState.assetPrices[assetName] || 0;
+    const total = price * quantity;
+
+    if (action === 'buy') {
+        // Check if player has enough cash
+        if (total > playerState.cash) {
+            showNotification('Not enough cash for this purchase.', 'danger');
+            return;
+        }
+
+        // Update player state
+        playerState.cash -= total;
+        playerState.portfolio[assetName] = (playerState.portfolio[assetName] || 0) + quantity;
+
+        // Add to trade history
+        playerState.tradeHistory.push({
+            round: window.currentRound,
+            asset: assetName,
+            action: 'buy',
+            quantity: quantity,
+            price: price,
+            total: total
+        });
+
+        showNotification(`Bought ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
+    } else if (action === 'sell') {
+        // Check if player has enough of the asset
+        const playerQuantity = playerState.portfolio[assetName] || 0;
+        if (quantity > playerQuantity) {
+            showNotification(`You don't have enough ${assetName} to sell.`, 'danger');
+            return;
+        }
+
+        // Update player state
+        playerState.cash += total;
+        playerState.portfolio[assetName] -= quantity;
+
+        // Remove asset from portfolio if quantity is 0
+        if (playerState.portfolio[assetName] <= 0) {
+            delete playerState.portfolio[assetName];
+        }
+
+        // Add to trade history
+        playerState.tradeHistory.push({
+            round: window.currentRound,
+            asset: assetName,
+            action: 'sell',
+            quantity: quantity,
+            price: price,
+            total: total
+        });
+
+        showNotification(`Sold ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
+    }
+
+    // Hide trade panel
+    const tradePanel = document.querySelector('.trade-panel');
+    if (tradePanel) {
+        tradePanel.style.display = 'none';
+    }
+
+    // Update UI
+    updateUI();
+}
+
 // Initialize event listeners
 window.initializeEventListeners = function() {
     console.log('Initializing event listeners');
@@ -842,30 +1003,47 @@ window.initializeEventListeners = function() {
 }
 
 // Initialize trade form listeners
-function initializeTradeFormListeners() {
-    // Asset select change
-    const assetSelect = document.getElementById('trade-asset');
-    if (assetSelect) {
-        assetSelect.addEventListener('change', updateAssetPrice);
+window.initializeTradeFormListeners = function() {
+    console.log('Initializing trade form listeners');
+
+    // Add event listeners for trade buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('trade-btn')) {
+            const asset = event.target.getAttribute('data-asset');
+            const action = event.target.classList.contains('buy') ? 'buy' : 'sell';
+            showTradePanel(asset, action);
+        }
+    });
+
+    // Add event listener for trade action change
+    const tradeAction = document.getElementById('trade-action');
+    if (tradeAction) {
+        tradeAction.addEventListener('change', updateTradeSummary);
     }
 
-    // Action select change
-    const actionSelect = document.getElementById('trade-action');
-    if (actionSelect) {
-        actionSelect.addEventListener('change', updateTradeSummary);
+    // Add event listener for trade quantity change
+    const tradeQuantity = document.getElementById('trade-quantity');
+    if (tradeQuantity) {
+        tradeQuantity.addEventListener('input', updateTradeSummary);
     }
 
-    // Quantity input change
-    const quantityInput = document.getElementById('trade-quantity');
-    if (quantityInput) {
-        quantityInput.addEventListener('input', updateTradeSummary);
+    // Add event listener for execute trade button
+    const executeTradeBtn = document.getElementById('execute-trade-btn');
+    if (executeTradeBtn) {
+        executeTradeBtn.addEventListener('click', executeTrade);
     }
 
-    // Amount input change
-    const amountInput = document.getElementById('trade-amount');
-    if (amountInput) {
-        amountInput.addEventListener('input', updateTradeSummary);
+    // Add event listener for cancel trade button
+    const cancelTradeBtn = document.getElementById('cancel-trade-btn');
+    if (cancelTradeBtn) {
+        cancelTradeBtn.addEventListener('click', function() {
+            const tradePanel = document.querySelector('.trade-panel');
+            if (tradePanel) {
+                tradePanel.style.display = 'none';
+            }
+        });
     }
+}
 
     // Execute trade button
     const executeTradeBtn = document.getElementById('execute-trade-btn');
@@ -893,26 +1071,27 @@ function initializeTradeFormListeners() {
 }
 
 // Initialize portfolio action listeners
-function initializePortfolioActionListeners() {
-    // Select all assets button
-    const selectAllBtn = document.getElementById('select-all-assets-btn');
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', () => {
-            document.querySelectorAll('.asset-select').forEach(checkbox => {
-                checkbox.checked = true;
-            });
+window.initializePortfolioActionListeners = function() {
+    console.log('Initializing portfolio action listeners');
+
+    // Buy all assets button
+    const buyAllBtn = document.getElementById('buy-all-btn');
+    if (buyAllBtn) {
+        buyAllBtn.addEventListener('click', function() {
+            // Implement buy all assets functionality
+            console.log('Buy all assets button clicked');
         });
     }
 
-    // Deselect all assets button
-    const deselectAllBtn = document.getElementById('deselect-all-assets-btn');
-    if (deselectAllBtn) {
-        deselectAllBtn.addEventListener('click', () => {
-            document.querySelectorAll('.asset-select').forEach(checkbox => {
-                checkbox.checked = false;
-            });
+    // Sell all assets button
+    const sellAllBtn = document.getElementById('sell-all-btn');
+    if (sellAllBtn) {
+        sellAllBtn.addEventListener('click', function() {
+            // Implement sell all assets functionality
+            console.log('Sell all assets button clicked');
         });
     }
+}
 
     // Distribute cash evenly button
     const distributeEvenlyBtn = document.getElementById('distribute-evenly-btn');

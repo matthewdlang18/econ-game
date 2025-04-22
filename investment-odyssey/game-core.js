@@ -93,7 +93,7 @@ const assetCorrelationMatrix = [
 
 // Game session information
 let gameSession = null;
-let currentRound = 0;
+window.currentRound = 0;
 
 // Initialize game
 function initializeGame() {
@@ -121,7 +121,7 @@ function initializeGame() {
     }
 
     // Reset current round
-    currentRound = 0;
+    window.currentRound = 0;
 
     // Update UI
     updateUI();
@@ -219,16 +219,16 @@ async function nextRound() {
         console.log('Starting nextRound function');
 
         // Check if we've already reached the maximum number of rounds
-        if (currentRound >= gameState.maxRounds) {
+        if (window.currentRound >= gameState.maxRounds) {
             console.log('Maximum rounds reached, ending game');
             endGame();
             return;
         }
 
         // Increment round number
-        currentRound++;
-        gameState.roundNumber = currentRound;
-        console.log('Round number incremented to:', currentRound);
+        window.currentRound++;
+        gameState.roundNumber = window.currentRound;
+        console.log('Round number incremented to:', window.currentRound);
 
         try {
             // Generate new prices
@@ -264,7 +264,7 @@ async function nextRound() {
             console.log('Portfolio value calculated:', portfolioValue);
 
             // Add to portfolio value history
-            playerState.portfolioValueHistory[currentRound] = portfolioValue + playerState.cash;
+            playerState.portfolioValueHistory[window.currentRound] = portfolioValue + playerState.cash;
             console.log('Portfolio value history updated');
         } catch (portfolioError) {
             console.error('Error calculating portfolio value:', portfolioError);
@@ -281,7 +281,7 @@ async function nextRound() {
 
         try {
             // Check if game is over
-            if (currentRound >= gameState.maxRounds) {
+            if (window.currentRound >= gameState.maxRounds) {
                 console.log('Game is over, calling endGame()');
                 endGame();
             }
@@ -293,12 +293,28 @@ async function nextRound() {
             // If connected to Supabase, save to database
             if (gameSession && window.gameSupabase) {
                 console.log('Saving game state to database...');
-                await window.gameSupabase.saveGameState(gameSession.id, currentRound, gameState);
-                await window.gameSupabase.savePlayerState(gameSession.id, playerState);
-                console.log('Game state saved to database');
+                if (typeof window.gameSupabase.saveGameState === 'function') {
+                    await window.gameSupabase.saveGameState(gameSession.id, window.currentRound, gameState);
+                    if (typeof window.gameSupabase.savePlayerState === 'function') {
+                        await window.gameSupabase.savePlayerState(gameSession.id, playerState);
+                    }
+                    console.log('Game state saved to database');
+                } else {
+                    console.log('Supabase save functions not available, using local storage instead');
+                    saveGameState();
+                }
+            } else {
+                // Save to local storage as fallback
+                saveGameState();
             }
         } catch (saveError) {
             console.error('Error saving game state to database:', saveError);
+            // Try to save to local storage as fallback
+            try {
+                saveGameState();
+            } catch (localSaveError) {
+                console.error('Error saving to local storage:', localSaveError);
+            }
         }
 
         console.log('nextRound function completed successfully');
@@ -392,7 +408,7 @@ function generateNewPrices() {
                             // Bitcoin crash
                             const crashSeverity = gameState.bitcoinShockRange[0] + (Math.random() * (gameState.bitcoinShockRange[1] - gameState.bitcoinShockRange[0]));
                             returnValue = crashSeverity; // Negative return (crash)
-                            gameState.lastBitcoinCrashRound = currentRound;
+                            gameState.lastBitcoinCrashRound = window.currentRound;
                             console.log(`Bitcoin crash! Return: ${returnValue}`);
                         }
                     }
@@ -548,7 +564,7 @@ function saveGameState() {
         const gameData = {
             gameState: gameState,
             playerState: playerState,
-            currentRound: currentRound
+            currentRound: window.currentRound
         };
 
         localStorage.setItem('investmentOdysseyGameData', JSON.stringify(gameData));
@@ -567,7 +583,7 @@ function loadGameState() {
             const parsedData = JSON.parse(gameData);
             gameState = parsedData.gameState;
             playerState = parsedData.playerState;
-            currentRound = parsedData.currentRound;
+            window.currentRound = parsedData.currentRound;
 
             console.log('Game state loaded from local storage');
             return true;

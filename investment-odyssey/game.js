@@ -4,7 +4,6 @@
 let gameSession = null;
 let playerState = null;
 let gameState = null;
-let currentRound = 0;
 
 // Asset information for educational purposes
 const assetInfo = {
