@@ -1,7 +1,7 @@
 // UI Functions for Investment Odyssey
 
 // Update UI
-function updateUI() {
+window.updateUI = function() {
     try {
         // Update market data table
         updateMarketData();
@@ -29,7 +29,7 @@ function updateUI() {
 }
 
 // Update cash and portfolio displays
-function updateCashAndPortfolioDisplays() {
+window.updateCashAndPortfolioDisplays = function() {
     // Calculate portfolio value
     const portfolioValue = calculatePortfolioValue();
     const totalValue = playerState.cash + portfolioValue;
@@ -42,7 +42,7 @@ function updateCashAndPortfolioDisplays() {
 }
 
 // Update element text helper function
-function updateElementText(id, text) {
+window.updateElementText = function(id, text) {
     const element = document.getElementById(id);
     if (element) {
         element.textContent = text;
@@ -50,7 +50,7 @@ function updateElementText(id, text) {
 }
 
 // Update round progress
-function updateRoundProgress() {
+window.updateRoundProgress = function() {
     // Update round displays
     updateElementText('current-round-display', currentRound);
     updateElementText('market-round-display', currentRound);
@@ -66,7 +66,7 @@ function updateRoundProgress() {
 }
 
 // Update market data
-function updateMarketData() {
+window.updateMarketData = function() {
     const tableBody = document.getElementById('asset-prices-table');
     if (!tableBody) return;
 
@@ -132,7 +132,7 @@ function updateMarketData() {
 }
 
 // Update price ticker
-function updatePriceTicker() {
+window.updatePriceTicker = function() {
     const ticker = document.getElementById('price-ticker');
     if (!ticker) return;
 
@@ -175,7 +175,7 @@ function updatePriceTicker() {
 }
 
 // Update portfolio chart
-function updatePortfolioChart() {
+window.updatePortfolioChart = function() {
     const canvas = document.getElementById('portfolio-chart');
     if (!canvas) return;
 
@@ -252,7 +252,7 @@ function updatePortfolioChart() {
 }
 
 // Update portfolio allocation chart
-function updatePortfolioAllocationChart() {
+window.updatePortfolioAllocationChart = function() {
     const canvas = document.getElementById('portfolio-allocation-chart');
     if (!canvas) return;
 
@@ -324,7 +324,7 @@ function updatePortfolioAllocationChart() {
 }
 
 // Update asset price charts
-function updateAssetPriceCharts() {
+window.updateAssetPriceCharts = function() {
     // Update Real Estate & Gold chart
     updateRealEstateGoldChart();
 
@@ -336,7 +336,7 @@ function updateAssetPriceCharts() {
 }
 
 // Update Real Estate & Gold chart
-function updateRealEstateGoldChart() {
+window.updateRealEstateGoldChart = function() {
     const canvas = document.getElementById('real-estate-gold-chart');
     if (!canvas) return;
 
@@ -360,7 +360,7 @@ function updateRealEstateGoldChart() {
 }
 
 // Update Bonds, Commodities & S&P chart
-function updateBondsCommoditiesSPChart() {
+window.updateBondsCommoditiesSPChart = function() {
     const canvas = document.getElementById('bonds-commodities-sp-chart');
     if (!canvas) return;
 
@@ -386,7 +386,7 @@ function updateBondsCommoditiesSPChart() {
 }
 
 // Update Bitcoin chart
-function updateBitcoinChart() {
+window.updateBitcoinChart = function() {
     const canvas = document.getElementById('bitcoin-chart');
     if (!canvas) return;
 
@@ -408,7 +408,7 @@ function updateBitcoinChart() {
 }
 
 // Update CPI chart
-function updateCPIChart() {
+window.updateCPIChart = function() {
     const canvas = document.getElementById('cpi-chart');
     if (!canvas) return;
 
@@ -821,7 +821,6 @@ window.initializeEventListeners = function() {
             }
         });
     }
-}
 
     // Add event listener for the start game button
     const startGameBtn = document.getElementById('start-game');

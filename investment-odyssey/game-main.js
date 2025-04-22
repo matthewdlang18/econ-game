@@ -181,7 +181,7 @@ function loadGameInterface() {
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h5 class="mb-0">Game Progress: Round <span id="current-round">${currentRound}</span> of ${gameState ? gameState.maxRounds : 20}</h5>
+                                <h5 class="mb-0">Game Progress: Round <span id="current-round">${typeof currentRound !== 'undefined' ? currentRound : 0}</span> of ${gameState ? gameState.maxRounds : 20}</h5>
                             </div>
                             <div>
                                 <button id="next-round-btn" class="btn btn-success">Next Round</button>
@@ -190,10 +190,10 @@ function loadGameInterface() {
                         </div>
                         <div class="progress mt-2">
                             <div id="round-progress" class="progress-bar bg-success" role="progressbar"
-                                style="width: ${gameState ? (currentRound / gameState.maxRounds * 100) : 0}%;"
-                                aria-valuenow="${gameState ? (currentRound / gameState.maxRounds * 100) : 0}"
+                                style="width: ${gameState ? ((typeof currentRound !== 'undefined' ? currentRound : 0) / gameState.maxRounds * 100) : 0}%;"
+                                aria-valuenow="${gameState ? ((typeof currentRound !== 'undefined' ? currentRound : 0) / gameState.maxRounds * 100) : 0}"
                                 aria-valuemin="0" aria-valuemax="100">
-                                ${gameState ? Math.round(currentRound / gameState.maxRounds * 100) : 0}%
+                                ${gameState ? Math.round((typeof currentRound !== 'undefined' ? currentRound : 0) / gameState.maxRounds * 100) : 0}%
                             </div>
                         </div>
                     </div>
@@ -249,7 +249,7 @@ function loadGameInterface() {
                 <div class="card h-100">
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Market Data</h5>
-                        <span class="badge badge-danger">Round ${currentRound}</span>
+                        <span class="badge badge-danger">Round ${typeof currentRound !== 'undefined' ? currentRound : 0}</span>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
