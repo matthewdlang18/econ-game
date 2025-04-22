@@ -294,22 +294,17 @@ async function createNextRoundState(gameId, previousState) {
       bitcoin_shock_range: previousState.bitcoin_shock_range
     };
 
-    // Check for Bitcoin crash (simplified)
-    if (newRoundNumber - previousState.last_bitcoin_crash_round >= 4) {
-      if (Math.random() < 0.5) { // 50% chance of crash after 4 rounds
-        // Apply shock to Bitcoin price
-        const shockFactor = previousState.bitcoin_shock_range[0] +
-          Math.random() * (previousState.bitcoin_shock_range[1] - previousState.bitcoin_shock_range[0]);
+    // Check for Bitcoin crash (handled by price generator)
+    // If a crash occurred, update the last crash round and shock range
+    if (newGameState.asset_prices['Bitcoin'] < previousState.asset_prices['Bitcoin'] * 0.7) {
+      // A significant drop occurred (more than 30%), consider it a crash
+      newGameState.last_bitcoin_crash_round = newRoundNumber;
 
-        newGameState.asset_prices['Bitcoin'] = newGameState.asset_prices['Bitcoin'] * (1 + shockFactor);
-        newGameState.last_bitcoin_crash_round = newRoundNumber;
-
-        // Update shock range for next crash (less severe but still negative)
-        newGameState.bitcoin_shock_range = [
-          Math.min(Math.max(previousState.bitcoin_shock_range[0] + 0.1, -0.5), -0.05),
-          Math.min(Math.max(previousState.bitcoin_shock_range[1] + 0.1, -0.75), -0.15)
-        ];
-      }
+      // Update shock range for next crash (less severe but still negative)
+      newGameState.bitcoin_shock_range = [
+        Math.min(Math.max(previousState.bitcoin_shock_range[0] + 0.1, -0.5), -0.05),
+        Math.min(Math.max(previousState.bitcoin_shock_range[1] + 0.1, -0.75), -0.15)
+      ];
     }
 
     // Save new game state to Supabase
@@ -343,6 +338,12 @@ async function createNextRoundState(gameId, previousState) {
 
 // Generate new prices based on previous prices
 function generateNewPrices(previousPrices, gameState) {
+  // Use the advanced price generator if available, otherwise fall back to simple generation
+  if (window.priceGenerator) {
+    return window.priceGenerator.generateNewPrices(previousPrices, gameState);
+  }
+
+  // Fallback simple price generation (for backward compatibility)
   const newPrices = {};
 
   // Define asset parameters (simplified version)

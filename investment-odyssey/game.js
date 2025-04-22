@@ -6,6 +6,52 @@ let playerState = null;
 let gameState = null;
 let currentRound = 0;
 
+// Asset information for educational purposes
+const assetInfo = {
+  'S&P 500': {
+    description: 'A stock market index tracking the performance of 500 large companies listed on stock exchanges in the United States.',
+    risk: 'Medium',
+    expectedReturn: 'Medium-High',
+    volatility: 'Medium',
+    correlations: 'Negative correlation with bonds, positive with real estate and Bitcoin.'
+  },
+  'Bonds': {
+    description: 'Debt securities issued by governments and corporations to raise capital.',
+    risk: 'Low',
+    expectedReturn: 'Low',
+    volatility: 'Low',
+    correlations: 'Negative correlation with stocks, low correlation with other assets.'
+  },
+  'Real Estate': {
+    description: 'Property consisting of land and buildings, often represented through REITs (Real Estate Investment Trusts).',
+    risk: 'Medium',
+    expectedReturn: 'Medium',
+    volatility: 'Medium-Low',
+    correlations: 'Positive correlation with stocks, negative with gold.'
+  },
+  'Gold': {
+    description: 'Precious metal often used as a store of value and hedge against inflation.',
+    risk: 'Medium',
+    expectedReturn: 'Medium',
+    volatility: 'Medium-High',
+    correlations: 'Negative correlation with real estate and Bitcoin, low correlation with stocks.'
+  },
+  'Commodities': {
+    description: 'Raw materials or primary agricultural products that can be bought and sold.',
+    risk: 'Medium-High',
+    expectedReturn: 'Medium',
+    volatility: 'Medium-High',
+    correlations: 'Low correlation with most assets.'
+  },
+  'Bitcoin': {
+    description: 'A decentralized digital currency without a central bank or administrator.',
+    risk: 'Very High',
+    expectedReturn: 'High',
+    volatility: 'Very High',
+    correlations: 'Positive correlation with stocks, negative with gold and bonds.'
+  }
+};
+
 // DOM Elements
 const singlePlayerBtn = document.getElementById('single-player-btn');
 const classModeBtn = document.getElementById('class-mode-btn');
@@ -313,6 +359,7 @@ function loadGameInterface() {
       <div class="game-actions">
         <button id="next-round-btn" class="primary-btn">Next Round</button>
         <button id="view-history-btn" class="secondary-btn">Trade History</button>
+        <button id="view-correlation-btn" class="secondary-btn">Correlation Matrix</button>
         <button id="back-to-welcome" class="secondary-btn">Exit Game</button>
       </div>
 
@@ -343,6 +390,113 @@ function loadGameInterface() {
           </div>
         </div>
       </div>
+
+      <!-- Asset Information Modal (hidden by default) -->
+      <div id="asset-info-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <span class="close-modal">&times;</span>
+          <h3>Asset Information</h3>
+          <div id="asset-info-content">
+            <!-- Asset information will be loaded here -->
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn close-asset-info-btn">Close</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Correlation Matrix Modal (hidden by default) -->
+      <div id="correlation-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <span class="close-modal">&times;</span>
+          <h3>Asset Correlation Matrix</h3>
+          <p class="modal-description">
+            This matrix shows how different assets move in relation to each other.
+            Values close to 1 indicate assets that tend to move together,
+            values close to -1 indicate assets that tend to move in opposite directions,
+            and values close to 0 indicate little relationship.
+          </p>
+          <div class="correlation-container">
+            <table class="correlation-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>S&P 500</th>
+                  <th>Bonds</th>
+                  <th>Real Estate</th>
+                  <th>Gold</th>
+                  <th>Commodities</th>
+                  <th>Bitcoin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>S&P 500</strong></td>
+                  <td class="corr-1">1.00</td>
+                  <td class="corr-neg">-0.52</td>
+                  <td class="corr-pos">0.34</td>
+                  <td class="corr-neutral">0.02</td>
+                  <td class="corr-neutral">0.12</td>
+                  <td class="corr-pos">0.41</td>
+                </tr>
+                <tr>
+                  <td><strong>Bonds</strong></td>
+                  <td class="corr-neg">-0.52</td>
+                  <td class="corr-1">1.00</td>
+                  <td class="corr-neutral">0.02</td>
+                  <td class="corr-neutral">0.03</td>
+                  <td class="corr-neutral">-0.02</td>
+                  <td class="corr-neg">-0.23</td>
+                </tr>
+                <tr>
+                  <td><strong>Real Estate</strong></td>
+                  <td class="corr-pos">0.34</td>
+                  <td class="corr-neutral">0.02</td>
+                  <td class="corr-1">1.00</td>
+                  <td class="corr-neg">-0.50</td>
+                  <td class="corr-neutral">-0.03</td>
+                  <td class="corr-neutral">0.16</td>
+                </tr>
+                <tr>
+                  <td><strong>Gold</strong></td>
+                  <td class="corr-neutral">0.02</td>
+                  <td class="corr-neutral">0.03</td>
+                  <td class="corr-neg">-0.50</td>
+                  <td class="corr-1">1.00</td>
+                  <td class="corr-neutral">0.10</td>
+                  <td class="corr-neg">-0.53</td>
+                </tr>
+                <tr>
+                  <td><strong>Commodities</strong></td>
+                  <td class="corr-neutral">0.12</td>
+                  <td class="corr-neutral">-0.02</td>
+                  <td class="corr-neutral">-0.03</td>
+                  <td class="corr-neutral">0.10</td>
+                  <td class="corr-1">1.00</td>
+                  <td class="corr-neutral">0.04</td>
+                </tr>
+                <tr>
+                  <td><strong>Bitcoin</strong></td>
+                  <td class="corr-pos">0.41</td>
+                  <td class="corr-neg">-0.23</td>
+                  <td class="corr-neutral">0.16</td>
+                  <td class="corr-neg">-0.53</td>
+                  <td class="corr-neutral">0.04</td>
+                  <td class="corr-1">1.00</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="correlation-legend">
+            <div class="legend-item"><span class="legend-color corr-pos"></span> Positive Correlation</div>
+            <div class="legend-item"><span class="legend-color corr-neutral"></span> Low/No Correlation</div>
+            <div class="legend-item"><span class="legend-color corr-neg"></span> Negative Correlation</div>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn close-correlation-btn">Close</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -366,13 +520,40 @@ function loadGameInterface() {
     document.getElementById('trade-history-modal').style.display = 'block';
   });
 
-  // Add event listeners for closing the trade history modal
-  document.querySelector('.close-modal').addEventListener('click', () => {
-    document.getElementById('trade-history-modal').style.display = 'none';
+  // Add event listener for the correlation matrix button
+  document.getElementById('view-correlation-btn').addEventListener('click', () => {
+    document.getElementById('correlation-modal').style.display = 'block';
+  });
+
+  // Add event listeners for asset information
+  document.querySelectorAll('.asset-name').forEach(element => {
+    element.style.cursor = 'pointer';
+    element.title = 'Click for asset information';
+    element.addEventListener('click', () => {
+      const asset = element.parentElement.getAttribute('data-asset');
+      showAssetInfo(asset);
+    });
+  });
+
+  // Add event listeners for closing modals
+  document.querySelectorAll('.close-modal').forEach(closeBtn => {
+    closeBtn.addEventListener('click', () => {
+      document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.display = 'none';
+      });
+    });
   });
 
   document.querySelector('.close-history-btn').addEventListener('click', () => {
     document.getElementById('trade-history-modal').style.display = 'none';
+  });
+
+  document.querySelector('.close-asset-info-btn').addEventListener('click', () => {
+    document.getElementById('asset-info-modal').style.display = 'none';
+  });
+
+  document.querySelector('.close-correlation-btn').addEventListener('click', () => {
+    document.getElementById('correlation-modal').style.display = 'none';
   });
 
   // Add event listener for the back button
@@ -701,6 +882,92 @@ async function advanceToNextRound() {
 
   // Reload the game interface
   loadGameInterface();
+}
+
+// Show asset information in a modal
+function showAssetInfo(asset) {
+  const assetInfoContent = document.getElementById('asset-info-content');
+  const assetData = assetInfo[asset];
+
+  if (!assetData) {
+    assetInfoContent.innerHTML = `<p>No information available for ${asset}.</p>`;
+    document.getElementById('asset-info-modal').style.display = 'block';
+    return;
+  }
+
+  // Get current price and price change
+  const price = gameState.asset_prices[asset];
+  const priceHistory = gameState.price_history[asset];
+  let priceChange = 0;
+  let priceChangePercent = 0;
+
+  if (priceHistory.length > 1) {
+    const previousPrice = priceHistory[priceHistory.length - 2];
+    priceChange = price - previousPrice;
+    priceChangePercent = (priceChange / previousPrice) * 100;
+  }
+
+  // Get asset parameters from price generator if available
+  let meanReturn = 'N/A';
+  let stdDev = 'N/A';
+  let minReturn = 'N/A';
+  let maxReturn = 'N/A';
+
+  if (window.priceGenerator && window.priceGenerator.assetParams[asset]) {
+    const params = window.priceGenerator.assetParams[asset];
+    meanReturn = `${(params.mean * 100).toFixed(2)}%`;
+    stdDev = `${(params.stdDev * 100).toFixed(2)}%`;
+    minReturn = `${(params.min * 100).toFixed(2)}%`;
+    maxReturn = `${(params.max * 100).toFixed(2)}%`;
+  }
+
+  // Create the asset information content
+  assetInfoContent.innerHTML = `
+    <div class="asset-info-item">
+      <span class="asset-info-label">Description:</span>
+      <span class="asset-info-value">${assetData.description}</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Current Price:</span>
+      <span class="asset-info-value">$${price.toFixed(2)}</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Price Change:</span>
+      <span class="asset-info-value ${priceChange >= 0 ? 'positive' : 'negative'}">
+        ${priceChange >= 0 ? '+' : ''}$${priceChange.toFixed(2)} (${priceChangePercent >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%)
+      </span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Risk Level:</span>
+      <span class="asset-info-value">${assetData.risk}</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Expected Return:</span>
+      <span class="asset-info-value">${assetData.expectedReturn} (Mean: ${meanReturn})</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Volatility:</span>
+      <span class="asset-info-value">${assetData.volatility} (Std Dev: ${stdDev})</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Return Range:</span>
+      <span class="asset-info-value">Min: ${minReturn}, Max: ${maxReturn}</span>
+    </div>
+
+    <div class="asset-info-item">
+      <span class="asset-info-label">Correlations:</span>
+      <span class="asset-info-value">${assetData.correlations}</span>
+    </div>
+  `;
+
+  // Show the modal
+  document.getElementById('asset-info-modal').style.display = 'block';
 }
 
 // Show game results
