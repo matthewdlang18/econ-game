@@ -92,7 +92,7 @@ const assetCorrelationMatrix = [
 ];
 
 // Game session information
-let gameSession = null;
+window.gameSession = null;
 window.currentRound = 0;
 
 // Initialize game
@@ -124,7 +124,11 @@ function initializeGame() {
     window.currentRound = 0;
 
     // Update UI
-    updateUI();
+    if (typeof window.updateUI === 'function') {
+        window.updateUI();
+    } else {
+        console.error('updateUI function not found');
+    }
 }
 
 // Reset all charts
@@ -176,7 +180,11 @@ async function startGame() {
     gameState.CPIHistory.push(gameState.CPI);
 
     // Update UI to show initial state
-    updateUI();
+    if (typeof window.updateUI === 'function') {
+        window.updateUI();
+    } else {
+        console.error('updateUI function not found');
+    }
 
     // Enable next round button
     const nextRoundBtn = document.getElementById('next-round-btn');
@@ -273,8 +281,12 @@ async function nextRound() {
         try {
             // Update UI
             console.log('Updating UI...');
-            updateUI();
-            console.log('UI updated');
+            if (typeof window.updateUI === 'function') {
+                window.updateUI();
+                console.log('UI updated');
+            } else {
+                console.error('updateUI function not found');
+            }
         } catch (updateError) {
             console.error('Error in updateUI function:', updateError);
         }
@@ -291,12 +303,12 @@ async function nextRound() {
 
         try {
             // If connected to Supabase, save to database
-            if (gameSession && window.gameSupabase) {
+            if (window.gameSession && window.gameSupabase) {
                 console.log('Saving game state to database...');
                 if (typeof window.gameSupabase.saveGameState === 'function') {
-                    await window.gameSupabase.saveGameState(gameSession.id, window.currentRound, gameState);
+                    await window.gameSupabase.saveGameState(window.gameSession.id, window.currentRound, gameState);
                     if (typeof window.gameSupabase.savePlayerState === 'function') {
-                        await window.gameSupabase.savePlayerState(gameSession.id, playerState);
+                        await window.gameSupabase.savePlayerState(window.gameSession.id, playerState);
                     }
                     console.log('Game state saved to database');
                 } else {

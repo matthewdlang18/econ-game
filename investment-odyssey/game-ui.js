@@ -1093,21 +1093,4 @@ window.initializePortfolioActionListeners = function() {
     }
 }
 
-    // Distribute cash evenly button
-    const distributeEvenlyBtn = document.getElementById('distribute-evenly-btn');
-    if (distributeEvenlyBtn) {
-        distributeEvenlyBtn.addEventListener('click', buyAllAssets);
-    }
 
-    // Distribute to selected button
-    const distributeSelectedBtn = document.getElementById('distribute-selected-btn');
-    if (distributeSelectedBtn) {
-        distributeSelectedBtn.addEventListener('click', buySelectedAssets);
-    }
-
-    // Sell all assets button
-    const sellAllBtn = document.getElementById('sell-all-btn');
-    if (sellAllBtn) {
-        sellAllBtn.addEventListener('click', sellAllAssets);
-    }
-}

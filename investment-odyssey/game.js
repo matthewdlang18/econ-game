@@ -1,7 +1,6 @@
 // Investment Odyssey Game Logic
 
 // Game state variables
-let gameSession = null;
 let playerState = null;
 let gameState = null;
 
