@@ -371,163 +371,9 @@ async function updateGameSessionRound(gameId, roundNumber) {
 // Submit score to leaderboard
 async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId, finalValue) {
   try {
-    console.log('Submitting to leaderboard:', { userId, userName, gameMode, gameId, sectionId, finalValue });
+    console.log('Submitting to leaderboard:', { userId, userName, gameMode, finalValue });
 
-    // For local IDs, just use localStorage
-    if (gameId && gameId.startsWith('local-')) {
-      console.log('Using local storage for leaderboard (local game ID)');
-      const leaderboardEntry = {
-        user_id: userId,
-        user_name: userName,
-        game_mode: gameMode,
-        final_value: finalValue,
-        created_at: new Date().toISOString()
-      };
-
-      // Save to localStorage
-      try {
-        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-        existingEntries.push(leaderboardEntry);
-        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
-      } catch (localError) {
-        console.error('Error saving to localStorage:', localError);
-      }
-
-      return { data: leaderboardEntry, error: null };
-    }
-
-    // For UUIDs, try to save to database
-    // First check if there's an existing entry for this user
-    const { data: existingEntry, error: checkError } = await supabaseClient
-      .from('leaderboard')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('game_mode', gameMode)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error('Error checking existing leaderboard entry:', checkError);
-      // Fall back to localStorage
-      const leaderboardEntry = {
-        user_id: userId,
-        user_name: userName,
-        game_mode: gameMode,
-        final_value: finalValue,
-        created_at: new Date().toISOString()
-      };
-
-      try {
-        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-        existingEntries.push(leaderboardEntry);
-        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
-      } catch (localError) {
-        console.error('Error saving to localStorage:', localError);
-      }
-
-      return { data: leaderboardEntry, error: checkError };
-    }
-
-    let result;
-
-    if (existingEntry) {
-      // Update existing entry if new score is better
-      if (finalValue > existingEntry.final_value) {
-        // Prepare update data
-        let updateData = {
-          final_value: finalValue,
-          user_name: userName // Update name in case it changed
-        };
-
-        // Only include game_id if it's provided and is a valid UUID
-        if (gameId) {
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          if (uuidRegex.test(gameId)) {
-            updateData.game_id = gameId;
-          } else {
-            console.warn('Invalid UUID format for game_id, omitting from leaderboard update:', gameId);
-          }
-        } else {
-          console.log('No game_id provided for update, leaving existing game reference unchanged');
-        }
-
-        // Include section_id if provided
-        if (sectionId) {
-          updateData.section_id = sectionId;
-        }
-
-        result = await supabaseClient
-          .from('leaderboard')
-          .update(updateData)
-          .eq('id', existingEntry.id)
-          .select();
-
-        console.log('Updated existing leaderboard entry with better score');
-      } else {
-        console.log('Existing score is better, not updating');
-        return { data: existingEntry, error: null };
-      }
-    } else {
-      // Insert new entry
-      // Validate gameId if provided (it's optional in the leaderboard table)
-      let insertData = {
-        user_id: userId,
-        user_name: userName,
-        game_mode: gameMode,
-        final_value: finalValue
-      };
-
-      // Only include game_id if it's provided and is a valid UUID
-      if (gameId) {
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(gameId)) {
-          insertData.game_id = gameId;
-        } else {
-          console.warn('Invalid UUID format for game_id, omitting from leaderboard entry:', gameId);
-        }
-      } else {
-        console.log('No game_id provided, creating leaderboard entry without game reference');
-      }
-
-      // Include section_id if provided
-      if (sectionId) {
-        insertData.section_id = sectionId;
-      }
-
-      result = await supabaseClient
-        .from('leaderboard')
-        .insert(insertData)
-        .select();
-
-      console.log('Inserted new leaderboard entry');
-    }
-
-    if (result.error) {
-      console.error('Error saving to leaderboard:', result.error);
-      // Fall back to localStorage
-      const leaderboardEntry = {
-        user_id: userId,
-        user_name: userName,
-        game_mode: gameMode,
-        final_value: finalValue,
-        created_at: new Date().toISOString()
-      };
-
-      try {
-        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-        existingEntries.push(leaderboardEntry);
-        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
-      } catch (localError) {
-        console.error('Error saving to localStorage:', localError);
-      }
-    } else {
-      console.log('Leaderboard entry saved to database successfully');
-    }
-
-    return result;
-  } catch (error) {
-    console.error('Error submitting to leaderboard:', error);
-
-    // Fall back to localStorage
+    // Always save to localStorage first as a backup
     const leaderboardEntry = {
       user_id: userId,
       user_name: userName,
@@ -540,10 +386,77 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
       const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
       existingEntries.push(leaderboardEntry);
       localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+      console.log('Score saved to local leaderboard');
     } catch (localError) {
       console.error('Error saving to localStorage:', localError);
     }
 
+    // Now try to save to the database
+    // We'll simplify this by not using game_id at all
+    // The leaderboard table allows game_id to be null
+    let insertData = {
+      user_id: userId,
+      user_name: userName,
+      game_mode: gameMode,
+      final_value: finalValue
+    };
+
+    // Include section_id if provided
+    if (sectionId) {
+      insertData.section_id = sectionId;
+    }
+
+    // First check if there's an existing entry for this user and game mode
+    const { data: existingEntry, error: checkError } = await supabaseClient
+      .from('leaderboard')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('game_mode', gameMode)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking existing leaderboard entry:', checkError);
+      return { data: leaderboardEntry, error: checkError };
+    }
+
+    let result;
+
+    if (existingEntry) {
+      // Update existing entry if new score is better
+      if (finalValue > existingEntry.final_value) {
+        result = await supabaseClient
+          .from('leaderboard')
+          .update({
+            final_value: finalValue,
+            user_name: userName // Update name in case it changed
+          })
+          .eq('id', existingEntry.id)
+          .select();
+
+        console.log('Updated existing leaderboard entry with better score');
+      } else {
+        console.log('Existing score is better, not updating');
+        return { data: existingEntry, error: null };
+      }
+    } else {
+      // Insert new entry
+      result = await supabaseClient
+        .from('leaderboard')
+        .insert(insertData)
+        .select();
+
+      console.log('Inserted new leaderboard entry');
+    }
+
+    if (result.error) {
+      console.error('Error saving to leaderboard:', result.error);
+      return { data: leaderboardEntry, error: result.error };
+    }
+
+    console.log('Leaderboard entry saved to database successfully');
+    return result;
+  } catch (error) {
+    console.error('Error submitting to leaderboard:', error);
     return { data: leaderboardEntry, error };
   }
 }
@@ -568,71 +481,85 @@ async function getLeaderboard(gameMode = null, sectionId = null, limit = 20) {
 
     const { data, error } = await query;
 
-    if (error) {
-      console.error('Error fetching leaderboard from database:', error);
-      // Fall back to local entries only
-      try {
-        const localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
-
-        // Filter by game mode if specified
-        let filteredEntries = localEntries;
-        if (gameMode) {
-          filteredEntries = filteredEntries.filter(entry => entry.game_mode === gameMode);
-        }
-
-        // Sort by final value
-        filteredEntries.sort((a, b) => b.final_value - a.final_value);
-
-        // Limit entries
-        if (filteredEntries.length > limit) {
-          filteredEntries = filteredEntries.slice(0, limit);
-        }
-
-        console.log('Using local leaderboard entries only');
-        return { data: filteredEntries, error: null };
-      } catch (localError) {
-        console.error('Error loading local leaderboard entries:', localError);
-        return { data: [], error };
-      }
-    }
-
-    // Now try to merge with local entries
+    // Get local entries
+    let localEntries = [];
     try {
-      const localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+      localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
 
-      if (localEntries.length > 0) {
-        // Filter by game mode if specified
-        let filteredEntries = localEntries;
-        if (gameMode) {
-          filteredEntries = filteredEntries.filter(entry => entry.game_mode === gameMode);
-        }
-
-        // Merge with online data
-        const mergedEntries = [...(data || []), ...filteredEntries];
-
-        // Sort by final value
-        mergedEntries.sort((a, b) => b.final_value - a.final_value);
-
-        // Limit entries
-        if (mergedEntries.length > limit) {
-          const limitedEntries = mergedEntries.slice(0, limit);
-          console.log('Using merged leaderboard entries (online + local)');
-          return { data: limitedEntries, error: null };
-        }
-
-        console.log('Using merged leaderboard entries (online + local)');
-        return { data: mergedEntries, error: null };
+      // Filter by game mode if specified
+      if (gameMode) {
+        localEntries = localEntries.filter(entry => entry.game_mode === gameMode);
       }
     } catch (localError) {
-      console.error('Error merging local leaderboard entries:', localError);
+      console.error('Error loading local leaderboard entries:', localError);
     }
 
-    // If we get here, just return the online data
+    // If we have an error from the database or no data, just use local entries
+    if (error || !data || data.length === 0) {
+      if (error) {
+        console.error('Error fetching leaderboard from database:', error);
+      }
+
+      // Sort by final value
+      localEntries.sort((a, b) => b.final_value - a.final_value);
+
+      // Limit entries
+      if (localEntries.length > limit) {
+        localEntries = localEntries.slice(0, limit);
+      }
+
+      console.log('Using local leaderboard entries only');
+      return { data: localEntries, error: null };
+    }
+
+    // If we have both online and local entries, merge them
+    if (localEntries.length > 0) {
+      // Merge with online data
+      const mergedEntries = [...data, ...localEntries];
+
+      // Sort by final value
+      mergedEntries.sort((a, b) => b.final_value - a.final_value);
+
+      // Limit entries
+      if (mergedEntries.length > limit) {
+        const limitedEntries = mergedEntries.slice(0, limit);
+        console.log('Using merged leaderboard entries (online + local)');
+        return { data: limitedEntries, error: null };
+      }
+
+      console.log('Using merged leaderboard entries (online + local)');
+      return { data: mergedEntries, error: null };
+    }
+
+    // If we only have online entries, return those
     console.log('Using online leaderboard entries only');
     return { data, error: null };
   } catch (error) {
     console.error('Exception in getLeaderboard:', error);
-    return { data: [], error };
+
+    // Try to return local entries as a fallback
+    try {
+      let localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+
+      // Filter by game mode if specified
+      if (gameMode) {
+        localEntries = localEntries.filter(entry => entry.game_mode === gameMode);
+      }
+
+      // Sort by final value
+      localEntries.sort((a, b) => b.final_value - a.final_value);
+
+      // Limit entries
+      if (localEntries.length > limit) {
+        localEntries = localEntries.slice(0, limit);
+      }
+
+      console.log('Using local leaderboard entries as fallback after error');
+      return { data: localEntries, error: null };
+    } catch (localError) {
+      console.error('Error loading local leaderboard entries as fallback:', localError);
+      return { data: [], error };
+    }
   }
 }
 
@@ -662,66 +589,14 @@ async function updateGameSessionActive(gameId, active = false) {
 }
 
 // Get or create a shared single player game session
+// This is a simplified version that doesn't try to find or create a shared session
+// Instead, it just returns a local ID for single player games
 async function getSharedSinglePlayerSession() {
-  try {
-    // First, try to find an existing shared single player session
-    const { data: existingSessions, error: findError } = await supabaseClient
-      .from('game_sessions')
-      .select('*')
-      .eq('section_id', null) // Shared sessions have no section_id
-      .eq('active', true)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (findError) {
-      console.error('Error finding shared single player session:', findError);
-      return { data: null, error: findError };
-    }
-
-    // If we found an existing session, return it
-    if (existingSessions && existingSessions.length > 0) {
-      console.log('Found existing shared single player session:', existingSessions[0].id);
-      return { data: existingSessions[0], error: null };
-    }
-
-    // No existing session found, try to create one
-    // This will only work for TAs due to RLS policies
-    console.log('No shared session found, attempting to create one');
-    const { data: newSession, error: createError } = await supabaseClient
-      .from('game_sessions')
-      .insert({
-        section_id: null, // Shared sessions have no section_id
-        max_rounds: 20,
-        current_round: 0,
-        active: true
-      })
-      .select()
-      .single();
-
-    if (createError) {
-      console.error('Error creating shared single player session:', createError);
-      // Try a different approach - look for ANY active session
-      const { data: anySession, error: anyError } = await supabaseClient
-        .from('game_sessions')
-        .select('*')
-        .eq('active', true)
-        .limit(1);
-
-      if (anyError || !anySession || anySession.length === 0) {
-        console.error('Could not find any active session:', anyError);
-        return { data: null, error: createError };
-      }
-
-      console.log('Using an existing active session as fallback:', anySession[0].id);
-      return { data: anySession[0], error: null };
-    }
-
-    console.log('Created new shared single player session:', newSession.id);
-    return { data: newSession, error: null };
-  } catch (error) {
-    console.error('Exception in getSharedSinglePlayerSession:', error);
-    return { data: null, error };
-  }
+  // We're not going to try to use a shared session anymore
+  // Just return a local ID
+  const localId = 'local-' + Date.now();
+  console.log('Using local ID for single player game:', localId);
+  return { data: { id: localId }, error: null };
 }
 
 // Export functions
