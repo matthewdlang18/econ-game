@@ -149,65 +149,183 @@ async function getActiveGameSession(sectionId) {
 
 // Save game state to Supabase
 async function saveGameState(gameId, userId, gameState) {
-  const { data, error } = await supabaseClient
-    .from('game_states')
-    .upsert({
-      game_id: gameId,
-      user_id: userId,
-      round_number: gameState.roundNumber,
-      asset_prices: gameState.assetPrices,
-      price_history: gameState.priceHistory,
-      cpi: gameState.cpi,
-      cpi_history: gameState.cpiHistory,
-      last_bitcoin_crash_round: gameState.lastBitcoinCrashRound,
-      bitcoin_shock_range: gameState.bitcoinShockRange
-    })
-    .select();
+  try {
+    // Skip database operations for local IDs
+    if (gameId && gameId.startsWith('local-')) {
+      console.log('Using localStorage for game state (local ID)');
+      return { data: null, error: null };
+    }
 
-  return { data, error };
+    // For special format IDs or real UUIDs, try to save to database
+    const { data, error } = await supabaseClient
+      .from('game_states')
+      .upsert({
+        game_id: gameId,
+        user_id: userId,
+        round_number: gameState.roundNumber,
+        asset_prices: gameState.assetPrices,
+        price_history: gameState.priceHistory,
+        cpi: gameState.cpi,
+        cpi_history: gameState.cpiHistory,
+        last_bitcoin_crash_round: gameState.lastBitcoinCrashRound,
+        bitcoin_shock_range: gameState.bitcoinShockRange
+      })
+      .select();
+
+    if (error) {
+      console.error('Error saving game state to database:', error);
+      // Also save to localStorage as backup
+      try {
+        localStorage.setItem('investmentOdyssey_gameState_' + userId, JSON.stringify(gameState));
+      } catch (localError) {
+        console.error('Error saving to localStorage:', localError);
+      }
+    } else {
+      console.log('Game state saved to database successfully');
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Exception in saveGameState:', error);
+    return { data: null, error };
+  }
 }
 
 // Load game state from Supabase
 async function loadGameState(gameId, userId) {
-  const { data, error } = await supabaseClient
-    .from('game_states')
-    .select('*')
-    .eq('game_id', gameId)
-    .eq('user_id', userId)
-    .order('round_number', { ascending: false })
-    .maybeSingle();
+  try {
+    // Skip database operations for local IDs
+    if (gameId && gameId.startsWith('local-')) {
+      console.log('Loading game state from localStorage (local ID)');
+      try {
+        const savedState = localStorage.getItem('investmentOdyssey_gameState_' + userId);
+        if (savedState) {
+          return { data: JSON.parse(savedState), error: null };
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+      }
+      return { data: null, error: null };
+    }
 
-  return { data, error };
+    // For special format IDs or real UUIDs, try to load from database
+    const { data, error } = await supabaseClient
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .order('round_number', { ascending: false })
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error loading game state from database:', error);
+      // Try to load from localStorage as backup
+      try {
+        const savedState = localStorage.getItem('investmentOdyssey_gameState_' + userId);
+        if (savedState) {
+          return { data: JSON.parse(savedState), error: null };
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+      }
+    } else if (data) {
+      console.log('Game state loaded from database successfully');
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Exception in loadGameState:', error);
+    return { data: null, error };
+  }
 }
 
 // Save player state to Supabase
 async function savePlayerState(gameId, userId, playerState) {
-  const { data, error } = await supabaseClient
-    .from('player_states')
-    .upsert({
-      game_id: gameId,
-      user_id: userId,
-      cash: playerState.cash,
-      portfolio: playerState.portfolio,
-      trade_history: playerState.tradeHistory,
-      portfolio_value_history: playerState.portfolioValueHistory,
-      total_value: playerState.totalValue
-    })
-    .select();
+  try {
+    // Skip database operations for local IDs
+    if (gameId && gameId.startsWith('local-')) {
+      console.log('Using localStorage for player state (local ID)');
+      return { data: null, error: null };
+    }
 
-  return { data, error };
+    // For special format IDs or real UUIDs, try to save to database
+    const { data, error } = await supabaseClient
+      .from('player_states')
+      .upsert({
+        game_id: gameId,
+        user_id: userId,
+        cash: playerState.cash,
+        portfolio: playerState.portfolio,
+        trade_history: playerState.tradeHistory,
+        portfolio_value_history: playerState.portfolioValueHistory,
+        total_value: playerState.totalValue
+      })
+      .select();
+
+    if (error) {
+      console.error('Error saving player state to database:', error);
+      // Also save to localStorage as backup
+      try {
+        localStorage.setItem('investmentOdyssey_playerState_' + userId, JSON.stringify(playerState));
+      } catch (localError) {
+        console.error('Error saving to localStorage:', localError);
+      }
+    } else {
+      console.log('Player state saved to database successfully');
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Exception in savePlayerState:', error);
+    return { data: null, error };
+  }
 }
 
 // Load player state from Supabase
 async function loadPlayerState(gameId, userId) {
-  const { data, error } = await supabaseClient
-    .from('player_states')
-    .select('*')
-    .eq('game_id', gameId)
-    .eq('user_id', userId)
-    .maybeSingle();
+  try {
+    // Skip database operations for local IDs
+    if (gameId && gameId.startsWith('local-')) {
+      console.log('Loading player state from localStorage (local ID)');
+      try {
+        const savedState = localStorage.getItem('investmentOdyssey_playerState_' + userId);
+        if (savedState) {
+          return { data: JSON.parse(savedState), error: null };
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+      }
+      return { data: null, error: null };
+    }
 
-  return { data, error };
+    // For special format IDs or real UUIDs, try to load from database
+    const { data, error } = await supabaseClient
+      .from('player_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error loading player state from database:', error);
+      // Try to load from localStorage as backup
+      try {
+        const savedState = localStorage.getItem('investmentOdyssey_playerState_' + userId);
+        if (savedState) {
+          return { data: JSON.parse(savedState), error: null };
+        }
+      } catch (localError) {
+        console.error('Error loading from localStorage:', localError);
+      }
+    } else if (data) {
+      console.log('Player state loaded from database successfully');
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Exception in loadPlayerState:', error);
+    return { data: null, error };
+  }
 }
 
 // Update game session round
@@ -227,32 +345,58 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
   try {
     console.log('Submitting to leaderboard:', { userId, userName, gameMode, gameId, sectionId, finalValue });
 
-    // Skip database operations for local IDs
+    // For local IDs, just use localStorage
     if (gameId && gameId.startsWith('local-')) {
       console.log('Using local storage for leaderboard (local game ID)');
-      return {
-        data: {
-          user_id: userId,
-          user_name: userName,
-          game_mode: gameMode,
-          final_value: finalValue,
-          created_at: new Date().toISOString()
-        },
-        error: null
+      const leaderboardEntry = {
+        user_id: userId,
+        user_name: userName,
+        game_mode: gameMode,
+        final_value: finalValue,
+        created_at: new Date().toISOString()
       };
+
+      // Save to localStorage
+      try {
+        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+        existingEntries.push(leaderboardEntry);
+        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+      } catch (localError) {
+        console.error('Error saving to localStorage:', localError);
+      }
+
+      return { data: leaderboardEntry, error: null };
     }
 
-    // Check if there's an existing entry
+    // For special format IDs or real UUIDs, try to save to database
+    // First check if there's an existing entry
     const { data: existingEntry, error: checkError } = await supabaseClient
       .from('leaderboard')
       .select('*')
       .eq('user_id', userId)
-      .eq('game_id', gameId)
+      .eq('game_mode', gameMode)
       .maybeSingle();
 
     if (checkError) {
       console.error('Error checking existing leaderboard entry:', checkError);
-      throw checkError;
+      // Fall back to localStorage
+      const leaderboardEntry = {
+        user_id: userId,
+        user_name: userName,
+        game_mode: gameMode,
+        final_value: finalValue,
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+        existingEntries.push(leaderboardEntry);
+        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+      } catch (localError) {
+        console.error('Error saving to localStorage:', localError);
+      }
+
+      return { data: leaderboardEntry, error: checkError };
     }
 
     let result;
@@ -264,10 +408,14 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
           .from('leaderboard')
           .update({
             final_value: finalValue,
-            user_name: userName // Update name in case it changed
+            user_name: userName, // Update name in case it changed
+            game_id: gameId,
+            section_id: sectionId
           })
           .eq('id', existingEntry.id)
           .select();
+
+        console.log('Updated existing leaderboard entry with better score');
       } else {
         console.log('Existing score is better, not updating');
         return { data: existingEntry, error: null };
@@ -285,34 +433,143 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
           final_value: finalValue
         })
         .select();
+
+      console.log('Inserted new leaderboard entry');
+    }
+
+    if (result.error) {
+      console.error('Error saving to leaderboard:', result.error);
+      // Fall back to localStorage
+      const leaderboardEntry = {
+        user_id: userId,
+        user_name: userName,
+        game_mode: gameMode,
+        final_value: finalValue,
+        created_at: new Date().toISOString()
+      };
+
+      try {
+        const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+        existingEntries.push(leaderboardEntry);
+        localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+      } catch (localError) {
+        console.error('Error saving to localStorage:', localError);
+      }
+    } else {
+      console.log('Leaderboard entry saved to database successfully');
     }
 
     return result;
   } catch (error) {
     console.error('Error submitting to leaderboard:', error);
-    return { data: null, error };
+
+    // Fall back to localStorage
+    const leaderboardEntry = {
+      user_id: userId,
+      user_name: userName,
+      game_mode: gameMode,
+      final_value: finalValue,
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      const existingEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+      existingEntries.push(leaderboardEntry);
+      localStorage.setItem('investmentOdyssey_leaderboard', JSON.stringify(existingEntries));
+    } catch (localError) {
+      console.error('Error saving to localStorage:', localError);
+    }
+
+    return { data: leaderboardEntry, error };
   }
 }
 
 // Get leaderboard entries
-async function getLeaderboard(gameMode = null, sectionId = null, limit = 10) {
-  let query = supabaseClient
-    .from('leaderboard')
-    .select('*')
-    .order('final_value', { ascending: false })
-    .limit(limit);
+async function getLeaderboard(gameMode = null, sectionId = null, limit = 20) {
+  try {
+    // First try to get online entries
+    let query = supabaseClient
+      .from('leaderboard')
+      .select('*')
+      .order('final_value', { ascending: false })
+      .limit(limit);
 
-  if (gameMode) {
-    query = query.eq('game_mode', gameMode);
+    if (gameMode) {
+      query = query.eq('game_mode', gameMode);
+    }
+
+    if (sectionId) {
+      query = query.eq('section_id', sectionId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching leaderboard from database:', error);
+      // Fall back to local entries only
+      try {
+        const localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+
+        // Filter by game mode if specified
+        let filteredEntries = localEntries;
+        if (gameMode) {
+          filteredEntries = filteredEntries.filter(entry => entry.game_mode === gameMode);
+        }
+
+        // Sort by final value
+        filteredEntries.sort((a, b) => b.final_value - a.final_value);
+
+        // Limit entries
+        if (filteredEntries.length > limit) {
+          filteredEntries = filteredEntries.slice(0, limit);
+        }
+
+        console.log('Using local leaderboard entries only');
+        return { data: filteredEntries, error: null };
+      } catch (localError) {
+        console.error('Error loading local leaderboard entries:', localError);
+        return { data: [], error };
+      }
+    }
+
+    // Now try to merge with local entries
+    try {
+      const localEntries = JSON.parse(localStorage.getItem('investmentOdyssey_leaderboard') || '[]');
+
+      if (localEntries.length > 0) {
+        // Filter by game mode if specified
+        let filteredEntries = localEntries;
+        if (gameMode) {
+          filteredEntries = filteredEntries.filter(entry => entry.game_mode === gameMode);
+        }
+
+        // Merge with online data
+        const mergedEntries = [...(data || []), ...filteredEntries];
+
+        // Sort by final value
+        mergedEntries.sort((a, b) => b.final_value - a.final_value);
+
+        // Limit entries
+        if (mergedEntries.length > limit) {
+          const limitedEntries = mergedEntries.slice(0, limit);
+          console.log('Using merged leaderboard entries (online + local)');
+          return { data: limitedEntries, error: null };
+        }
+
+        console.log('Using merged leaderboard entries (online + local)');
+        return { data: mergedEntries, error: null };
+      }
+    } catch (localError) {
+      console.error('Error merging local leaderboard entries:', localError);
+    }
+
+    // If we get here, just return the online data
+    console.log('Using online leaderboard entries only');
+    return { data, error: null };
+  } catch (error) {
+    console.error('Exception in getLeaderboard:', error);
+    return { data: [], error };
   }
-
-  if (sectionId) {
-    query = query.eq('section_id', sectionId);
-  }
-
-  const { data, error } = await query;
-
-  return { data, error };
 }
 
 // Subscribe to game session updates
