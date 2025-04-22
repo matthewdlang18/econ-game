@@ -48,16 +48,6 @@ async function showDashboard(profile) {
         <div id="ta-controls">
           <h4>TA Controls</h4>
           <p>Click "Show Roster" to view students in a section.</p>
-          <div class="games-section">
-            <h4>Available Games</h4>
-            <div class="game-cards">
-              <div class="game-card">
-                <h5>Investment Odyssey</h5>
-                <p>A financial market simulation game to learn investment strategies.</p>
-                <a href="investment-odyssey/index.html" class="game-link">Launch Game</a>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
       <button id="logout-btn">Logout</button>
@@ -131,13 +121,7 @@ async function showDashboard(profile) {
     <div id="role-dashboard" class="dashboard-panel">
       <div id="student-games">
         <h4>Student Dashboard</h4>
-        <div class="game-cards">
-          <div class="game-card">
-            <h5>Investment Odyssey</h5>
-            <p>A financial market simulation game to learn investment strategies.</p>
-            <a href="investment-odyssey/index.html" class="game-link">Launch Game</a>
-          </div>
-        </div>
+        <div id="student-games-list"><em>(No games available yet)</em></div>
       </div>
     </div>
     <button id="logout-btn">Logout</button>
@@ -187,8 +171,8 @@ async function showDashboard(profile) {
   // Show TA controls or student dashboard after section selection
   const roleDashboard = document.getElementById('role-dashboard');
   if (profile.role === 'ta') {
-    roleDashboard.innerHTML = '<div id="ta-controls"><h4>TA Controls</h4><div class="games-section"><h4>Available Games</h4><div class="game-cards"><div class="game-card"><h5>Investment Odyssey</h5><p>A financial market simulation game to learn investment strategies.</p><a href="investment-odyssey/index.html" class="game-link">Launch Game</a></div></div></div></div>';
+    roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
   } else {
-    roleDashboard.innerHTML = '<div id="student-games"><h4>Available Games</h4><div class="game-cards"><div class="game-card"><h5>Investment Odyssey</h5><p>A financial market simulation game to learn investment strategies.</p><a href="investment-odyssey/index.html" class="game-link">Launch Game</a></div></div></div>';
+    roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
   }
 }
