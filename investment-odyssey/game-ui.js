@@ -464,31 +464,11 @@ window.initializeCharts = function() {
     console.log('Initializing charts...');
 
     try {
-        // Destroy existing charts to prevent errors
-        if (window.portfolioChart) {
-            window.portfolioChart.destroy();
-            window.portfolioChart = null;
-        }
-        if (window.portfolioAllocationChart) {
-            window.portfolioAllocationChart.destroy();
-            window.portfolioAllocationChart = null;
-        }
-        if (window.realEstateGoldChart) {
-            window.realEstateGoldChart.destroy();
-            window.realEstateGoldChart = null;
-        }
-        if (window.bondsCommoditiesSPChart) {
-            window.bondsCommoditiesSPChart.destroy();
-            window.bondsCommoditiesSPChart = null;
-        }
-        if (window.bitcoinChart) {
-            window.bitcoinChart.destroy();
-            window.bitcoinChart = null;
-        }
-        if (window.cpiChart) {
-            window.cpiChart.destroy();
-            window.cpiChart = null;
-        }
+        // Destroy all existing charts to prevent errors
+        destroyAllCharts();
+
+        // Wait a moment for the DOM to be ready
+        setTimeout(() => {
         // Initialize portfolio value chart
         const portfolioValueCanvas = document.getElementById('portfolio-value-chart');
         if (portfolioValueCanvas) {
@@ -777,8 +757,44 @@ window.initializeCharts = function() {
         }
 
         console.log('Charts initialized successfully');
+        }, 100); // End of setTimeout
     } catch (error) {
         console.error('Error initializing charts:', error);
+    }
+}
+
+// Destroy all charts to prevent errors
+window.destroyAllCharts = function() {
+    console.log('Destroying all charts...');
+    try {
+        // Destroy existing charts to prevent errors
+        if (window.portfolioChart) {
+            window.portfolioChart.destroy();
+            window.portfolioChart = null;
+        }
+        if (window.portfolioAllocationChart) {
+            window.portfolioAllocationChart.destroy();
+            window.portfolioAllocationChart = null;
+        }
+        if (window.realEstateGoldChart) {
+            window.realEstateGoldChart.destroy();
+            window.realEstateGoldChart = null;
+        }
+        if (window.bondsCommoditiesSPChart) {
+            window.bondsCommoditiesSPChart.destroy();
+            window.bondsCommoditiesSPChart = null;
+        }
+        if (window.bitcoinChart) {
+            window.bitcoinChart.destroy();
+            window.bitcoinChart = null;
+        }
+        if (window.cpiChart) {
+            window.cpiChart.destroy();
+            window.cpiChart = null;
+        }
+        console.log('All charts destroyed successfully');
+    } catch (error) {
+        console.error('Error destroying charts:', error);
     }
 }
 
@@ -1106,6 +1122,21 @@ window.initializeEventListeners = function() {
         });
     }
 
+    // Add event listener for the debug trade panel button
+    const debugTradeBtn = document.getElementById('debug-trade-btn');
+    if (debugTradeBtn) {
+        debugTradeBtn.addEventListener('click', function() {
+            console.log('Debug trade panel button clicked');
+            window.debugShowTradePanel();
+            // Also set up the trade panel with some default values
+            const assetNameElement = document.getElementById('trade-asset-name');
+            if (assetNameElement) {
+                assetNameElement.textContent = 'Gold';
+            }
+            window.updateTradeSummary();
+        });
+    }
+
     // Add event listener for the back button
     const backToWelcomeBtn = document.getElementById('back-to-welcome');
     if (backToWelcomeBtn) {
@@ -1146,7 +1177,7 @@ window.initializeEventListeners = function() {
 window.initializeTradeFormListeners = function() {
     console.log('Initializing trade form listeners');
 
-    // Add event listeners for trade buttons
+    // Add event listeners for trade buttons - both delegation and direct
     document.addEventListener('click', function(event) {
         if (event.target.classList.contains('trade-btn')) {
             console.log('Trade button clicked:', event.target);
@@ -1157,16 +1188,63 @@ window.initializeTradeFormListeners = function() {
         }
     });
 
+    // Also add direct event listeners to all trade buttons
+    window.addTradeButtonListeners();
+};
+
+// Add direct event listeners to all trade buttons
+window.addTradeButtonListeners = function() {
+    console.log('Adding direct event listeners to trade buttons');
+    const tradeButtons = document.querySelectorAll('.trade-btn');
+    console.log(`Found ${tradeButtons.length} trade buttons`);
+
+    tradeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const asset = this.getAttribute('data-asset');
+            const action = this.classList.contains('buy') ? 'buy' : 'sell';
+            console.log(`Direct listener: Trade button clicked for ${asset}, action: ${action}`);
+            window.showTradePanel(asset, action);
+
+            // Debug: Check if trade panel is visible after a short delay
+            setTimeout(() => {
+                const tradePanel = document.querySelector('.trade-panel');
+                console.log('Trade panel visibility check:', {
+                    display: tradePanel.style.display,
+                    zIndex: tradePanel.style.zIndex,
+                    visible: tradePanel.style.display !== 'none',
+                    computedStyle: window.getComputedStyle(tradePanel).display
+                });
+            }, 100);
+        });
+    });
+};
+
+// Debug function to show the trade panel directly
+window.debugShowTradePanel = function() {
+    const tradePanel = document.querySelector('.trade-panel');
+    if (tradePanel) {
+        tradePanel.style.display = 'block';
+        tradePanel.style.zIndex = '9999';
+        console.log('Trade panel forced visible');
+    } else {
+        console.error('Trade panel not found');
+    }
+};
+
     // Add event listener for trade action change
     const tradeAction = document.getElementById('trade-action');
     if (tradeAction) {
-        tradeAction.addEventListener('change', updateTradeSummary);
+        tradeAction.addEventListener('change', function() {
+            window.updateTradeSummary();
+        });
     }
 
     // Add event listener for trade quantity change
     const tradeQuantity = document.getElementById('trade-quantity');
     if (tradeQuantity) {
-        tradeQuantity.addEventListener('input', updateTradeSummary);
+        tradeQuantity.addEventListener('input', function() {
+            window.updateTradeSummary();
+        });
     }
 
     // Add event listeners for quantity shortcuts
@@ -1174,7 +1252,7 @@ window.initializeTradeFormListeners = function() {
         if (event.target.classList.contains('quantity-btn')) {
             const percent = parseInt(event.target.getAttribute('data-percent'));
             if (!isNaN(percent)) {
-                setAmountPercentage(percent);
+                window.setAmountPercentage(percent);
             }
         }
     });
@@ -1182,7 +1260,9 @@ window.initializeTradeFormListeners = function() {
     // Add event listener for execute trade button
     const executeTradeBtn = document.getElementById('execute-trade-btn');
     if (executeTradeBtn) {
-        executeTradeBtn.addEventListener('click', executeTrade);
+        executeTradeBtn.addEventListener('click', function() {
+            window.executeTrade();
+        });
     }
 
     // Add event listener for cancel trade button

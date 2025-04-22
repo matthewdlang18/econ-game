@@ -335,6 +335,9 @@ function loadGameInterface() {
                                 <button id="view-correlation-btn" class="btn btn-outline-info mr-2">
                                     <i class="fas fa-table"></i> Correlation Matrix
                                 </button>
+                                <button id="debug-trade-btn" class="btn btn-outline-danger mr-2">
+                                    <i class="fas fa-bug"></i> Debug Trade Panel
+                                </button>
                             </div>
                             <div>
                                 <button id="back-to-welcome" class="btn btn-outline-secondary">

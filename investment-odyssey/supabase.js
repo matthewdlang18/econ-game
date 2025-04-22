@@ -237,11 +237,10 @@ async function updatePlayerState(gameId, updatedState) {
     }
 
     // Handle trade history naming inconsistency
-    if (stateToUpdate.tradeHistory && !stateToUpdate.trade_history) {
+    if (stateToUpdate.tradeHistory) {
+      // If tradeHistory exists, convert it to trade_history
       stateToUpdate.trade_history = stateToUpdate.tradeHistory;
       delete stateToUpdate.tradeHistory; // Remove the camelCase version
-    } else if (stateToUpdate.trade_history && !stateToUpdate.tradeHistory) {
-      // Keep using snake_case version which matches the database schema
     }
 
     // Make sure portfolio_value_history is an array
@@ -258,11 +257,20 @@ async function updatePlayerState(gameId, updatedState) {
       stateToUpdate.trade_history = [];
     }
 
-    console.log('Updating player state with:', stateToUpdate);
+    // Create a clean version of the state with only the columns that exist in the database
+    const cleanState = {
+      cash: stateToUpdate.cash,
+      portfolio: stateToUpdate.portfolio,
+      portfolio_value_history: stateToUpdate.portfolio_value_history,
+      trade_history: stateToUpdate.trade_history,
+      total_value: stateToUpdate.total_value || (stateToUpdate.cash + calculatePortfolioValue(stateToUpdate.portfolio, gameState?.asset_prices || {}))
+    };
+
+    console.log('Updating player state with:', cleanState);
 
     const { error } = await supabase
       .from('player_states')
-      .update(stateToUpdate)
+      .update(cleanState)
       .eq('game_id', gameId)
       .eq('user_id', currentUser.id);
 
@@ -276,6 +284,19 @@ async function updatePlayerState(gameId, updatedState) {
     console.error('Error in updatePlayerState:', error);
     return false;
   }
+}
+
+// Helper function to calculate portfolio value
+function calculatePortfolioValue(portfolio, assetPrices) {
+  let value = 0;
+  if (!portfolio || !assetPrices) return value;
+
+  for (const [asset, quantity] of Object.entries(portfolio)) {
+    const price = assetPrices[asset] || 0;
+    value += price * quantity;
+  }
+
+  return value;
 }
 
 // Create a new game state for the next round
