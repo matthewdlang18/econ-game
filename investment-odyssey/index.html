@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Investment Odyssey</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game-container">
+    <header>
+      <h1>Investment Odyssey</h1>
+      <div id="user-info"></div>
+    </header>
+    
+    <main>
+      <div id="welcome-screen">
+        <h2>Welcome to Investment Odyssey</h2>
+        <p>An interactive financial market simulation game designed to help you understand investment strategies, risk management, and portfolio diversification through hands-on experience.</p>
+        
+        <div class="game-description">
+          <h3>About the Game</h3>
+          <p>Investment Odyssey simulates real market behavior using correlation-based asset price generation and includes special mechanics like Bitcoin's 4-year cycle to provide an educational yet engaging experience.</p>
+          
+          <div class="feature-list">
+            <h4>Key Features:</h4>
+            <ul>
+              <li>Learn investment concepts through practical application</li>
+              <li>Experience realistic market behavior without risking real money</li>
+              <li>Understand correlation effects on portfolio diversification</li>
+              <li>Gain insights into cryptocurrency market cycles</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="game-modes">
+          <h3>Game Modes</h3>
+          <div class="mode-cards">
+            <div class="mode-card">
+              <h4>Single Player</h4>
+              <p>Play at your own pace and test different investment strategies.</p>
+              <button id="single-player-btn" class="primary-btn">Start Single Player</button>
+            </div>
+            <div class="mode-card">
+              <h4>Class Mode</h4>
+              <p>Join your class session and compete with classmates.</p>
+              <button id="class-mode-btn" class="primary-btn">Join Class Game</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="game-screen" style="display: none;">
+        <!-- Game interface will be loaded here -->
+      </div>
+    </main>
+    
+    <footer>
+      <p>&copy; 2023 Investment Odyssey</p>
+    </footer>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

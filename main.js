@@ -173,6 +173,25 @@ async function showDashboard(profile) {
   if (profile.role === 'ta') {
     roleDashboard.innerHTML = '<div id="ta-controls">(TA controls go here)</div>';
   } else {
-    roleDashboard.innerHTML = '<div id="student-games">(Student game list goes here)</div>';
+    roleDashboard.innerHTML = `
+      <div id="student-games">
+        <h4>Available Games</h4>
+        <div id="student-games-list">
+          <div class="game-card">
+            <h5>Investment Odyssey</h5>
+            <p>An interactive financial market simulation game designed to help you understand investment strategies, risk management, and portfolio diversification.</p>
+            <button id="play-investment-odyssey" class="game-btn">Play Now</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    // Add event listener for the Investment Odyssey button
+    document.getElementById('play-investment-odyssey').addEventListener('click', () => {
+      // Store user data in localStorage for the game to access
+      localStorage.setItem('userData', JSON.stringify(profile));
+      // Navigate to the Investment Odyssey game
+      window.location.href = 'investment-odyssey/index.html';
+    });
   }
 }

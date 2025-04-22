@@ -1,0 +1,203 @@
+/* Investment Odyssey Styles */
+:root {
+  --primary-color: #2e7be4;
+  --primary-dark: #1956a3;
+  --secondary-color: #f4f8fd;
+  --text-color: #333;
+  --light-text: #666;
+  --border-radius: 8px;
+  --box-shadow: 0 2px 8px rgba(46, 123, 228, 0.1);
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  color: var(--text-color);
+  line-height: 1.6;
+}
+
+#game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+header h1 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+#user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+main {
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+
+#welcome-screen {
+  text-align: center;
+}
+
+#welcome-screen h2 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.game-description {
+  max-width: 800px;
+  margin: 0 auto 40px;
+  text-align: left;
+  padding: 20px;
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius);
+}
+
+.feature-list {
+  margin-top: 20px;
+}
+
+.feature-list ul {
+  text-align: left;
+  padding-left: 20px;
+}
+
+.feature-list li {
+  margin-bottom: 8px;
+}
+
+.game-modes {
+  margin-top: 40px;
+}
+
+.mode-cards {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 20px;
+}
+
+.mode-card {
+  flex: 1;
+  max-width: 350px;
+  padding: 25px;
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  transition: transform 0.3s ease;
+}
+
+.mode-card:hover {
+  transform: translateY(-5px);
+}
+
+.mode-card h4 {
+  color: var(--primary-color);
+  margin-top: 0;
+}
+
+.primary-btn {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 15px;
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+footer {
+  text-align: center;
+  color: var(--light-text);
+  padding: 20px 0;
+}
+
+/* Game screen styles */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.game-header h2 {
+  margin: 0;
+  color: var(--primary-color);
+}
+
+.game-info {
+  display: flex;
+  gap: 20px;
+}
+
+.game-info span {
+  font-weight: bold;
+}
+
+.game-content {
+  padding: 20px;
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius);
+  min-height: 300px;
+}
+
+.game-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.secondary-btn {
+  background-color: #f4f4f4;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.secondary-btn:hover {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .mode-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mode-card {
+    width: 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+}

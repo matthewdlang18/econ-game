@@ -1,0 +1,138 @@
+-- Investment Odyssey Database Setup
+
+-- Game Sessions Table
+CREATE TABLE game_sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  section_id UUID REFERENCES sections(id) ON DELETE CASCADE,
+  current_round INTEGER DEFAULT 0,
+  max_rounds INTEGER DEFAULT 20,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Game States Table
+CREATE TABLE game_states (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  game_id UUID REFERENCES game_sessions(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  round_number INTEGER NOT NULL,
+  asset_prices JSONB NOT NULL,
+  price_history JSONB NOT NULL,
+  cpi FLOAT NOT NULL,
+  cpi_history JSONB NOT NULL,
+  last_bitcoin_crash_round INTEGER DEFAULT 0,
+  bitcoin_shock_range JSONB DEFAULT '[-0.5, -0.75]',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(game_id, user_id, round_number)
+);
+
+-- Player States Table
+CREATE TABLE player_states (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  game_id UUID REFERENCES game_sessions(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  cash FLOAT NOT NULL DEFAULT 10000,
+  portfolio JSONB NOT NULL DEFAULT '{}',
+  trade_history JSONB NOT NULL DEFAULT '[]',
+  portfolio_value_history JSONB NOT NULL DEFAULT '[10000]',
+  total_value FLOAT NOT NULL DEFAULT 10000,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(game_id, user_id)
+);
+
+-- Leaderboard Table
+CREATE TABLE leaderboard (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_name TEXT NOT NULL,
+  game_mode TEXT NOT NULL CHECK (game_mode IN ('single', 'class')),
+  game_id UUID REFERENCES game_sessions(id) ON DELETE SET NULL,
+  section_id UUID REFERENCES sections(id) ON DELETE SET NULL,
+  final_value FLOAT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(user_id, game_id)
+);
+
+-- Row Level Security Policies
+
+-- Game Sessions RLS
+ALTER TABLE game_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Allow students to read game sessions for their section
+CREATE POLICY game_sessions_student_read ON game_sessions
+  FOR SELECT
+  USING (
+    section_id IN (
+      SELECT section_id FROM profiles
+      WHERE id = auth.uid()
+    )
+  );
+
+-- Allow TAs to read and update game sessions for their sections
+CREATE POLICY game_sessions_ta_read ON game_sessions
+  FOR SELECT
+  USING (
+    section_id IN (
+      SELECT id FROM sections
+      WHERE ta_id = (
+        SELECT custom_id FROM profiles
+        WHERE id = auth.uid() AND role = 'ta'
+      )
+    )
+  );
+
+CREATE POLICY game_sessions_ta_update ON game_sessions
+  FOR UPDATE
+  USING (
+    section_id IN (
+      SELECT id FROM sections
+      WHERE ta_id = (
+        SELECT custom_id FROM profiles
+        WHERE id = auth.uid() AND role = 'ta'
+      )
+    )
+  );
+
+-- Game States RLS
+ALTER TABLE game_states ENABLE ROW LEVEL SECURITY;
+
+-- Allow students to read game states for their games
+CREATE POLICY game_states_student_read ON game_states
+  FOR SELECT
+  USING (
+    game_id IN (
+      SELECT id FROM game_sessions
+      WHERE section_id = (
+        SELECT section_id FROM profiles
+        WHERE id = auth.uid()
+      )
+    )
+  );
+
+-- Player States RLS
+ALTER TABLE player_states ENABLE ROW LEVEL SECURITY;
+
+-- Allow students to read and update their own player states
+CREATE POLICY player_states_student_read ON player_states
+  FOR SELECT
+  USING (user_id = auth.uid());
+
+CREATE POLICY player_states_student_update ON player_states
+  FOR UPDATE
+  USING (user_id = auth.uid());
+
+-- Leaderboard RLS
+ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
+
+-- Allow everyone to read the leaderboard
+CREATE POLICY leaderboard_read ON leaderboard
+  FOR SELECT
+  USING (true);
+
+-- Allow students to insert their own scores
+CREATE POLICY leaderboard_student_insert ON leaderboard
+  FOR INSERT
+  WITH CHECK (user_id = auth.uid());
