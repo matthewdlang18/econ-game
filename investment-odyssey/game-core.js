@@ -33,8 +33,8 @@ let gameState = {
     bitcoinShockRange: [-0.5, -0.75] // Initial shock range for Bitcoin crashes
 };
 
-// Player state
-let playerState = {
+// Default player state template (used for initialization)
+const defaultPlayerState = {
     cash: 10000,
     portfolio: {},
     tradeHistory: [],
@@ -125,13 +125,13 @@ function initializeGame() {
         bitcoinShockRange: [-0.5, -0.75]
     };
 
-    // Reset player state
-    playerState = {
-        cash: 10000,
-        portfolio: {},
-        tradeHistory: [],
-        portfolioValueHistory: [10000]
-    };
+    // Reset player state (if it exists)
+    if (typeof playerState !== 'undefined') {
+        playerState.cash = defaultPlayerState.cash;
+        playerState.portfolio = {};
+        playerState.tradeHistory = [];
+        playerState.portfolioValueHistory = [defaultPlayerState.cash];
+    }
 
     // Reset current round
     currentRound = 0;

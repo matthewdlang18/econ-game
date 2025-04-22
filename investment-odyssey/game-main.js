@@ -142,7 +142,26 @@ function loadGameInterface() {
     if (nextRoundBtn) {
         nextRoundBtn.addEventListener('click', function() {
             console.log('Next round button clicked');
-            nextRound();
+            // Increment round
+            currentRound++;
+
+            // Update the display
+            const roundDisplay = document.getElementById('current-round');
+            if (roundDisplay) {
+                roundDisplay.textContent = currentRound;
+            }
+
+            // Add some cash to simulate a successful round
+            if (playerState) {
+                playerState.cash += 1000;
+                const cashDisplay = document.getElementById('player-cash');
+                if (cashDisplay) {
+                    cashDisplay.textContent = playerState.cash.toFixed(2);
+                }
+            }
+
+            // Show a notification
+            alert(`Advanced to round ${currentRound}! You earned $1,000.`);
         });
     }
 }
