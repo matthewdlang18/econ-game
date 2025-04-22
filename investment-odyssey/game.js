@@ -34,7 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const userData = localStorage.getItem('userData');
     if (userData) {
       try {
-        window.gameSupabase.initializeUser(JSON.parse(userData));
+        const parsedUserData = JSON.parse(userData);
+        // Initialize user data
+        window.gameSupabase.initializeUser(parsedUserData);
       } catch (e) {
         console.error('Error parsing user data from localStorage', e);
         redirectToLogin();

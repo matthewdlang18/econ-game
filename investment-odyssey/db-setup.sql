@@ -71,6 +71,26 @@ CREATE POLICY game_sessions_student_read ON game_sessions
     )
   );
 
+-- Allow students to insert game sessions for their section
+CREATE POLICY game_sessions_student_insert ON game_sessions
+  FOR INSERT
+  WITH CHECK (
+    section_id IN (
+      SELECT section_id FROM profiles
+      WHERE id = auth.uid()
+    )
+  );
+
+-- Allow students to update game sessions they created
+CREATE POLICY game_sessions_student_update ON game_sessions
+  FOR UPDATE
+  USING (
+    section_id IN (
+      SELECT section_id FROM profiles
+      WHERE id = auth.uid()
+    )
+  );
+
 -- Allow TAs to read and update game sessions for their sections
 CREATE POLICY game_sessions_ta_read ON game_sessions
   FOR SELECT
@@ -112,6 +132,20 @@ CREATE POLICY game_states_student_read ON game_states
     )
   );
 
+-- Allow students to insert game states for their games
+CREATE POLICY game_states_student_insert ON game_states
+  FOR INSERT
+  WITH CHECK (
+    user_id = auth.uid()
+  );
+
+-- Allow students to update game states they created
+CREATE POLICY game_states_student_update ON game_states
+  FOR UPDATE
+  USING (
+    user_id = auth.uid()
+  );
+
 -- Player States RLS
 ALTER TABLE player_states ENABLE ROW LEVEL SECURITY;
 
@@ -123,6 +157,11 @@ CREATE POLICY player_states_student_read ON player_states
 CREATE POLICY player_states_student_update ON player_states
   FOR UPDATE
   USING (user_id = auth.uid());
+
+-- Allow students to insert their own player states
+CREATE POLICY player_states_student_insert ON player_states
+  FOR INSERT
+  WITH CHECK (user_id = auth.uid());
 
 -- Leaderboard RLS
 ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
