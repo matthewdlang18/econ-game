@@ -581,7 +581,7 @@ function loadGameState() {
 }
 
 // Show notification
-function showNotification(message, type = 'info', duration = 5000) {
+window.showNotification = function(message, type = 'info', duration = 5000) {
     // Create notification container if it doesn't exist
     let notificationContainer = document.getElementById('notification-container');
 

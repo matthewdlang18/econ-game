@@ -430,7 +430,7 @@ function updateCPIChart() {
 }
 
 // Initialize charts
-function initializeCharts() {
+window.initializeCharts = function() {
     console.log('Initializing charts...');
 
     try {
@@ -734,7 +734,7 @@ function updateComparativeReturnsChart() {
 }
 
 // Initialize event listeners
-function initializeEventListeners() {
+window.initializeEventListeners = function() {
     console.log('Initializing event listeners');
 
     // Add event listener for the next round button

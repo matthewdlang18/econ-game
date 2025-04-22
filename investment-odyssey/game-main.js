@@ -532,14 +532,26 @@ function loadGameInterface() {
         stickyNextRoundBtn.style.display = 'flex';
     }
 
-    // Initialize event listeners
-    initializeEventListeners();
+    // Initialize event listeners - using the function from game-ui.js
+    if (typeof window.initializeEventListeners === 'function') {
+        window.initializeEventListeners();
+    } else {
+        console.error('initializeEventListeners function not found');
+    }
 
-    // Initialize charts
-    initializeCharts();
+    // Initialize charts - using the function from game-ui.js
+    if (typeof window.initializeCharts === 'function') {
+        window.initializeCharts();
+    } else {
+        console.error('initializeCharts function not found');
+    }
 
     // Show notification
-    showNotification('Game interface loaded successfully!', 'success');
+    if (typeof window.showNotification === 'function') {
+        window.showNotification('Game interface loaded successfully!', 'success');
+    } else {
+        console.log('Game interface loaded successfully!');
+    }
 }
 
 // Start a single player game
