@@ -5,22 +5,22 @@ function updateUI() {
     try {
         // Update market data table
         updateMarketData();
-        
+
         // Update price ticker
         updatePriceTicker();
-        
+
         // Update charts
         updatePortfolioChart();
         updatePortfolioAllocationChart();
         updateAssetPriceCharts();
         updateComparativeReturnsChart();
-        
+
         // Update asset price in trade form
         updateAssetPrice();
-        
+
         // Update cash and portfolio displays
         updateCashAndPortfolioDisplays();
-        
+
         // Update round progress
         updateRoundProgress();
     } catch (error) {
@@ -33,7 +33,7 @@ function updateCashAndPortfolioDisplays() {
     // Calculate portfolio value
     const portfolioValue = calculatePortfolioValue();
     const totalValue = playerState.cash + portfolioValue;
-    
+
     // Update displays
     updateElementText('cash-display', playerState.cash.toFixed(2));
     updateElementText('portfolio-value-display', portfolioValue.toFixed(2));
@@ -54,7 +54,7 @@ function updateRoundProgress() {
     // Update round displays
     updateElementText('current-round-display', currentRound);
     updateElementText('market-round-display', currentRound);
-    
+
     // Update progress bar
     const progressBar = document.getElementById('round-progress');
     if (progressBar) {
@@ -69,10 +69,10 @@ function updateRoundProgress() {
 function updateMarketData() {
     const tableBody = document.getElementById('asset-prices-table');
     if (!tableBody) return;
-    
+
     // Clear existing rows
     tableBody.innerHTML = '';
-    
+
     // Add Cash row first
     const cashRow = document.createElement('tr');
     cashRow.innerHTML = `
@@ -84,26 +84,26 @@ function updateMarketData() {
         <td>${(playerState.cash / (calculatePortfolioValue() + playerState.cash) * 100).toFixed(2)}%</td>
     `;
     tableBody.appendChild(cashRow);
-    
+
     // Add rows for each asset
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
         const row = document.createElement('tr');
-        
+
         // Calculate price change
         let priceChange = 0;
         let percentChange = 0;
-        
+
         const priceHistory = gameState.priceHistory[asset];
         if (priceHistory && priceHistory.length > 1) {
             const previousPrice = priceHistory[priceHistory.length - 2];
             priceChange = price - previousPrice;
             percentChange = (priceChange / previousPrice) * 100;
         }
-        
+
         // Create change class
         let changeClass = 'text-secondary';
         let changeIcon = '';
-        
+
         if (priceChange > 0) {
             changeClass = 'text-success';
             changeIcon = '<i class="fas fa-arrow-up mr-1"></i>';
@@ -111,13 +111,13 @@ function updateMarketData() {
             changeClass = 'text-danger';
             changeIcon = '<i class="fas fa-arrow-down mr-1"></i>';
         }
-        
+
         // Get portfolio quantity and value
         const quantity = playerState.portfolio[asset] || 0;
         const value = quantity * price;
         const portfolioTotal = calculatePortfolioValue() + playerState.cash;
         const percentage = portfolioTotal > 0 ? (value / portfolioTotal) * 100 : 0;
-        
+
         row.innerHTML = `
             <td>${asset}</td>
             <td class="price-cell">$${price.toFixed(2)}</td>
@@ -126,7 +126,7 @@ function updateMarketData() {
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(2)}%</td>
         `;
-        
+
         tableBody.appendChild(row);
     }
 }
@@ -135,24 +135,24 @@ function updateMarketData() {
 function updatePriceTicker() {
     const ticker = document.getElementById('price-ticker');
     if (!ticker) return;
-    
+
     // Clear existing items
     ticker.innerHTML = '';
-    
+
     // Add items for each asset
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
         // Get previous price
         const priceHistory = gameState.priceHistory[asset] || [];
         const previousPrice = priceHistory.length > 1 ? priceHistory[priceHistory.length - 2] : price;
-        
+
         // Calculate change
         const change = price - previousPrice;
         const percentChange = (change / previousPrice) * 100;
-        
+
         // Create change class
         let changeClass = '';
         let changeIcon = '';
-        
+
         if (change > 0) {
             changeClass = 'text-success';
             changeIcon = '▲';
@@ -160,16 +160,16 @@ function updatePriceTicker() {
             changeClass = 'text-danger';
             changeIcon = '▼';
         }
-        
+
         const tickerItem = document.createElement('div');
         tickerItem.className = 'ticker-item';
-        
+
         tickerItem.innerHTML = `
             <span class="asset-name">${asset}</span>
             <span class="price">$${price.toFixed(2)}</span>
             <span class="${changeClass}">${changeIcon} ${percentChange.toFixed(2)}%</span>
         `;
-        
+
         ticker.appendChild(tickerItem);
     }
 }
@@ -178,16 +178,16 @@ function updatePriceTicker() {
 function updatePortfolioChart() {
     const canvas = document.getElementById('portfolio-chart');
     if (!canvas) return;
-    
+
     // Get portfolio value history
     const portfolioValueHistory = playerState.portfolioValueHistory;
-    
+
     // Create labels
     const labels = Object.keys(portfolioValueHistory).map(round => `Round ${round}`);
-    
+
     // Create data
     const data = Object.values(portfolioValueHistory);
-    
+
     // Create chart
     if (window.portfolioChart) {
         window.portfolioChart.data.labels = labels;
@@ -195,7 +195,7 @@ function updatePortfolioChart() {
         window.portfolioChart.update();
     } else {
         const ctx = canvas.getContext('2d');
-        
+
         window.portfolioChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -255,14 +255,14 @@ function updatePortfolioChart() {
 function updatePortfolioAllocationChart() {
     const canvas = document.getElementById('portfolio-allocation-chart');
     if (!canvas) return;
-    
+
     // Prepare data for portfolio allocation chart
     const portfolioData = [];
     const portfolioLabels = [];
     const portfolioColors = [
         '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01', '#1976D2'
     ];
-    
+
     // Add assets to portfolio data
     let colorIndex = 0;
     for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
@@ -273,11 +273,11 @@ function updatePortfolioAllocationChart() {
             colorIndex = (colorIndex + 1) % portfolioColors.length;
         }
     }
-    
+
     // Add cash to portfolio allocation
     portfolioData.push(playerState.cash);
     portfolioLabels.push('Cash');
-    
+
     // Create chart
     if (window.portfolioAllocationChart) {
         window.portfolioAllocationChart.data.labels = portfolioLabels;
@@ -285,7 +285,7 @@ function updatePortfolioAllocationChart() {
         window.portfolioAllocationChart.update();
     } else {
         const ctx = canvas.getContext('2d');
-        
+
         window.portfolioAllocationChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -337,33 +337,47 @@ function updateComparativeReturnsChart() {
 
 // Initialize event listeners
 function initializeEventListeners() {
+    console.log('Initializing event listeners');
+
     // Add event listener for the next round button
     const nextRoundBtn = document.getElementById('next-round-btn');
     if (nextRoundBtn) {
-        nextRoundBtn.addEventListener('click', nextRound);
+        console.log('Adding event listener to next-round-btn');
+        nextRoundBtn.addEventListener('click', function() {
+            console.log('Next round button clicked');
+            nextRound();
+        });
+    } else {
+        console.warn('next-round-btn not found');
     }
-    
+
     // Add event listener for the sticky next round button
     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
     if (stickyNextRoundBtn) {
-        stickyNextRoundBtn.addEventListener('click', nextRound);
+        console.log('Adding event listener to sticky-next-round');
+        stickyNextRoundBtn.addEventListener('click', function() {
+            console.log('Sticky next round button clicked');
+            nextRound();
+        });
+    } else {
+        console.warn('sticky-next-round not found');
     }
-    
+
     // Add event listener for the start game button
     const startGameBtn = document.getElementById('start-game');
     if (startGameBtn) {
         startGameBtn.addEventListener('click', startGame);
     }
-    
+
     // Add event listener for the restart game button
     const restartGameBtn = document.getElementById('restart-game');
     if (restartGameBtn) {
         restartGameBtn.addEventListener('click', restartGame);
     }
-    
+
     // Add event listeners for trading form
     initializeTradeFormListeners();
-    
+
     // Add event listeners for portfolio actions
     initializePortfolioActionListeners();
 }
@@ -375,31 +389,31 @@ function initializeTradeFormListeners() {
     if (assetSelect) {
         assetSelect.addEventListener('change', updateAssetPrice);
     }
-    
+
     // Action select change
     const actionSelect = document.getElementById('trade-action');
     if (actionSelect) {
         actionSelect.addEventListener('change', updateTradeSummary);
     }
-    
+
     // Quantity input change
     const quantityInput = document.getElementById('trade-quantity');
     if (quantityInput) {
         quantityInput.addEventListener('input', updateTradeSummary);
     }
-    
+
     // Amount input change
     const amountInput = document.getElementById('trade-amount');
     if (amountInput) {
         amountInput.addEventListener('input', updateTradeSummary);
     }
-    
+
     // Execute trade button
     const executeTradeBtn = document.getElementById('execute-trade-btn');
     if (executeTradeBtn) {
         executeTradeBtn.addEventListener('click', executeTrade);
     }
-    
+
     // Amount percentage buttons
     const amountPercentBtns = document.querySelectorAll('.amount-percent-btn');
     amountPercentBtns.forEach(btn => {
@@ -408,7 +422,7 @@ function initializeTradeFormListeners() {
             setAmountPercentage(percent);
         });
     });
-    
+
     // Quantity percentage buttons
     const quantityPercentBtns = document.querySelectorAll('.quantity-percent-btn');
     quantityPercentBtns.forEach(btn => {
@@ -430,7 +444,7 @@ function initializePortfolioActionListeners() {
             });
         });
     }
-    
+
     // Deselect all assets button
     const deselectAllBtn = document.getElementById('deselect-all-assets-btn');
     if (deselectAllBtn) {
@@ -440,19 +454,19 @@ function initializePortfolioActionListeners() {
             });
         });
     }
-    
+
     // Distribute cash evenly button
     const distributeEvenlyBtn = document.getElementById('distribute-evenly-btn');
     if (distributeEvenlyBtn) {
         distributeEvenlyBtn.addEventListener('click', buyAllAssets);
     }
-    
+
     // Distribute to selected button
     const distributeSelectedBtn = document.getElementById('distribute-selected-btn');
     if (distributeSelectedBtn) {
         distributeSelectedBtn.addEventListener('click', buySelectedAssets);
     }
-    
+
     // Sell all assets button
     const sellAllBtn = document.getElementById('sell-all-btn');
     if (sellAllBtn) {

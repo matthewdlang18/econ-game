@@ -82,7 +82,7 @@ const assetReturns = {
 };
 
 // Correlation matrix for assets
-const correlationMatrix = [
+const assetCorrelationMatrix = [
     [1.0000, -0.5169, 0.3425, 0.0199, 0.1243, 0.4057],
     [-0.5169, 1.0000, 0.0176, 0.0289, -0.0235, -0.2259],
     [0.3425, 0.0176, 1.0000, -0.4967, -0.0334, 0.1559],
@@ -309,13 +309,13 @@ async function nextRound() {
             // Save game state to local storage and database
             console.log('Saving game state...');
             saveGameState();
-            
+
             // If connected to Supabase, save to database
             if (gameSession && window.gameSupabase) {
                 await window.gameSupabase.saveGameState(gameSession.id, currentRound, gameState);
                 await window.gameSupabase.savePlayerState(gameSession.id, playerState);
             }
-            
+
             console.log('Game state saved');
         } catch (saveError) {
             console.error('Error saving game state:', saveError);
@@ -375,7 +375,7 @@ function generateNewPrices() {
         for (let i = 0; i < assetNames.length; i++) {
             let sum = 0;
             for (let j = 0; j < assetNames.length; j++) {
-                sum += correlationMatrix[i][j] * uncorrelatedZ[j];
+                sum += assetCorrelationMatrix[i][j] * uncorrelatedZ[j];
             }
             correlatedZ.push(sum);
         }
@@ -385,11 +385,11 @@ function generateNewPrices() {
         for (let i = 0; i < assetNames.length; i++) {
             const asset = assetNames[i];
             let returnValue = means[i] + stdDevs[i] * correlatedZ[i];
-            
+
             // Special handling for Bitcoin
             if (asset === 'Bitcoin') {
                 const bitcoinPrice = gameState.assetPrices['Bitcoin'];
-                
+
                 // Bitcoin has special growth patterns based on its price
                 if (bitcoinPrice < 10000) {
                     // Low price: rapid growth
@@ -406,7 +406,7 @@ function generateNewPrices() {
                         const incrementsAboveThreshold = Math.max(0, (bitcoinPrice - priceThreshold) / 50000);
                         // Increase crash probability as price rises
                         const crashProbability = Math.min(0.8, 0.1 + (incrementsAboveThreshold * 0.05));
-                        
+
                         // Determine if a crash occurs
                         if (Math.random() < crashProbability) {
                             // Bitcoin crash
@@ -418,7 +418,7 @@ function generateNewPrices() {
                     }
                 }
             }
-            
+
             // Ensure returns are within min/max bounds
             returnValue = Math.max(assetReturns[asset].min, Math.min(assetReturns[asset].max, returnValue));
             returns[asset] = returnValue;
@@ -443,16 +443,16 @@ function generateNewPrices() {
 function generateCashInjection() {
     // Determine if there should be a cash injection this round
     const injectionProbability = 0.2; // 20% chance each round
-    
+
     if (Math.random() < injectionProbability) {
         // Generate a random cash injection between $500 and $2000
         const injectionAmount = 500 + Math.random() * 1500;
         gameState.lastCashInjection = injectionAmount;
         gameState.totalCashInjected += injectionAmount;
-        
+
         // Add to player's cash
         playerState.cash += injectionAmount;
-        
+
         // Show notification
         showNotification(`Cash injection! You received $${injectionAmount.toFixed(2)}.`, 'success');
     } else {
@@ -463,12 +463,12 @@ function generateCashInjection() {
 // Calculate portfolio value
 function calculatePortfolioValue() {
     let totalValue = 0;
-    
+
     for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
         const price = gameState.assetPrices[asset] || 0;
         totalValue += price * quantity;
     }
-    
+
     return totalValue;
 }
 
@@ -477,23 +477,23 @@ function endGame() {
     // Calculate final portfolio value
     const portfolioValue = calculatePortfolioValue();
     const totalValue = playerState.cash + portfolioValue;
-    
+
     // Calculate performance metrics
     const initialValue = 10000; // Starting cash
     const totalReturn = totalValue - initialValue;
     const percentReturn = (totalReturn / initialValue) * 100;
-    
+
     // Calculate inflation-adjusted return
     const realReturn = (totalValue / gameState.CPI * 100) - initialValue;
     const realPercentReturn = (realReturn / initialValue) * 100;
-    
+
     // Show results screen
     const gameScreen = document.getElementById('game-screen');
     if (gameScreen) {
         gameScreen.innerHTML = `
             <div class="results-screen text-center">
                 <h2 class="display-4 mb-4">Game Complete!</h2>
-                
+
                 <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h3 class="mb-0">Your Investment Results</h3>
@@ -527,20 +527,20 @@ function endGame() {
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="results-actions">
                     <button id="play-again-btn" class="btn btn-primary btn-lg">Play Again</button>
                     <button id="back-to-welcome-btn" class="btn btn-secondary btn-lg">Back to Welcome</button>
                 </div>
             </div>
         `;
-        
+
         // Add event listeners
         document.getElementById('play-again-btn').addEventListener('click', () => {
             resetGame();
             startGame();
         });
-        
+
         document.getElementById('back-to-welcome-btn').addEventListener('click', () => {
             const welcomeScreen = document.getElementById('welcome-screen');
             if (welcomeScreen) {
@@ -549,13 +549,13 @@ function endGame() {
             }
         });
     }
-    
+
     // Hide sticky next round button
     const stickyNextRoundBtn = document.getElementById('sticky-next-round');
     if (stickyNextRoundBtn) {
         stickyNextRoundBtn.style.display = 'none';
     }
-    
+
     // Show notification
     showNotification('Game complete! Check your results.', 'success');
 }
@@ -568,7 +568,7 @@ function saveGameState() {
             playerState: playerState,
             currentRound: currentRound
         };
-        
+
         localStorage.setItem('investmentOdysseyGameData', JSON.stringify(gameData));
         console.log('Game state saved to local storage');
     } catch (error) {
@@ -580,17 +580,17 @@ function saveGameState() {
 function loadGameState() {
     try {
         const gameData = localStorage.getItem('investmentOdysseyGameData');
-        
+
         if (gameData) {
             const parsedData = JSON.parse(gameData);
             gameState = parsedData.gameState;
             playerState = parsedData.playerState;
             currentRound = parsedData.currentRound;
-            
+
             console.log('Game state loaded from local storage');
             return true;
         }
-        
+
         return false;
     } catch (error) {
         console.error('Error loading game state from local storage:', error);
@@ -602,7 +602,7 @@ function loadGameState() {
 function showNotification(message, type = 'info', duration = 5000) {
     // Create notification container if it doesn't exist
     let notificationContainer = document.getElementById('notification-container');
-    
+
     if (!notificationContainer) {
         notificationContainer = document.createElement('div');
         notificationContainer.id = 'notification-container';
@@ -612,7 +612,7 @@ function showNotification(message, type = 'info', duration = 5000) {
         notificationContainer.style.zIndex = '9999';
         document.body.appendChild(notificationContainer);
     }
-    
+
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `alert alert-${type} alert-dismissible fade show`;
@@ -623,10 +623,10 @@ function showNotification(message, type = 'info', duration = 5000) {
             <span aria-hidden="true">&times;</span>
         </button>
     `;
-    
+
     // Add to container
     notificationContainer.appendChild(notification);
-    
+
     // Auto-dismiss after duration
     setTimeout(() => {
         notification.classList.remove('show');
