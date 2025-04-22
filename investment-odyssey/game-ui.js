@@ -203,14 +203,20 @@ window.updatePortfolioChart = function() {
     const canvas = document.getElementById('portfolio-chart');
     if (!canvas) return;
 
-    // Get portfolio value history
-    const portfolioValueHistory = playerState.portfolioValueHistory;
+    // Get portfolio value history (handle both naming conventions)
+    const portfolioValueHistory = playerState.portfolio_value_history || playerState.portfolioValueHistory || [];
+
+    // If portfolio value history is not an array, create an empty array
+    const valueHistory = Array.isArray(portfolioValueHistory) ? portfolioValueHistory : [];
 
     // Create labels
-    const labels = Object.keys(portfolioValueHistory).map(round => `Round ${round}`);
+    const labels = [];
+    for (let i = 0; i < valueHistory.length; i++) {
+        labels.push(`Round ${i}`);
+    }
 
     // Create data
-    const data = Object.values(portfolioValueHistory);
+    const data = valueHistory;
 
     // Create chart
     if (window.portfolioChart) {
@@ -815,6 +821,7 @@ window.showTradePanel = function(asset, action = 'buy') {
 
     // Make sure the trade panel is visible
     tradePanel.style.display = 'block';
+    tradePanel.style.zIndex = '9999';
 
     // Set the asset name
     const assetNameElement = document.getElementById('trade-asset-name');
@@ -848,8 +855,7 @@ window.showTradePanel = function(asset, action = 'buy') {
     // Update trade summary
     updateTradeSummary();
 
-    // Show the panel
-    tradePanel.style.display = 'block';
+    // No need to set display again, already set above
 }
 
 // Update trade summary
@@ -1143,9 +1149,11 @@ window.initializeTradeFormListeners = function() {
     // Add event listeners for trade buttons
     document.addEventListener('click', function(event) {
         if (event.target.classList.contains('trade-btn')) {
+            console.log('Trade button clicked:', event.target);
             const asset = event.target.getAttribute('data-asset');
             const action = event.target.classList.contains('buy') ? 'buy' : 'sell';
-            showTradePanel(asset, action);
+            console.log(`Trade button clicked for ${asset}, action: ${action}`);
+            window.showTradePanel(asset, action);
         }
     });
 

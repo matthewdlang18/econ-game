@@ -244,6 +244,20 @@ async function updatePlayerState(gameId, updatedState) {
       // Keep using snake_case version which matches the database schema
     }
 
+    // Make sure portfolio_value_history is an array
+    if (!stateToUpdate.portfolio_value_history) {
+      stateToUpdate.portfolio_value_history = [stateToUpdate.total_value || 10000];
+    } else if (!Array.isArray(stateToUpdate.portfolio_value_history)) {
+      stateToUpdate.portfolio_value_history = [stateToUpdate.total_value || 10000];
+    }
+
+    // Make sure trade_history is an array
+    if (!stateToUpdate.trade_history) {
+      stateToUpdate.trade_history = [];
+    } else if (!Array.isArray(stateToUpdate.trade_history)) {
+      stateToUpdate.trade_history = [];
+    }
+
     console.log('Updating player state with:', stateToUpdate);
 
     const { error } = await supabase

@@ -932,10 +932,14 @@ async function advanceToNextRound() {
         playerState.portfolio_value_history = [playerState.total_value];
       } else if (Array.isArray(playerState.portfolio_value_history)) {
         playerState.portfolio_value_history.push(playerState.total_value);
-      } else if (!playerState.portfolioValueHistory) {
-        playerState.portfolioValueHistory = [playerState.total_value];
-      } else if (Array.isArray(playerState.portfolioValueHistory)) {
-        playerState.portfolioValueHistory.push(playerState.total_value);
+      } else {
+        // If portfolio_value_history is not an array, create a new one
+        playerState.portfolio_value_history = [playerState.total_value];
+      }
+
+      // Make sure we don't have both versions
+      if (playerState.portfolioValueHistory) {
+        delete playerState.portfolioValueHistory;
       }
 
       // Save updated player state
