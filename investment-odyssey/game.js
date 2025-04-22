@@ -137,6 +137,11 @@ function loadGameInterface() {
   // Update player state with new total value
   playerState.total_value = totalValue;
 
+  // Calculate performance metrics
+  const initialValue = 10000; // Starting cash
+  const totalReturn = totalValue - initialValue;
+  const percentReturn = (totalReturn / initialValue) * 100;
+
   // Create asset rows for the table
   let assetRows = '';
   for (const asset in gameState.asset_prices) {
@@ -161,13 +166,13 @@ function loadGameInterface() {
 
     assetRows += `
       <tr data-asset="${asset}">
-        <td>${asset}</td>
-        <td>$${price.toFixed(2)}</td>
-        <td class="${priceDirection}">${priceChange >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%</td>
-        <td>${quantity.toFixed(2)}</td>
-        <td>$${value.toFixed(2)}</td>
-        <td>${percentOfPortfolio.toFixed(2)}%</td>
-        <td>
+        <td class="asset-name">${asset}</td>
+        <td class="asset-price">$${price.toFixed(2)}</td>
+        <td class="asset-change ${priceDirection}">${priceChange >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%</td>
+        <td class="asset-quantity">${quantity.toFixed(2)}</td>
+        <td class="asset-value">$${value.toFixed(2)}</td>
+        <td class="asset-percent">${percentOfPortfolio.toFixed(2)}%</td>
+        <td class="asset-actions">
           <button class="trade-btn buy" data-asset="${asset}">Buy</button>
           <button class="trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
         </td>
@@ -175,40 +180,99 @@ function loadGameInterface() {
     `;
   }
 
+  // Prepare data for portfolio allocation chart
+  const portfolioData = [];
+  const portfolioLabels = [];
+  const portfolioColors = [
+    '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01'
+  ];
+
+  let colorIndex = 0;
+  for (const asset in playerState.portfolio) {
+    const quantity = playerState.portfolio[asset];
+    if (quantity > 0) {
+      const value = quantity * gameState.asset_prices[asset];
+      portfolioData.push(value);
+      portfolioLabels.push(asset);
+      colorIndex = (colorIndex + 1) % portfolioColors.length;
+    }
+  }
+
+  // Add cash to portfolio allocation
+  portfolioData.push(playerState.cash);
+  portfolioLabels.push('Cash');
+
   // Create the game interface
   gameScreen.innerHTML = `
     <div class="game-header">
       <h2>Investment Odyssey Game</h2>
       <div class="game-info">
-        <span>Round: ${currentRound} / ${gameSession.max_rounds}</span>
-        <span>Cash: $${playerState.cash.toFixed(2)}</span>
-        <span>Portfolio Value: $${portfolioValue.toFixed(2)}</span>
-        <span>Total Value: $${totalValue.toFixed(2)}</span>
+        <span class="round-indicator">Round: ${currentRound} / ${gameSession.max_rounds}</span>
+        <span class="cash-indicator">Cash: $${playerState.cash.toFixed(2)}</span>
+        <span class="portfolio-indicator">Portfolio: $${portfolioValue.toFixed(2)}</span>
+        <span class="total-indicator">Total: $${totalValue.toFixed(2)}</span>
       </div>
     </div>
 
     <div class="game-content">
-      <div class="game-grid">
-        <div class="market-panel">
-          <h3>Market</h3>
-          <table class="asset-table">
-            <thead>
-              <tr>
-                <th>Asset</th>
-                <th>Price</th>
-                <th>Change</th>
-                <th>Quantity</th>
-                <th>Value</th>
-                <th>% of Portfolio</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${assetRows}
-            </tbody>
-          </table>
+      <div class="dashboard-grid">
+        <!-- Portfolio Summary Panel -->
+        <div class="portfolio-summary-panel">
+          <h3>Portfolio Summary</h3>
+          <div class="summary-stats">
+            <div class="stat-item">
+              <span class="stat-label">Total Value:</span>
+              <span class="stat-value">$${totalValue.toFixed(2)}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Cash:</span>
+              <span class="stat-value">$${playerState.cash.toFixed(2)}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Invested:</span>
+              <span class="stat-value">$${portfolioValue.toFixed(2)}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Return:</span>
+              <span class="stat-value ${totalReturn >= 0 ? 'positive' : 'negative'}">$${totalReturn.toFixed(2)} (${percentReturn.toFixed(2)}%)</span>
+            </div>
+          </div>
+
+          <!-- Portfolio Allocation Chart -->
+          <div class="chart-container">
+            <canvas id="portfolio-allocation-chart"></canvas>
+          </div>
+
+          <!-- Portfolio Value History Chart -->
+          <div class="chart-container">
+            <canvas id="portfolio-value-chart"></canvas>
+          </div>
         </div>
 
+        <!-- Market Panel -->
+        <div class="market-panel">
+          <h3>Market</h3>
+          <div class="table-container">
+            <table class="asset-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Price</th>
+                  <th>Change</th>
+                  <th>Quantity</th>
+                  <th>Value</th>
+                  <th>% of Portfolio</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${assetRows}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Trade Panel -->
         <div class="trade-panel" style="display: none;">
           <h3>Trade <span id="trade-asset-name"></span></h3>
           <div class="trade-form">
@@ -225,6 +289,13 @@ function loadGameInterface() {
               <input type="number" id="trade-quantity" min="0" step="0.01" value="1">
             </div>
 
+            <div class="quantity-shortcuts">
+              <button class="quantity-btn" data-percent="25">25%</button>
+              <button class="quantity-btn" data-percent="50">50%</button>
+              <button class="quantity-btn" data-percent="75">75%</button>
+              <button class="quantity-btn" data-percent="100">100%</button>
+            </div>
+
             <div class="form-group">
               <label for="trade-total">Total:</label>
               <span id="trade-total">$0.00</span>
@@ -238,12 +309,45 @@ function loadGameInterface() {
         </div>
       </div>
 
+      <!-- Game Controls -->
       <div class="game-actions">
         <button id="next-round-btn" class="primary-btn">Next Round</button>
+        <button id="view-history-btn" class="secondary-btn">Trade History</button>
         <button id="back-to-welcome" class="secondary-btn">Exit Game</button>
+      </div>
+
+      <!-- Trade History Modal (hidden by default) -->
+      <div id="trade-history-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <span class="close-modal">&times;</span>
+          <h3>Trade History</h3>
+          <div class="trade-history-container">
+            <table class="trade-history-table">
+              <thead>
+                <tr>
+                  <th>Round</th>
+                  <th>Asset</th>
+                  <th>Action</th>
+                  <th>Quantity</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody id="trade-history-body">
+                ${generateTradeHistoryRows()}
+              </tbody>
+            </table>
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-btn close-history-btn">Close</button>
+          </div>
+        </div>
       </div>
     </div>
   `;
+
+  // Initialize charts
+  initializeCharts(portfolioLabels, portfolioData, portfolioColors);
 
   // Add event listeners for trading
   document.querySelectorAll('.trade-btn').forEach(btn => {
@@ -257,11 +361,151 @@ function loadGameInterface() {
   // Add event listener for the next round button
   document.getElementById('next-round-btn').addEventListener('click', advanceToNextRound);
 
+  // Add event listener for the trade history button
+  document.getElementById('view-history-btn').addEventListener('click', () => {
+    document.getElementById('trade-history-modal').style.display = 'block';
+  });
+
+  // Add event listeners for closing the trade history modal
+  document.querySelector('.close-modal').addEventListener('click', () => {
+    document.getElementById('trade-history-modal').style.display = 'none';
+  });
+
+  document.querySelector('.close-history-btn').addEventListener('click', () => {
+    document.getElementById('trade-history-modal').style.display = 'none';
+  });
+
   // Add event listener for the back button
   document.getElementById('back-to-welcome').addEventListener('click', () => {
     if (confirm('Are you sure you want to exit the game? Your progress will be saved.')) {
       gameScreen.style.display = 'none';
       welcomeScreen.style.display = 'block';
+    }
+  });
+}
+
+// Generate trade history rows for the trade history modal
+function generateTradeHistoryRows() {
+  if (!playerState.trade_history || playerState.trade_history.length === 0) {
+    return '<tr><td colspan="6">No trades yet</td></tr>';
+  }
+
+  // Sort trade history by round (descending) and then by timestamp (descending)
+  const sortedHistory = [...playerState.trade_history].sort((a, b) => {
+    if (b.round !== a.round) {
+      return b.round - a.round;
+    }
+    return new Date(b.timestamp) - new Date(a.timestamp);
+  });
+
+  let rows = '';
+  for (const trade of sortedHistory) {
+    rows += `
+      <tr>
+        <td>${trade.round}</td>
+        <td>${trade.asset}</td>
+        <td class="${trade.action === 'buy' ? 'buy' : 'sell'}">${trade.action.toUpperCase()}</td>
+        <td>${trade.quantity.toFixed(2)}</td>
+        <td>$${trade.price.toFixed(2)}</td>
+        <td>$${(trade.action === 'buy' ? trade.total : trade.value).toFixed(2)}</td>
+      </tr>
+    `;
+  }
+
+  return rows;
+}
+
+// Initialize charts using Chart.js
+function initializeCharts(portfolioLabels, portfolioData, portfolioColors) {
+  // Portfolio Allocation Pie Chart
+  const allocationCtx = document.getElementById('portfolio-allocation-chart').getContext('2d');
+  new Chart(allocationCtx, {
+    type: 'pie',
+    data: {
+      labels: portfolioLabels,
+      datasets: [{
+        data: portfolioData,
+        backgroundColor: portfolioColors,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 12
+          }
+        },
+        title: {
+          display: true,
+          text: 'Portfolio Allocation'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const value = context.raw;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = ((value / total) * 100).toFixed(1);
+              return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // Portfolio Value History Line Chart
+  const valueHistoryCtx = document.getElementById('portfolio-value-chart').getContext('2d');
+
+  // Create labels for each round
+  const roundLabels = [];
+  for (let i = 0; i <= currentRound; i++) {
+    roundLabels.push(`Round ${i}`);
+  }
+
+  new Chart(valueHistoryCtx, {
+    type: 'line',
+    data: {
+      labels: roundLabels,
+      datasets: [{
+        label: 'Portfolio Value',
+        data: playerState.portfolio_value_history,
+        borderColor: '#4285F4',
+        backgroundColor: 'rgba(66, 133, 244, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Portfolio Value History'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Value: $${context.raw.toFixed(2)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: {
+            callback: function(value) {
+              return '$' + value.toFixed(0);
+            }
+          }
+        }
+      }
     }
   });
 }
@@ -281,7 +525,6 @@ function showTradePanel(asset, action) {
 
   // Show the trade panel
   tradePanel.style.display = 'block';
-  marketPanel.style.width = '60%';
 
   // Calculate and display the total
   updateTradeTotal();
@@ -289,6 +532,26 @@ function showTradePanel(asset, action) {
   // Add event listeners for the trade form
   tradeAction.addEventListener('change', updateTradeTotal);
   tradeQuantity.addEventListener('input', updateTradeTotal);
+
+  // Add event listeners for the quantity shortcuts
+  document.querySelectorAll('.quantity-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const percent = parseInt(btn.getAttribute('data-percent')) / 100;
+
+      if (tradeAction.value === 'buy') {
+        // Calculate maximum quantity based on available cash
+        const price = gameState.asset_prices[asset];
+        const maxQuantity = playerState.cash / price;
+        tradeQuantity.value = (maxQuantity * percent).toFixed(2);
+      } else { // sell
+        // Calculate quantity based on current holdings
+        const currentQuantity = playerState.portfolio[asset] || 0;
+        tradeQuantity.value = (currentQuantity * percent).toFixed(2);
+      }
+
+      updateTradeTotal();
+    });
+  });
 
   // Add event listeners for the trade buttons
   document.getElementById('execute-trade-btn').addEventListener('click', executeTrade);
@@ -364,7 +627,7 @@ function showTradePanel(asset, action) {
         action: 'sell',
         quantity: quantity,
         price: price,
-        total: total,
+        value: total,  // Changed from total to value for consistency
         round: currentRound,
         timestamp: new Date().toISOString()
       });
@@ -392,7 +655,6 @@ function showTradePanel(asset, action) {
   // Function to hide the trade panel
   function hideTradePanel() {
     tradePanel.style.display = 'none';
-    marketPanel.style.width = '100%';
   }
 }
 
