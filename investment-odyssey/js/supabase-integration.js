@@ -661,6 +661,69 @@ async function updateGameSessionActive(gameId, active = false) {
   return { data, error };
 }
 
+// Get or create a shared single player game session
+async function getSharedSinglePlayerSession() {
+  try {
+    // First, try to find an existing shared single player session
+    const { data: existingSessions, error: findError } = await supabaseClient
+      .from('game_sessions')
+      .select('*')
+      .eq('section_id', null) // Shared sessions have no section_id
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (findError) {
+      console.error('Error finding shared single player session:', findError);
+      return { data: null, error: findError };
+    }
+
+    // If we found an existing session, return it
+    if (existingSessions && existingSessions.length > 0) {
+      console.log('Found existing shared single player session:', existingSessions[0].id);
+      return { data: existingSessions[0], error: null };
+    }
+
+    // No existing session found, try to create one
+    // This will only work for TAs due to RLS policies
+    console.log('No shared session found, attempting to create one');
+    const { data: newSession, error: createError } = await supabaseClient
+      .from('game_sessions')
+      .insert({
+        section_id: null, // Shared sessions have no section_id
+        max_rounds: 20,
+        current_round: 0,
+        active: true
+      })
+      .select()
+      .single();
+
+    if (createError) {
+      console.error('Error creating shared single player session:', createError);
+      // Try a different approach - look for ANY active session
+      const { data: anySession, error: anyError } = await supabaseClient
+        .from('game_sessions')
+        .select('*')
+        .eq('active', true)
+        .limit(1);
+
+      if (anyError || !anySession || anySession.length === 0) {
+        console.error('Could not find any active session:', anyError);
+        return { data: null, error: createError };
+      }
+
+      console.log('Using an existing active session as fallback:', anySession[0].id);
+      return { data: anySession[0], error: null };
+    }
+
+    console.log('Created new shared single player session:', newSession.id);
+    return { data: newSession, error: null };
+  } catch (error) {
+    console.error('Exception in getSharedSinglePlayerSession:', error);
+    return { data: null, error };
+  }
+}
+
 // Export functions
 window.SupabaseIntegration = {
   createGameSession,
@@ -671,6 +734,7 @@ window.SupabaseIntegration = {
   loadPlayerState,
   updateGameSessionRound,
   updateGameSessionActive,
+  getSharedSinglePlayerSession,
   submitToLeaderboard,
   getLeaderboard,
   subscribeToGameSession

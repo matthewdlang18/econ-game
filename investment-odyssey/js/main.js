@@ -427,37 +427,39 @@ async function startSinglePlayerGame() {
         sectionId = currentUser.section_id;
       }
     } else {
-      // For regular students, we need to generate a proper UUID
-      console.log('Generating UUID for single player game');
+      // For regular students, we'll try to use a shared game session
+      console.log('Looking for shared single player session');
 
-      // Generate a proper UUID for this game
-      // We'll use the crypto API to generate a random UUID
       try {
-        if (window.crypto && window.crypto.randomUUID) {
-          // Use the built-in randomUUID function if available
-          gameId = window.crypto.randomUUID();
+        // Try to get a shared single player session
+        const { data: sharedSession, error: sessionError } = await window.SupabaseIntegration.getSharedSinglePlayerSession();
+
+        if (sessionError) {
+          console.error('Error getting shared single player session:', sessionError);
+          // Fall back to local ID
+          gameId = 'local-' + Date.now();
+          window.UIController.showNotification('Single player game started! Your progress will be saved locally.', 'info');
+        } else if (sharedSession) {
+          // Use the shared session ID
+          gameId = sharedSession.id;
+          console.log('Using shared single player session:', gameId);
+          window.UIController.showNotification('Single player game started! Your progress will be saved to the database.', 'success');
         } else {
-          // Fallback to a simple UUID generator
-          gameId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-          });
+          // Fall back to local ID
+          gameId = 'local-' + Date.now();
+          window.UIController.showNotification('Single player game started! Your progress will be saved locally.', 'info');
         }
-        console.log('Generated UUID for single player game:', gameId);
       } catch (error) {
-        console.error('Error generating UUID:', error);
-        // Fall back to local storage
+        console.error('Error setting up shared session:', error);
+        // Fall back to local ID
         gameId = 'local-' + Date.now();
+        window.UIController.showNotification('Single player game started! Your progress will be saved locally.', 'info');
       }
 
       // Store section ID if available
       if (currentUser.section_id) {
         sectionId = currentUser.section_id;
       }
-
-      // Show notification about game saving
-      window.UIController.showNotification('Single player game started! Your progress will be saved.', 'success');
     }
 
     // Initialize game state
@@ -477,26 +479,44 @@ async function startSinglePlayerGame() {
     // Update dashboard
     window.UIController.updateDashboard(gameState, playerState);
 
-    // For single player mode, we'll always save to localStorage
-    // Only TAs can create game sessions and save to the database due to RLS policies
-    console.log('Saving game state to localStorage');
+    // For single player mode, we'll try to use a shared game session
+    // This allows all students to save to the database while respecting foreign key constraints
     try {
+      // First, try to get the shared single player game session
+      const { data: sharedSession, error: sessionError } = await window.SupabaseIntegration.getSharedSinglePlayerSession();
+
+      if (sessionError) {
+        console.error('Error getting shared single player session:', sessionError);
+        // Fall back to localStorage
+        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+      } else if (sharedSession) {
+        // We have a shared session, use it to save game state
+        console.log('Using shared single player session:', sharedSession.id);
+        gameId = sharedSession.id;
+
+        // Try to save to database
+        const gameStateResult = await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
+        const playerStateResult = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
+
+        if (gameStateResult.error || playerStateResult.error) {
+          console.error('Error saving to database:', gameStateResult.error || playerStateResult.error);
+          // Fall back to localStorage
+          localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+          localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+        } else {
+          console.log('Successfully saved game state to database using shared session');
+        }
+      } else {
+        console.log('No shared session available, saving to localStorage');
+        localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
+        localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
+      }
+    } catch (error) {
+      console.error('Error in single player game setup:', error);
+      // Fall back to localStorage
       localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
       localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-
-    // If user is a TA, also try to save to database
-    if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
-      try {
-        console.log('TA user detected, also saving to database');
-        await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
-        await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
-      } catch (saveError) {
-        console.error('Error saving initial game state to database:', saveError);
-        // Non-critical error, continue with game
-      }
     }
 
     // Show game dashboard
@@ -760,7 +780,7 @@ async function handleTrade(event) {
     window.UIController.elements.tradeMessage.textContent = result.message;
     window.UIController.elements.tradeMessage.className = 'message success';
 
-    // Always save to localStorage
+    // Always save to localStorage as a backup
     try {
       console.log('Saving player state to localStorage');
       localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
@@ -768,13 +788,15 @@ async function handleTrade(event) {
       console.error('Error saving to localStorage:', error);
     }
 
-    // If user is a TA, also try to save to database
-    if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+    // Try to save to database using the shared session
+    if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
       try {
-        console.log('TA user detected, also saving player state to database');
+        console.log('Saving player state to database for game:', gameId);
         const { error } = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
         if (error) {
           console.error('Database error saving player state:', error);
+        } else {
+          console.log('Successfully saved player state to database');
         }
       } catch (error) {
         console.error('Error saving player state to database:', error);
@@ -817,7 +839,7 @@ async function handleNextRound() {
     return;
   }
 
-  // Always save to localStorage
+  // Always save to localStorage as a backup
   try {
     console.log('Saving game state to localStorage');
     localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
@@ -826,10 +848,10 @@ async function handleNextRound() {
     console.error('Error saving to localStorage:', error);
   }
 
-  // If user is a TA, also try to save to database
-  if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+  // Try to save to database using the shared session
+  if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
     try {
-      console.log('TA user detected, also saving game state to database');
+      console.log('Saving game state to database for game:', gameId);
       const gameStateResult = await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
       const playerStateResult = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
 
@@ -839,8 +861,8 @@ async function handleNextRound() {
         console.log('Game state saved to database successfully');
       }
 
-      // Update game session round if in class mode
-      if (gameMode === 'class') {
+      // Update game session round if in class mode or if user is a TA
+      if (gameMode === 'class' || currentUser.role === 'ta') {
         await window.SupabaseIntegration.updateGameSessionRound(gameId, gameState.roundNumber);
       }
     } catch (error) {
@@ -882,33 +904,37 @@ async function handleSaveGame() {
     return;
   }
 
-  // Always save to localStorage
+  // Always save to localStorage as a backup
   try {
     console.log('Saving game to localStorage');
     localStorage.setItem('investmentOdyssey_gameState', JSON.stringify(gameState));
     localStorage.setItem('investmentOdyssey_playerState', JSON.stringify(playerState));
-    window.UIController.showNotification('Game saved!', 'success');
   } catch (error) {
     console.error('Error saving to localStorage:', error);
     window.UIController.showNotification('Failed to save game: ' + error.message, 'error');
     return;
   }
 
-  // If user is a TA, also try to save to database
-  if (currentUser.role === 'ta' && gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
+  // Try to save to database using the shared session
+  if (gameId && !gameId.startsWith('local-') && window.SupabaseIntegration) {
     try {
-      console.log('TA user detected, also saving game to database');
+      console.log('Saving game to database for game:', gameId);
       const gameStateResult = await window.SupabaseIntegration.saveGameState(gameId, currentUser.id, gameState);
       const playerStateResult = await window.SupabaseIntegration.savePlayerState(gameId, currentUser.id, playerState);
 
       if (gameStateResult.error || playerStateResult.error) {
         console.error('Database error saving game:', gameStateResult.error || playerStateResult.error);
+        window.UIController.showNotification('Game saved locally!', 'success');
       } else {
         console.log('Game saved to database successfully');
+        window.UIController.showNotification('Game saved to database!', 'success');
       }
     } catch (error) {
       console.error('Error saving game to database:', error);
+      window.UIController.showNotification('Game saved locally!', 'success');
     }
+  } else {
+    window.UIController.showNotification('Game saved locally!', 'success');
   }
 }
 
