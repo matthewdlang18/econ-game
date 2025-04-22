@@ -544,6 +544,53 @@ footer {
   margin-top: 15px;
 }
 
+/* Trade panel styles */
+.trade-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  width: 90%;
+  max-width: 500px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Quantity shortcuts */
+.quantity-shortcuts {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+.quantity-btn {
+  padding: 5px 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quantity-btn:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+/* Trade buttons */
+.trade-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* Trade form */
+.trade-form {
+  padding: 10px;
+}
+
 .trade-form {
   display: flex;
   flex-direction: column;

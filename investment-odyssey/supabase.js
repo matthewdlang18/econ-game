@@ -225,9 +225,30 @@ async function updatePlayerState(gameId, updatedState) {
   if (!currentUser) return false;
 
   try {
+    // Create a copy of the state to modify
+    const stateToUpdate = { ...updatedState };
+
+    // Handle portfolio value history naming inconsistency
+    if (stateToUpdate.portfolioValueHistory && !stateToUpdate.portfolio_value_history) {
+      stateToUpdate.portfolio_value_history = stateToUpdate.portfolioValueHistory;
+      delete stateToUpdate.portfolioValueHistory; // Remove the camelCase version
+    } else if (stateToUpdate.portfolio_value_history && !stateToUpdate.portfolioValueHistory) {
+      // Keep using snake_case version which matches the database schema
+    }
+
+    // Handle trade history naming inconsistency
+    if (stateToUpdate.tradeHistory && !stateToUpdate.trade_history) {
+      stateToUpdate.trade_history = stateToUpdate.tradeHistory;
+      delete stateToUpdate.tradeHistory; // Remove the camelCase version
+    } else if (stateToUpdate.trade_history && !stateToUpdate.tradeHistory) {
+      // Keep using snake_case version which matches the database schema
+    }
+
+    console.log('Updating player state with:', stateToUpdate);
+
     const { error } = await supabase
       .from('player_states')
-      .update(updatedState)
+      .update(stateToUpdate)
       .eq('game_id', gameId)
       .eq('user_id', currentUser.id);
 

@@ -930,8 +930,12 @@ async function advanceToNextRound() {
       // Update portfolio value history
       if (!playerState.portfolio_value_history) {
         playerState.portfolio_value_history = [playerState.total_value];
-      } else {
+      } else if (Array.isArray(playerState.portfolio_value_history)) {
         playerState.portfolio_value_history.push(playerState.total_value);
+      } else if (!playerState.portfolioValueHistory) {
+        playerState.portfolioValueHistory = [playerState.total_value];
+      } else if (Array.isArray(playerState.portfolioValueHistory)) {
+        playerState.portfolioValueHistory.push(playerState.total_value);
       }
 
       // Save updated player state

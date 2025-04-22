@@ -458,6 +458,31 @@ window.initializeCharts = function() {
     console.log('Initializing charts...');
 
     try {
+        // Destroy existing charts to prevent errors
+        if (window.portfolioChart) {
+            window.portfolioChart.destroy();
+            window.portfolioChart = null;
+        }
+        if (window.portfolioAllocationChart) {
+            window.portfolioAllocationChart.destroy();
+            window.portfolioAllocationChart = null;
+        }
+        if (window.realEstateGoldChart) {
+            window.realEstateGoldChart.destroy();
+            window.realEstateGoldChart = null;
+        }
+        if (window.bondsCommoditiesSPChart) {
+            window.bondsCommoditiesSPChart.destroy();
+            window.bondsCommoditiesSPChart = null;
+        }
+        if (window.bitcoinChart) {
+            window.bitcoinChart.destroy();
+            window.bitcoinChart = null;
+        }
+        if (window.cpiChart) {
+            window.cpiChart.destroy();
+            window.cpiChart = null;
+        }
         // Initialize portfolio value chart
         const portfolioValueCanvas = document.getElementById('portfolio-value-chart');
         if (portfolioValueCanvas) {
@@ -782,6 +807,15 @@ window.showTradePanel = function(asset, action = 'buy') {
         return;
     }
 
+    // Debug log to check if gameState and asset prices are available
+    console.log('gameState:', window.gameState || gameState);
+    console.log('Asset prices:', window.gameState?.assetPrices || gameState?.assetPrices ||
+                             window.gameState?.asset_prices || gameState?.asset_prices);
+    console.log('Trade panel element:', tradePanel);
+
+    // Make sure the trade panel is visible
+    tradePanel.style.display = 'block';
+
     // Set the asset name
     const assetNameElement = document.getElementById('trade-asset-name');
     if (assetNameElement) {
@@ -795,7 +829,11 @@ window.showTradePanel = function(asset, action = 'buy') {
     }
 
     // Set the asset price
-    const price = gameState.assetPrices[asset] || 0;
+    // Handle different property naming conventions
+    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                       gameState?.assetPrices || gameState?.asset_prices || {};
+    const price = assetPrices[asset] || 0;
+
     const priceElement = document.getElementById('trade-price');
     if (priceElement) {
         priceElement.textContent = `$${price.toFixed(2)}`;
@@ -820,8 +858,13 @@ window.updateTradeSummary = function() {
     const action = document.getElementById('trade-action').value;
     const quantity = parseFloat(document.getElementById('trade-quantity').value) || 0;
 
-    const price = gameState.assetPrices[assetName] || 0;
+    // Handle different property naming conventions
+    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                       gameState?.assetPrices || gameState?.asset_prices || {};
+    const price = assetPrices[assetName] || 0;
     const total = price * quantity;
+
+    console.log(`Updating trade summary: ${assetName}, ${action}, ${quantity} @ $${price} = $${total}`);
 
     // Update total display
     const totalElement = document.getElementById('trade-total');
@@ -850,17 +893,22 @@ window.executeTrade = function() {
     const quantity = parseFloat(document.getElementById('trade-quantity').value) || 0;
 
     if (quantity <= 0) {
-        showNotification('Please enter a valid quantity.', 'warning');
+        window.showNotification('Please enter a valid quantity.', 'warning');
         return;
     }
 
-    const price = gameState.assetPrices[assetName] || 0;
+    // Handle different property naming conventions
+    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                       gameState?.assetPrices || gameState?.asset_prices || {};
+    const price = assetPrices[assetName] || 0;
     const total = price * quantity;
+
+    console.log(`Executing trade: ${action} ${quantity} ${assetName} @ $${price} = $${total}`);
 
     if (action === 'buy') {
         // Check if player has enough cash
         if (total > playerState.cash) {
-            showNotification('Not enough cash for this purchase.', 'danger');
+            window.showNotification('Not enough cash for this purchase.', 'danger');
             return;
         }
 
@@ -869,21 +917,32 @@ window.executeTrade = function() {
         playerState.portfolio[assetName] = (playerState.portfolio[assetName] || 0) + quantity;
 
         // Add to trade history
-        playerState.tradeHistory.push({
-            round: window.currentRound,
+        if (!playerState.tradeHistory && !playerState.trade_history) {
+            playerState.trade_history = [];
+        }
+
+        const tradeRecord = {
+            round: window.currentRound || 0,
             asset: assetName,
             action: 'buy',
             quantity: quantity,
             price: price,
-            total: total
-        });
+            total: total,
+            timestamp: new Date().toISOString()
+        };
 
-        showNotification(`Bought ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
+        if (Array.isArray(playerState.tradeHistory)) {
+            playerState.tradeHistory.push(tradeRecord);
+        } else if (Array.isArray(playerState.trade_history)) {
+            playerState.trade_history.push(tradeRecord);
+        }
+
+        window.showNotification(`Bought ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
     } else if (action === 'sell') {
         // Check if player has enough of the asset
         const playerQuantity = playerState.portfolio[assetName] || 0;
         if (quantity > playerQuantity) {
-            showNotification(`You don't have enough ${assetName} to sell.`, 'danger');
+            window.showNotification(`You don't have enough ${assetName} to sell.`, 'danger');
             return;
         }
 
@@ -897,16 +956,27 @@ window.executeTrade = function() {
         }
 
         // Add to trade history
-        playerState.tradeHistory.push({
-            round: window.currentRound,
+        if (!playerState.tradeHistory && !playerState.trade_history) {
+            playerState.trade_history = [];
+        }
+
+        const tradeRecord = {
+            round: window.currentRound || 0,
             asset: assetName,
             action: 'sell',
             quantity: quantity,
             price: price,
-            total: total
-        });
+            total: total,
+            timestamp: new Date().toISOString()
+        };
 
-        showNotification(`Sold ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
+        if (Array.isArray(playerState.tradeHistory)) {
+            playerState.tradeHistory.push(tradeRecord);
+        } else if (Array.isArray(playerState.trade_history)) {
+            playerState.trade_history.push(tradeRecord);
+        }
+
+        window.showNotification(`Sold ${quantity} ${assetName} for $${total.toFixed(2)}.`, 'success');
     }
 
     // Hide trade panel
@@ -915,8 +985,29 @@ window.executeTrade = function() {
         tradePanel.style.display = 'none';
     }
 
-    // Update UI
-    updateUI();
+    // Save player state to Supabase
+    if (window.gameSupabase && typeof window.gameSupabase.updatePlayerState === 'function' && window.gameSession) {
+        console.log('Saving player state to Supabase after trade');
+        window.gameSupabase.updatePlayerState(window.gameSession.id, playerState)
+            .then(success => {
+                if (success) {
+                    console.log('Player state saved successfully');
+                } else {
+                    console.error('Failed to save player state');
+                }
+                // Update UI
+                updateUI();
+            })
+            .catch(error => {
+                console.error('Error saving player state:', error);
+                // Update UI anyway
+                updateUI();
+            });
+    } else {
+        console.warn('Unable to save player state to Supabase - missing required objects');
+        // Update UI
+        updateUI();
+    }
 }
 
 // Initialize event listeners
@@ -1070,6 +1161,16 @@ window.initializeTradeFormListeners = function() {
         tradeQuantity.addEventListener('input', updateTradeSummary);
     }
 
+    // Add event listeners for quantity shortcuts
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('quantity-btn')) {
+            const percent = parseInt(event.target.getAttribute('data-percent'));
+            if (!isNaN(percent)) {
+                setAmountPercentage(percent);
+            }
+        }
+    });
+
     // Add event listener for execute trade button
     const executeTradeBtn = document.getElementById('execute-trade-btn');
     if (executeTradeBtn) {
@@ -1089,6 +1190,37 @@ window.initializeTradeFormListeners = function() {
 }
 
 
+
+// Set amount percentage for trade
+window.setAmountPercentage = function(percent) {
+    console.log(`Setting amount to ${percent}%`);
+
+    const assetName = document.getElementById('trade-asset-name').textContent;
+    const action = document.getElementById('trade-action').value;
+    const quantityInput = document.getElementById('trade-quantity');
+
+    if (!quantityInput) return;
+
+    // Handle different property naming conventions
+    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                       gameState?.assetPrices || gameState?.asset_prices || {};
+    const price = assetPrices[assetName] || 0;
+
+    if (action === 'buy') {
+        // Calculate max quantity based on cash
+        const maxQuantity = playerState.cash / price;
+        const quantity = (maxQuantity * percent / 100).toFixed(2);
+        quantityInput.value = quantity;
+    } else if (action === 'sell') {
+        // Calculate max quantity based on holdings
+        const maxQuantity = playerState.portfolio[assetName] || 0;
+        const quantity = (maxQuantity * percent / 100).toFixed(2);
+        quantityInput.value = quantity;
+    }
+
+    // Update trade summary
+    updateTradeSummary();
+}
 
 // Initialize portfolio action listeners
 window.initializePortfolioActionListeners = function() {
@@ -1111,6 +1243,15 @@ window.initializePortfolioActionListeners = function() {
             console.log('Sell all assets button clicked');
         });
     }
+
+    // Add event listeners for portfolio action buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.classList.contains('portfolio-action-btn')) {
+            const asset = event.target.getAttribute('data-asset');
+            const action = event.target.getAttribute('data-action');
+            showTradePanel(asset, action);
+        }
+    });
 }
 
 
