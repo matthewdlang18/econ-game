@@ -16,7 +16,9 @@ window.updateUI = function() {
         updateComparativeReturnsChart();
 
         // Update asset price in trade form
-        updateAssetPrice();
+        if (typeof window.updateAssetPrice === 'function') {
+            window.updateAssetPrice();
+        }
 
         // Update cash and portfolio displays
         updateCashAndPortfolioDisplays();
@@ -741,9 +743,23 @@ window.initializeCharts = function() {
 }
 
 // Update comparative returns chart
-function updateComparativeReturnsChart() {
+window.updateComparativeReturnsChart = function() {
     // This is a placeholder for the comparative returns chart
     // We'll implement this in a separate function to keep the file size manageable
+}
+
+// Update asset price in trade form
+window.updateAssetPrice = function() {
+    const assetSelect = document.getElementById('trade-asset');
+    const priceDisplay = document.getElementById('trade-price');
+
+    if (!assetSelect || !priceDisplay) return;
+
+    const selectedAsset = assetSelect.value;
+    if (!selectedAsset) return;
+
+    const price = gameState.assetPrices[selectedAsset] || 0;
+    priceDisplay.textContent = `$${price.toFixed(2)}`;
 }
 
 // Show trade panel
@@ -1045,30 +1061,7 @@ window.initializeTradeFormListeners = function() {
     }
 }
 
-    // Execute trade button
-    const executeTradeBtn = document.getElementById('execute-trade-btn');
-    if (executeTradeBtn) {
-        executeTradeBtn.addEventListener('click', executeTrade);
-    }
 
-    // Amount percentage buttons
-    const amountPercentBtns = document.querySelectorAll('.amount-percent-btn');
-    amountPercentBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const percent = parseInt(btn.getAttribute('data-percent'));
-            setAmountPercentage(percent);
-        });
-    });
-
-    // Quantity percentage buttons
-    const quantityPercentBtns = document.querySelectorAll('.quantity-percent-btn');
-    quantityPercentBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const percent = parseInt(btn.getAttribute('data-percent'));
-            setQuantityPercentage(percent);
-        });
-    });
-}
 
 // Initialize portfolio action listeners
 window.initializePortfolioActionListeners = function() {
