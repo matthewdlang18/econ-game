@@ -219,20 +219,46 @@ footer {
 }
 
 /* Asset ticker */
-.asset-ticker {
+.ticker-container {
   background-color: #212529;
   color: white;
+  overflow: hidden;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  border-radius: 4px;
+}
+
+.ticker-wrap {
+  width: 100%;
   padding: 10px 0;
-  overflow-x: auto;
-  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ticker {
   display: flex;
+  white-space: nowrap;
+  animation: ticker-scroll 30s linear infinite;
+}
+
+.ticker:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .ticker-item {
-  padding: 0 15px;
+  padding: 0 20px;
   border-right: 1px solid rgba(255,255,255,0.2);
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .ticker-item:last-child {
@@ -246,10 +272,14 @@ footer {
 
 .ticker-price {
   margin-right: 10px;
+  font-family: monospace;
 }
 
 .ticker-change {
   font-size: 0.9em;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
 }
 
 .ticker-change.positive {
@@ -258,6 +288,10 @@ footer {
 
 .ticker-change.negative {
   color: #dc3545;
+}
+
+.ticker-change.neutral {
+  color: #6c757d;
 }
 
 /* Game progress bar */
@@ -956,6 +990,67 @@ footer {
 
 .action-btn.sell:hover {
   background-color: #c82333;
+}
+
+/* Notification styles */
+#notification-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 350px;
+}
+
+.notification {
+  background-color: white;
+  border-left: 4px solid #007bff;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-bottom: 10px;
+  padding: 15px;
+  animation: slide-in 0.3s ease-out forwards;
+}
+
+.notification.success {
+  border-left-color: #28a745;
+}
+
+.notification.warning {
+  border-left-color: #ffc107;
+}
+
+.notification.danger {
+  border-left-color: #dc3545;
+}
+
+.notification.info {
+  border-left-color: #17a2b8;
+}
+
+@keyframes slide-in {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.notification.fade-out {
+  animation: slide-out 0.3s ease-in forwards;
 }
 
 /* Responsive styles */
