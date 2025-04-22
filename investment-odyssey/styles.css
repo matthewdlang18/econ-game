@@ -188,6 +188,164 @@ footer {
   color: white;
 }
 
+/* Game grid layout */
+.game-grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.market-panel {
+  flex: 1;
+  transition: width 0.3s ease;
+}
+
+.trade-panel {
+  flex: 0 0 35%;
+  background-color: #f7f7fa;
+  padding: 15px;
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+/* Asset table styles */
+.asset-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.asset-table th,
+.asset-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.asset-table th {
+  background-color: #f4f4f4;
+  font-weight: bold;
+  color: #555;
+}
+
+.asset-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.asset-table .up {
+  color: #28a745;
+}
+
+.asset-table .down {
+  color: #dc3545;
+}
+
+.trade-btn {
+  padding: 5px 10px;
+  margin-right: 5px;
+  font-size: 0.8em;
+  border-radius: 3px;
+  cursor: pointer;
+  width: auto;
+}
+
+.trade-btn.buy {
+  background-color: #28a745;
+  color: white;
+  border: none;
+}
+
+.trade-btn.sell {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+}
+
+.trade-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Trade form styles */
+.trade-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-group label {
+  font-weight: bold;
+  flex: 0 0 30%;
+}
+
+.form-group select,
+.form-group input {
+  flex: 0 0 65%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.trade-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* Results screen styles */
+.results-screen {
+  text-align: center;
+}
+
+.results-summary {
+  max-width: 500px;
+  margin: 30px auto;
+  background-color: #f7f7fa;
+  padding: 20px;
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
+}
+
+.result-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-label {
+  font-weight: bold;
+}
+
+.result-value {
+  font-size: 1.1em;
+}
+
+.result-value.positive {
+  color: #28a745;
+}
+
+.result-value.negative {
+  color: #dc3545;
+}
+
+.results-actions {
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
 /* Responsive styles */
 @media (max-width: 768px) {
   .mode-cards {
@@ -199,5 +357,29 @@ footer {
     width: 100%;
     max-width: 100%;
     margin-bottom: 20px;
+  }
+
+  .game-grid {
+    flex-direction: column;
+  }
+
+  .market-panel,
+  .trade-panel {
+    width: 100% !important;
+  }
+
+  .game-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .asset-table {
+    font-size: 0.9em;
+  }
+
+  .trade-btn {
+    padding: 4px 8px;
+    font-size: 0.75em;
   }
 }
