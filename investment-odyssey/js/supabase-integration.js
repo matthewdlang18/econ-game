@@ -156,7 +156,14 @@ async function saveGameState(gameId, userId, gameState) {
       return { data: null, error: null };
     }
 
-    // For special format IDs or real UUIDs, try to save to database
+    // For UUIDs, try to save to database
+    // First validate that gameId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(gameId)) {
+      console.error('Invalid UUID format for game_id:', gameId);
+      return { data: null, error: { message: 'Invalid UUID format for game_id' } };
+    }
+
     const { data, error } = await supabaseClient
       .from('game_states')
       .upsert({
@@ -208,7 +215,14 @@ async function loadGameState(gameId, userId) {
       return { data: null, error: null };
     }
 
-    // For special format IDs or real UUIDs, try to load from database
+    // For UUIDs, try to load from database
+    // First validate that gameId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(gameId)) {
+      console.error('Invalid UUID format for game_id:', gameId);
+      return { data: null, error: { message: 'Invalid UUID format for game_id' } };
+    }
+
     const { data, error } = await supabaseClient
       .from('game_states')
       .select('*')
@@ -248,7 +262,14 @@ async function savePlayerState(gameId, userId, playerState) {
       return { data: null, error: null };
     }
 
-    // For special format IDs or real UUIDs, try to save to database
+    // For UUIDs, try to save to database
+    // First validate that gameId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(gameId)) {
+      console.error('Invalid UUID format for game_id:', gameId);
+      return { data: null, error: { message: 'Invalid UUID format for game_id' } };
+    }
+
     const { data, error } = await supabaseClient
       .from('player_states')
       .upsert({
@@ -298,7 +319,14 @@ async function loadPlayerState(gameId, userId) {
       return { data: null, error: null };
     }
 
-    // For special format IDs or real UUIDs, try to load from database
+    // For UUIDs, try to load from database
+    // First validate that gameId is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(gameId)) {
+      console.error('Invalid UUID format for game_id:', gameId);
+      return { data: null, error: { message: 'Invalid UUID format for game_id' } };
+    }
+
     const { data, error } = await supabaseClient
       .from('player_states')
       .select('*')
@@ -368,8 +396,8 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
       return { data: leaderboardEntry, error: null };
     }
 
-    // For special format IDs or real UUIDs, try to save to database
-    // First check if there's an existing entry
+    // For UUIDs, try to save to database
+    // First check if there's an existing entry for this user
     const { data: existingEntry, error: checkError } = await supabaseClient
       .from('leaderboard')
       .select('*')
@@ -404,14 +432,30 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
     if (existingEntry) {
       // Update existing entry if new score is better
       if (finalValue > existingEntry.final_value) {
+        // Prepare update data
+        let updateData = {
+          final_value: finalValue,
+          user_name: userName // Update name in case it changed
+        };
+
+        // Only include game_id if it's a valid UUID
+        if (gameId) {
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          if (uuidRegex.test(gameId)) {
+            updateData.game_id = gameId;
+          } else {
+            console.warn('Invalid UUID format for game_id, omitting from leaderboard update:', gameId);
+          }
+        }
+
+        // Include section_id if provided
+        if (sectionId) {
+          updateData.section_id = sectionId;
+        }
+
         result = await supabaseClient
           .from('leaderboard')
-          .update({
-            final_value: finalValue,
-            user_name: userName, // Update name in case it changed
-            game_id: gameId,
-            section_id: sectionId
-          })
+          .update(updateData)
           .eq('id', existingEntry.id)
           .select();
 
@@ -422,16 +466,32 @@ async function submitToLeaderboard(userId, userName, gameMode, gameId, sectionId
       }
     } else {
       // Insert new entry
+      // Validate gameId if provided (it's optional in the leaderboard table)
+      let insertData = {
+        user_id: userId,
+        user_name: userName,
+        game_mode: gameMode,
+        final_value: finalValue
+      };
+
+      // Only include game_id if it's a valid UUID
+      if (gameId) {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(gameId)) {
+          insertData.game_id = gameId;
+        } else {
+          console.warn('Invalid UUID format for game_id, omitting from leaderboard entry:', gameId);
+        }
+      }
+
+      // Include section_id if provided
+      if (sectionId) {
+        insertData.section_id = sectionId;
+      }
+
       result = await supabaseClient
         .from('leaderboard')
-        .insert({
-          user_id: userId,
-          user_name: userName,
-          game_mode: gameMode,
-          game_id: gameId,
-          section_id: sectionId,
-          final_value: finalValue
-        })
+        .insert(insertData)
         .select();
 
       console.log('Inserted new leaderboard entry');
