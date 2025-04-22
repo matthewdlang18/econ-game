@@ -188,41 +188,150 @@ footer {
   color: white;
 }
 
-/* Dashboard grid layout */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+/* Dashboard layout */
+.game-dashboard {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.portfolio-summary-panel {
-  grid-column: 1;
-  background-color: #f7f7fa;
-  padding: 20px;
+/* Panel styles */
+.dashboard-panel {
+  background-color: white;
   border-radius: var(--border-radius);
-  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
 }
 
-.market-panel {
-  grid-column: 2;
-  transition: width 0.3s ease;
+.panel-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.trade-panel {
-  grid-column: 2;
-  background-color: #f7f7fa;
+.panel-content {
+  padding: 15px;
+}
+
+/* Asset ticker */
+.asset-ticker {
+  background-color: #212529;
+  color: white;
+  padding: 10px 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  display: flex;
+}
+
+.ticker-item {
+  padding: 0 15px;
+  border-right: 1px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+}
+
+.ticker-item:last-child {
+  border-right: none;
+}
+
+.ticker-name {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.ticker-price {
+  margin-right: 10px;
+}
+
+.ticker-change {
+  font-size: 0.9em;
+}
+
+.ticker-change.positive {
+  color: #28a745;
+}
+
+.ticker-change.negative {
+  color: #dc3545;
+}
+
+/* Game progress bar */
+.game-progress {
+  background-color: white;
   padding: 15px;
   border-radius: var(--border-radius);
-  border-left: 4px solid var(--primary-color);
-  margin-top: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.progress-info {
+  font-weight: bold;
+}
+
+.progress-actions {
+  display: flex;
+  gap: 10px;
 }
 
 /* Chart containers */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
 .chart-container {
-  height: 200px;
-  margin: 15px 0;
+  height: 250px;
   position: relative;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.chart-container.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-header {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  font-weight: bold;
+}
+
+.chart-body {
+  padding: 15px;
+  height: calc(100% - 40px);
+}
+
+/* Asset price history charts */
+.price-history-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.price-chart {
+  height: 200px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.price-chart.full-width {
+  grid-column: 1 / -1;
 }
 
 /* Portfolio summary styles */
@@ -261,7 +370,81 @@ footer {
   color: #dc3545;
 }
 
-/* Asset table styles */
+/* Market data table styles */
+.market-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0;
+  font-size: 0.95em;
+}
+
+.market-data-table th,
+.market-data-table td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.market-data-table th {
+  font-weight: bold;
+  color: #495057;
+  background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.market-data-table tr:hover {
+  background-color: #f9f9f9;
+}
+
+.market-data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.market-data-table .asset-name {
+  font-weight: bold;
+}
+
+.market-data-table .price {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+.market-data-table .change {
+  font-weight: bold;
+  text-align: right;
+}
+
+.market-data-table .quantity {
+  text-align: right;
+  font-family: monospace;
+}
+
+.market-data-table .value {
+  text-align: right;
+  font-weight: bold;
+  font-family: monospace;
+}
+
+.market-data-table .percentage {
+  text-align: right;
+  font-weight: bold;
+}
+
+.positive {
+  color: #28a745;
+}
+
+.negative {
+  color: #dc3545;
+}
+
+.neutral {
+  color: #6c757d;
+}
+
+/* Asset table styles - legacy */
 .asset-table {
   width: 100%;
   border-collapse: collapse;
@@ -319,7 +502,14 @@ footer {
   cursor: not-allowed;
 }
 
-/* Trade form styles */
+/* Trading interface styles */
+.trading-interface {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 15px;
+}
+
 .trade-form {
   display: flex;
   flex-direction: column;
@@ -328,23 +518,105 @@ footer {
 
 .form-group {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 5px;
 }
 
 .form-group label {
   font-weight: bold;
-  flex: 0 0 30%;
+  font-size: 0.9em;
+  color: #495057;
 }
 
 .form-group select,
 .form-group input {
-  flex: 0 0 65%;
-  padding: 8px;
-  border: 1px solid #ddd;
+  padding: 8px 10px;
+  border: 1px solid #ced4da;
   border-radius: 4px;
+  font-size: 1em;
 }
 
+.form-group select:focus,
+.form-group input:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.trade-summary {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.summary-item:last-child {
+  margin-bottom: 0;
+  padding-top: 10px;
+  border-top: 1px solid #ced4da;
+  font-weight: bold;
+}
+
+.execute-trade-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.execute-trade-btn:hover {
+  background-color: #0069d9;
+}
+
+.execute-trade-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Percentage buttons */
+.percentage-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.percentage-btn {
+  flex: 1;
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  padding: 5px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  transition: all 0.2s ease;
+}
+
+.percentage-btn:hover {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+}
+
+.percentage-btn.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+/* Legacy quantity shortcuts */
 .quantity-shortcuts {
   display: flex;
   justify-content: space-between;
@@ -606,26 +878,104 @@ footer {
   gap: 15px;
 }
 
+/* Portfolio actions styles */
+.portfolio-actions {
+  margin-top: 20px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 15px;
+}
+
+.portfolio-actions h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #495057;
+  font-size: 1.1em;
+}
+
+.asset-selection {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.asset-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.asset-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.action-btn {
+  padding: 8px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.action-btn.distribute {
+  background-color: #28a745;
+  color: white;
+  border: none;
+}
+
+.action-btn.distribute:hover {
+  background-color: #218838;
+}
+
+.action-btn.select {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  color: #495057;
+}
+
+.action-btn.select:hover {
+  background-color: #e9ecef;
+}
+
+.action-btn.sell {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+}
+
+.action-btn.sell:hover {
+  background-color: #c82333;
+}
+
 /* Responsive styles */
 @media (max-width: 992px) {
-  .dashboard-grid {
+  .chart-grid,
+  .price-history-grid {
     grid-template-columns: 1fr;
   }
 
-  .portfolio-summary-panel,
-  .market-panel,
-  .trade-panel {
-    grid-column: 1;
+  .chart-container.full-width,
+  .price-chart.full-width {
+    grid-column: auto;
   }
 
-  .chart-container {
-    height: 250px;
+  .trading-interface {
+    grid-template-columns: 1fr;
   }
 
-  .game-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+  .asset-ticker {
+    font-size: 0.9em;
   }
 }
 
@@ -641,8 +991,15 @@ footer {
     margin-bottom: 20px;
   }
 
-  .game-info {
-    grid-template-columns: 1fr;
+  .game-progress {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .progress-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .summary-stats {
@@ -653,14 +1010,17 @@ footer {
     overflow-x: auto;
   }
 
-  .asset-table {
-    font-size: 0.9em;
+  .market-data-table {
+    font-size: 0.85em;
     min-width: 600px;
   }
 
-  .trade-btn {
-    padding: 4px 8px;
-    font-size: 0.75em;
+  .asset-selection {
+    grid-template-columns: 1fr;
+  }
+
+  .action-buttons {
+    grid-template-columns: 1fr;
   }
 
   .modal-content {
@@ -671,6 +1031,14 @@ footer {
 
   .trade-history-container {
     max-height: 300px;
+  }
+
+  .asset-ticker {
+    font-size: 0.8em;
+  }
+
+  .ticker-item {
+    padding: 0 10px;
   }
 }
 
@@ -688,12 +1056,16 @@ footer {
     width: 100%;
   }
 
-  .quantity-shortcuts {
+  .percentage-buttons {
     flex-wrap: wrap;
   }
 
-  .quantity-btn {
+  .percentage-btn {
     flex: 0 0 calc(50% - 5px);
     margin-bottom: 5px;
+  }
+
+  .asset-ticker {
+    overflow-x: scroll;
   }
 }

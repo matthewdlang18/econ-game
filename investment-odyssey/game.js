@@ -208,21 +208,44 @@ function loadGameInterface() {
     }
 
     // Determine if price went up or down
-    const priceDirection = priceChange >= 0 ? 'up' : 'down';
+    const changeClass = priceChange >= 0 ? 'positive' : 'negative';
+    const changeSymbol = priceChange >= 0 ? '+' : '';
 
     assetRows += `
       <tr data-asset="${asset}">
         <td class="asset-name">${asset}</td>
-        <td class="asset-price">$${price.toFixed(2)}</td>
-        <td class="asset-change ${priceDirection}">${priceChange >= 0 ? '+' : ''}${priceChangePercent.toFixed(2)}%</td>
-        <td class="asset-quantity">${quantity.toFixed(2)}</td>
-        <td class="asset-value">$${value.toFixed(2)}</td>
-        <td class="asset-percent">${percentOfPortfolio.toFixed(2)}%</td>
-        <td class="asset-actions">
-          <button class="trade-btn buy" data-asset="${asset}">Buy</button>
-          <button class="trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
-        </td>
+        <td class="price">$${price.toFixed(2)}</td>
+        <td class="change ${changeClass}">${changeSymbol}${priceChangePercent.toFixed(2)}%</td>
+        <td class="quantity">${quantity.toFixed(6)}</td>
+        <td class="value">$${value.toFixed(2)}</td>
+        <td class="percentage">${percentOfPortfolio.toFixed(2)}%</td>
       </tr>
+    `;
+  }
+
+  // Create the asset ticker
+  let tickerItems = '';
+  for (const asset in gameState.asset_prices) {
+    const price = gameState.asset_prices[asset];
+    const priceHistory = gameState.price_history[asset];
+    let priceChange = 0;
+    let priceChangePercent = 0;
+
+    if (priceHistory.length > 1) {
+      const previousPrice = priceHistory[priceHistory.length - 2];
+      priceChange = price - previousPrice;
+      priceChangePercent = (priceChange / previousPrice) * 100;
+    }
+
+    const changeClass = priceChange >= 0 ? 'positive' : 'negative';
+    const changeSymbol = priceChange >= 0 ? '+' : '';
+
+    tickerItems += `
+      <div class="ticker-item">
+        <span class="ticker-name">${asset}</span>
+        <span class="ticker-price">$${price.toFixed(2)}</span>
+        <span class="ticker-change ${changeClass}">${changeSymbol}${priceChangePercent.toFixed(2)}%</span>
+      </div>
     `;
   }
 
@@ -250,13 +273,20 @@ function loadGameInterface() {
 
   // Create the game interface
   gameScreen.innerHTML = `
-    <div class="game-header">
-      <h2>Investment Odyssey Game</h2>
-      <div class="game-info">
-        <span class="round-indicator">Round: ${currentRound} / ${gameSession.max_rounds}</span>
-        <span class="cash-indicator">Cash: $${playerState.cash.toFixed(2)}</span>
-        <span class="portfolio-indicator">Portfolio: $${portfolioValue.toFixed(2)}</span>
-        <span class="total-indicator">Total: $${totalValue.toFixed(2)}</span>
+    <!-- Asset Ticker -->
+    <div class="asset-ticker">
+      ${tickerItems}
+    </div>
+
+    <!-- Game Progress -->
+    <div class="game-progress">
+      <div class="progress-info">
+        Game Progress: Round ${currentRound} of ${gameSession.max_rounds}
+      </div>
+      <div class="progress-actions">
+        <button id="start-game-btn" class="primary-btn" ${currentRound > 0 ? 'style="display:none;"' : ''}>Start Game</button>
+        <button id="next-round-btn" class="primary-btn" ${currentRound === 0 ? 'style="display:none;"' : ''}>Next Round</button>
+        <button id="start-over-btn" class="secondary-btn">Start Over <i class="fas fa-redo"></i></button>
       </div>
     </div>
 
