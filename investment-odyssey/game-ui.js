@@ -291,28 +291,23 @@ window.updateMarketData = function() {
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(2)}%</td>
             <td>
-                <button class="btn btn-sm btn-primary trade-btn buy" data-asset="${asset}">Buy</button>
-                <button class="btn btn-sm btn-danger trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
+                <button class="btn btn-sm btn-secondary select-asset-btn" data-asset="${asset}">Select</button>
             </td>
         `;
 
         tableBody.appendChild(row);
     }
 
-    // Add event listeners to the trade buttons
-    const tradeButtons = document.querySelectorAll('.trade-btn');
-    tradeButtons.forEach(button => {
+    // Add event listeners to the select asset buttons
+    const selectButtons = document.querySelectorAll('.select-asset-btn');
+    selectButtons.forEach(button => {
         button.addEventListener('click', function() {
             const asset = this.getAttribute('data-asset');
-            const action = this.classList.contains('buy') ? 'buy' : 'sell';
-            console.log(`Trade button clicked for ${asset}, action: ${action}`);
+            console.log(`Select button clicked for ${asset}`);
 
-            // Set the asset and action in the trade form
+            // Set the asset in the trade form
             const assetSelect = document.getElementById('asset-select') || document.getElementById('trade-asset-select');
-            const actionSelect = document.getElementById('action-select') || document.getElementById('trade-action');
-
             if (assetSelect) assetSelect.value = asset;
-            if (actionSelect) actionSelect.value = action;
 
             // Update the asset price display
             if (typeof updateAssetPrice === 'function') {
@@ -323,9 +318,9 @@ window.updateMarketData = function() {
 
             // Show the trade panel if it exists
             if (typeof showTradePanel === 'function') {
-                showTradePanel(asset, action);
+                showTradePanel(asset, 'buy');
             } else if (typeof window.showTradePanel === 'function') {
-                window.showTradePanel(asset, action);
+                window.showTradePanel(asset, 'buy');
             }
         });
     });

@@ -331,8 +331,8 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
       section_id: currentUser.section_id,
       final_value: totalValue,
       percent_return: percentReturn,
-      real_return: realPercentReturn,
-      completed_at: new Date().toISOString()
+      real_return: realPercentReturn
+      // Removed completed_at field as it's not in the database schema
     };
 
     console.log('Leaderboard entry:', leaderboardEntry);

@@ -768,20 +768,36 @@ function showTradePanel(asset, action) {
 
   // Function to update the trade total
   function updateTradeTotal() {
-    const quantity = parseFloat(tradeQuantity.value) || 0;
-    const price = gameState.asset_prices[asset];
-    const total = quantity * price;
+    try {
+      if (!tradeQuantity) {
+        console.error('Trade quantity input not found');
+        return;
+      }
 
-    tradeTotal.textContent = `$${total.toFixed(2)}`;
+      const quantity = parseFloat(tradeQuantity.value) || 0;
+      const price = gameState.asset_prices[asset];
+      const total = quantity * price;
 
-    // Disable the execute button if the quantity is invalid
-    const executeBtn = document.getElementById('execute-trade-btn');
+      // Check if tradeTotal exists before updating it
+      if (tradeTotal) {
+        tradeTotal.textContent = `$${total.toFixed(2)}`;
+      } else {
+        console.warn('Trade total element not found');
+      }
 
-    if (tradeAction.value === 'buy') {
-      executeBtn.disabled = total > playerState.cash || quantity <= 0;
-    } else { // sell
-      const currentQuantity = playerState.portfolio[asset] || 0;
-      executeBtn.disabled = quantity > currentQuantity || quantity <= 0;
+      // Disable the execute button if the quantity is invalid
+      const executeBtn = document.getElementById('execute-trade-btn');
+
+    if (tradeAction && executeBtn) {
+      if (tradeAction.value === 'buy') {
+        executeBtn.disabled = total > playerState.cash || quantity <= 0;
+      } else { // sell
+        const currentQuantity = playerState.portfolio[asset] || 0;
+        executeBtn.disabled = quantity > currentQuantity || quantity <= 0;
+      }
+    }
+    } catch (error) {
+      console.error('Error in updateTradeTotal:', error);
     }
   }
 
