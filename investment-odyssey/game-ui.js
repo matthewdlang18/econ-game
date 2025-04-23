@@ -368,39 +368,71 @@ window.updatePortfolioChart = function() {
 
 // Update portfolio allocation chart
 window.updatePortfolioAllocationChart = function() {
-    const canvas = document.getElementById('portfolio-allocation-chart');
-    if (!canvas) return;
-
-    // Prepare data for portfolio allocation chart
-    const portfolioData = [];
-    const portfolioLabels = [];
-    const portfolioColors = [
-        '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01', '#1976D2'
-    ];
-
-    // Add assets to portfolio data
-    let colorIndex = 0;
-    for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
-        if (quantity > 0) {
-            const value = quantity * gameState.assetPrices[asset];
-            portfolioData.push(value);
-            portfolioLabels.push(asset);
-            colorIndex = (colorIndex + 1) % portfolioColors.length;
+    try {
+        console.log('Updating portfolio allocation chart...');
+        const canvas = document.getElementById('portfolio-allocation-chart');
+        if (!canvas) {
+            console.error('Portfolio allocation chart canvas not found');
+            return;
         }
-    }
 
-    // Add cash to portfolio allocation
-    portfolioData.push(playerState.cash);
-    portfolioLabels.push('Cash');
+        // Destroy existing chart if it exists
+        if (window.portfolioAllocationChart) {
+            try {
+                console.log('Destroying existing portfolio allocation chart');
+                window.portfolioAllocationChart.destroy();
+                window.portfolioAllocationChart = null;
+            } catch (chartError) {
+                console.error('Error destroying portfolio allocation chart:', chartError);
+            }
+        }
 
-    // Create chart
-    if (window.portfolioAllocationChart) {
-        window.portfolioAllocationChart.data.labels = portfolioLabels;
-        window.portfolioAllocationChart.data.datasets[0].data = portfolioData;
-        window.portfolioAllocationChart.update();
-    } else {
+        // Clear the canvas manually
         const ctx = canvas.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
 
+        // Prepare data for portfolio allocation chart
+        const portfolioData = [];
+        const portfolioLabels = [];
+        const portfolioColors = [
+            '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01', '#1976D2'
+        ];
+
+        // Add assets to portfolio data
+        let colorIndex = 0;
+        for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
+            if (quantity > 0) {
+                const price = gameState.assetPrices[asset] || 0;
+                const value = quantity * price;
+                if (value > 0) {
+                    portfolioData.push(value);
+                    portfolioLabels.push(asset);
+                    colorIndex = (colorIndex + 1) % portfolioColors.length;
+                }
+            }
+        }
+
+        // Add cash to portfolio allocation
+        if (playerState.cash > 0) {
+            portfolioData.push(playerState.cash);
+            portfolioLabels.push('Cash');
+        }
+
+        // Check if we have any data to display
+        if (portfolioData.length === 0) {
+            console.log('No portfolio data to display');
+            return;
+        }
+
+        console.log('Creating new portfolio allocation chart with data:', portfolioData, portfolioLabels);
+
+        // Create a new chart with a unique ID
+        const chartId = 'portfolio-allocation-' + Date.now();
+        canvas.id = chartId;
+
+        // Create chart
         window.portfolioAllocationChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -435,6 +467,10 @@ window.updatePortfolioAllocationChart = function() {
                 }
             }
         });
+
+        console.log('Portfolio allocation chart created successfully');
+    } catch (error) {
+        console.error('Error updating portfolio allocation chart:', error);
     }
 }
 
@@ -1344,7 +1380,275 @@ window.initializeTradeFormListeners = function() {
 
     // Initialize trade form controls
     window.initializeTradeFormControls();
+
+    // Initialize trade panel with advanced controls
+    window.initializeTradePanel();
 };
+
+// Initialize trade panel with advanced controls
+window.initializeTradePanel = function() {
+    try {
+        console.log('Initializing trade panel with advanced controls...');
+
+        const tradePanel = document.querySelector('.trade-panel');
+        const cancelTradeBtn = document.getElementById('cancel-trade-btn');
+        const executeTradeBtn = document.getElementById('execute-trade-btn');
+        const tradeQuantity = document.getElementById('trade-quantity');
+        const tradeAmount = document.getElementById('trade-amount');
+        const tradeAction = document.getElementById('trade-action');
+        const quantitySlider = document.getElementById('quantity-slider');
+        const amountSlider = document.getElementById('amount-slider');
+        const quantityPercentage = document.getElementById('quantity-percentage');
+        const amountPercentage = document.getElementById('amount-percentage');
+        const quantityPercentButtons = document.querySelectorAll('.quantity-percent-btn');
+        const amountPercentButtons = document.querySelectorAll('.amount-percent-btn');
+
+        if (!tradePanel) {
+            console.error('Trade panel not found');
+            return;
+        }
+
+        console.log('Trade panel elements found, adding event listeners...');
+
+        // Add event listener to cancel button
+        if (cancelTradeBtn) {
+            cancelTradeBtn.addEventListener('click', function() {
+                tradePanel.style.display = 'none';
+            });
+        }
+
+        // Add event listener to execute button
+        if (executeTradeBtn) {
+            executeTradeBtn.addEventListener('click', function() {
+                if (typeof window.executeTrade === 'function') {
+                    window.executeTrade();
+                } else if (typeof executeTrade === 'function') {
+                    executeTrade();
+                }
+            });
+        }
+
+        // Add event listeners for quantity input
+        if (tradeQuantity) {
+            tradeQuantity.addEventListener('input', function() {
+                const quantity = parseFloat(this.value) || 0;
+                const asset = document.getElementById('trade-asset-name').textContent;
+                const price = gameState.assetPrices[asset] || 0;
+
+                // Update amount
+                if (tradeAmount && !tradeAmount._updating) {
+                    tradeQuantity._updating = true;
+                    tradeAmount.value = (quantity * price).toFixed(2);
+                    tradeQuantity._updating = false;
+                }
+
+                // Update sliders and percentage inputs
+                updateTradeSliders();
+
+                // Update trade summary
+                if (typeof window.updateTradeSummary === 'function') {
+                    window.updateTradeSummary();
+                } else if (typeof updateTradeSummary === 'function') {
+                    updateTradeSummary();
+                }
+            });
+        }
+
+        // Add event listeners for amount input
+        if (tradeAmount) {
+            tradeAmount.addEventListener('input', function() {
+                const amount = parseFloat(this.value) || 0;
+                const asset = document.getElementById('trade-asset-name').textContent;
+                const price = gameState.assetPrices[asset] || 0;
+
+                // Update quantity
+                if (tradeQuantity && !tradeQuantity._updating && price > 0) {
+                    tradeAmount._updating = true;
+                    tradeQuantity.value = (amount / price).toFixed(6);
+                    tradeAmount._updating = false;
+                }
+
+                // Update sliders and percentage inputs
+                updateTradeSliders();
+
+                // Update trade summary
+                if (typeof window.updateTradeSummary === 'function') {
+                    window.updateTradeSummary();
+                } else if (typeof updateTradeSummary === 'function') {
+                    updateTradeSummary();
+                }
+            });
+        }
+
+        // Add event listeners for action change
+        if (tradeAction) {
+            tradeAction.addEventListener('change', function() {
+                // Reset inputs
+                if (tradeQuantity) tradeQuantity.value = '';
+                if (tradeAmount) tradeAmount.value = '';
+                if (quantitySlider) quantitySlider.value = 0;
+                if (amountSlider) amountSlider.value = 0;
+                if (quantityPercentage) quantityPercentage.value = 0;
+                if (amountPercentage) amountPercentage.value = 0;
+
+                // Update trade summary
+                if (typeof window.updateTradeSummary === 'function') {
+                    window.updateTradeSummary();
+                } else if (typeof updateTradeSummary === 'function') {
+                    updateTradeSummary();
+                }
+            });
+        }
+
+        // Add event listeners for quantity slider
+        if (quantitySlider) {
+            quantitySlider.addEventListener('input', function() {
+                const percent = parseInt(this.value);
+                if (quantityPercentage) quantityPercentage.value = percent;
+
+                const action = tradeAction.value;
+                const asset = document.getElementById('trade-asset-name').textContent;
+
+                if (action === 'sell') {
+                    // Set percentage of available asset
+                    const availableQuantity = playerState.portfolio[asset] || 0;
+                    if (tradeQuantity) tradeQuantity.value = (availableQuantity * (percent / 100)).toFixed(6);
+
+                    // Trigger input event to update other fields
+                    tradeQuantity.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        // Add event listeners for amount slider
+        if (amountSlider) {
+            amountSlider.addEventListener('input', function() {
+                const percent = parseInt(this.value);
+                if (amountPercentage) amountPercentage.value = percent;
+
+                const action = tradeAction.value;
+
+                if (action === 'buy') {
+                    // Set percentage of available cash
+                    const availableCash = playerState.cash;
+                    if (tradeAmount) tradeAmount.value = (availableCash * (percent / 100)).toFixed(2);
+
+                    // Trigger input event to update other fields
+                    tradeAmount.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        // Add event listeners for quantity percentage input
+        if (quantityPercentage) {
+            quantityPercentage.addEventListener('input', function() {
+                const percent = parseInt(this.value) || 0;
+                if (quantitySlider) quantitySlider.value = percent;
+
+                const action = tradeAction.value;
+                const asset = document.getElementById('trade-asset-name').textContent;
+
+                if (action === 'sell') {
+                    // Set percentage of available asset
+                    const availableQuantity = playerState.portfolio[asset] || 0;
+                    if (tradeQuantity) tradeQuantity.value = (availableQuantity * (percent / 100)).toFixed(6);
+
+                    // Trigger input event to update other fields
+                    tradeQuantity.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        // Add event listeners for amount percentage input
+        if (amountPercentage) {
+            amountPercentage.addEventListener('input', function() {
+                const percent = parseInt(this.value) || 0;
+                if (amountSlider) amountSlider.value = percent;
+
+                const action = tradeAction.value;
+
+                if (action === 'buy') {
+                    // Set percentage of available cash
+                    const availableCash = playerState.cash;
+                    if (tradeAmount) tradeAmount.value = (availableCash * (percent / 100)).toFixed(2);
+
+                    // Trigger input event to update other fields
+                    tradeAmount.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+
+        // Add event listeners for quantity percentage buttons
+        quantityPercentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const percent = parseInt(this.getAttribute('data-percent'));
+                if (quantityPercentage) {
+                    quantityPercentage.value = percent;
+                    quantityPercentage.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
+        // Add event listeners for amount percentage buttons
+        amountPercentButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const percent = parseInt(this.getAttribute('data-percent'));
+                if (amountPercentage) {
+                    amountPercentage.value = percent;
+                    amountPercentage.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+
+        console.log('Trade panel initialized successfully');
+    } catch (error) {
+        console.error('Error initializing trade panel:', error);
+    }
+}
+
+// Update trade sliders based on current inputs
+window.updateTradeSliders = function() {
+    try {
+        const tradeQuantity = document.getElementById('trade-quantity');
+        const tradeAmount = document.getElementById('trade-amount');
+        const tradeAction = document.getElementById('trade-action');
+        const quantitySlider = document.getElementById('quantity-slider');
+        const amountSlider = document.getElementById('amount-slider');
+        const quantityPercentage = document.getElementById('quantity-percentage');
+        const amountPercentage = document.getElementById('amount-percentage');
+
+        if (!tradeAction) return;
+
+        const action = tradeAction.value;
+        const asset = document.getElementById('trade-asset-name').textContent;
+
+        // Update quantity slider and percentage for sell action
+        if (action === 'sell' && tradeQuantity && quantitySlider && quantityPercentage) {
+            const quantity = parseFloat(tradeQuantity.value) || 0;
+            const availableQuantity = playerState.portfolio[asset] || 0;
+
+            if (availableQuantity > 0) {
+                const percent = Math.min(100, Math.round((quantity / availableQuantity) * 100));
+                quantitySlider.value = percent;
+                quantityPercentage.value = percent;
+            }
+        }
+
+        // Update amount slider and percentage for buy action
+        if (action === 'buy' && tradeAmount && amountSlider && amountPercentage) {
+            const amount = parseFloat(tradeAmount.value) || 0;
+            const availableCash = playerState.cash;
+
+            if (availableCash > 0) {
+                const percent = Math.min(100, Math.round((amount / availableCash) * 100));
+                amountSlider.value = percent;
+                amountPercentage.value = percent;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating trade sliders:', error);
+    }
+}
 
 // Add direct event listeners to all trade buttons
 window.addTradeButtonListeners = function() {
