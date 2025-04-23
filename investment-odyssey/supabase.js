@@ -299,6 +299,64 @@ function calculatePortfolioValue(portfolio, assetPrices) {
   return value;
 }
 
+// Save game results to leaderboard
+async function saveToLeaderboard(gameId, playerState, gameState) {
+  if (!currentUser) {
+    console.error('No current user found');
+    return false;
+  }
+
+  try {
+    console.log('Saving game results to leaderboard for game:', gameId);
+
+    // Calculate final portfolio value
+    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.asset_prices || gameState.assetPrices);
+    const totalValue = playerState.cash + portfolioValue;
+
+    // Calculate performance metrics
+    const initialValue = 10000; // Starting cash
+    const totalReturn = totalValue - initialValue;
+    const percentReturn = (totalReturn / initialValue) * 100;
+
+    // Calculate inflation-adjusted return
+    const cpi = gameState.cpi || gameState.CPI || 100;
+    const realReturn = (totalValue / cpi * 100) - initialValue;
+    const realPercentReturn = (realReturn / initialValue) * 100;
+
+    // Create leaderboard entry
+    const leaderboardEntry = {
+      game_id: gameId,
+      user_id: currentUser.id,
+      user_name: currentUser.name || 'Anonymous',
+      section_id: currentUser.section_id,
+      final_value: totalValue,
+      percent_return: percentReturn,
+      real_return: realPercentReturn,
+      completed_at: new Date().toISOString()
+    };
+
+    console.log('Leaderboard entry:', leaderboardEntry);
+
+    // Save to leaderboard table
+    const { data, error } = await supabase
+      .from('leaderboard')
+      .upsert([leaderboardEntry], { onConflict: 'game_id,user_id' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving to leaderboard:', error);
+      return false;
+    }
+
+    console.log('Successfully saved to leaderboard:', data);
+    return true;
+  } catch (error) {
+    console.error('Error in saveToLeaderboard:', error);
+    return false;
+  }
+}
+
 // Create a new game state for the next round
 async function createNextRoundState(gameId, previousState) {
   if (!currentUser) {
@@ -699,5 +757,6 @@ window.gameSupabase = {
   getGameState,
   updatePlayerState,
   createNextRoundState,
-  completeGame
+  completeGame,
+  saveToLeaderboard
 };

@@ -463,18 +463,38 @@ function calculatePortfolioValue() {
 
 // End game
 function endGame() {
-    // Calculate final portfolio value
-    const portfolioValue = calculatePortfolioValue();
-    const totalValue = playerState.cash + portfolioValue;
+    try {
+        console.log('Ending game...');
 
-    // Calculate performance metrics
-    const initialValue = 10000; // Starting cash
-    const totalReturn = totalValue - initialValue;
-    const percentReturn = (totalReturn / initialValue) * 100;
+        // Calculate final portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        const totalValue = playerState.cash + portfolioValue;
 
-    // Calculate inflation-adjusted return
-    const realReturn = (totalValue / gameState.CPI * 100) - initialValue;
-    const realPercentReturn = (realReturn / initialValue) * 100;
+        // Calculate performance metrics
+        const initialValue = 10000; // Starting cash
+        const totalReturn = totalValue - initialValue;
+        const percentReturn = (totalReturn / initialValue) * 100;
+
+        // Calculate inflation-adjusted return
+        const realReturn = (totalValue / gameState.CPI * 100) - initialValue;
+        const realPercentReturn = (realReturn / initialValue) * 100;
+
+        // Save to leaderboard if connected to Supabase
+        if (window.gameSession && window.gameSupabase) {
+            console.log('Saving to leaderboard...');
+            try {
+                // Check if saveToLeaderboard function exists
+                if (typeof window.gameSupabase.saveToLeaderboard === 'function') {
+                    window.gameSupabase.saveToLeaderboard(window.gameSession.id, playerState, gameState);
+                } else if (typeof saveToLeaderboard === 'function') {
+                    saveToLeaderboard(window.gameSession.id, playerState, gameState);
+                } else {
+                    console.warn('saveToLeaderboard function not found');
+                }
+            } catch (error) {
+                console.error('Error saving to leaderboard:', error);
+            }
+        }
 
     // Show results screen
     const gameScreen = document.getElementById('game-screen');
@@ -547,6 +567,10 @@ function endGame() {
 
     // Show notification
     showNotification('Game complete! Check your results.', 'success');
+    } catch (error) {
+        console.error('Error in endGame function:', error);
+        showNotification('Error ending game', 'danger');
+    }
 }
 
 // Save game state to local storage

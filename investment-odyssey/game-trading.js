@@ -39,18 +39,19 @@ function setQuantityPercentage(percentage) {
     }
 }
 
-// Execute trade - simplified version based on templates
+// Execute trade - based directly on templates/game-trading.js
 function executeTrade() {
     try {
         console.log('Executing trade...');
 
-        // Get trade form elements
-        const assetSelect = document.getElementById('trade-asset-select');
-        const actionSelect = document.getElementById('trade-action');
-        const quantityInput = document.getElementById('trade-quantity');
+        // Get trade form elements - use both possible IDs to handle different HTML structures
+        const assetSelect = document.getElementById('asset-select') || document.getElementById('trade-asset-select');
+        const actionSelect = document.getElementById('action-select') || document.getElementById('trade-action');
+        const quantityInput = document.getElementById('quantity-input') || document.getElementById('trade-quantity');
 
         if (!assetSelect || !actionSelect || !quantityInput) {
             console.error('Missing required elements for executeTrade');
+            console.log('Looking for: asset-select/trade-asset-select, action-select/trade-action, quantity-input/trade-quantity');
             window.showNotification('Error: Missing form elements', 'danger');
             return;
         }
@@ -161,20 +162,38 @@ function executeTrade() {
 
         // Reset form
         quantityInput.value = '';
-        const amountInput = document.getElementById('trade-amount');
+        const amountInput = document.getElementById('amount-input') || document.getElementById('trade-amount');
         if (amountInput) {
             amountInput.value = '';
         }
 
-        // Update trade summary
+        // Update trade history list if the function exists
+        if (typeof window.updateTradeHistoryList === 'function') {
+            window.updateTradeHistoryList();
+        } else if (typeof updateTradeHistoryList === 'function') {
+            updateTradeHistoryList();
+        }
+
+        // Update trade summary if the function exists
         if (typeof window.updateTradeSummary === 'function') {
             window.updateTradeSummary();
+        } else if (typeof updateTradeSummary === 'function') {
+            updateTradeSummary();
         }
 
         // Save game state
         if (window.gameSession && window.gameSupabase) {
             // Save to Supabase
-            window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+            console.log('Saving trade to Supabase...');
+            window.gameSupabase.updatePlayerState(window.gameSession.id, playerState)
+                .then(() => {
+                    console.log('Trade saved to Supabase successfully');
+                })
+                .catch(error => {
+                    console.error('Error saving trade to Supabase:', error);
+                    // Fall back to local storage
+                    saveGameState();
+                });
         } else {
             // Save to local storage
             saveGameState();

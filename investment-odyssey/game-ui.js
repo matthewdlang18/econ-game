@@ -1,14 +1,21 @@
 // UI Functions for Investment Odyssey
 
-// Update UI - simplified version based on templates
+// Update UI - robust version that handles missing elements
 window.updateUI = function() {
     try {
         console.log('Updating UI...');
 
-        // Update round displays
-        const currentRoundDisplay = document.getElementById('current-round');
+        // Update round displays - try multiple possible IDs
+        const currentRoundDisplay = document.getElementById('current-round') ||
+                                   document.getElementById('current-round-display');
         if (currentRoundDisplay) {
             currentRoundDisplay.textContent = gameState.roundNumber || 0;
+        }
+
+        // Update market round display
+        const marketRoundDisplay = document.getElementById('market-round-display');
+        if (marketRoundDisplay) {
+            marketRoundDisplay.textContent = gameState.roundNumber || 0;
         }
 
         // Update progress bar
@@ -40,20 +47,53 @@ window.updateUI = function() {
             totalValueDisplay.textContent = totalValue.toFixed(2);
         }
 
-        // Update market data table
-        updateMarketData();
+        const cpiDisplay = document.getElementById('cpi-display');
+        if (cpiDisplay) {
+            cpiDisplay.textContent = gameState.CPI.toFixed(2);
+        }
 
-        // Update price ticker
-        updatePriceTicker();
+        // Update market data table - safely
+        try {
+            updateMarketData();
+        } catch (error) {
+            console.error('Error updating market data:', error);
+        }
+
+        // Update price ticker - safely
+        try {
+            updatePriceTicker();
+        } catch (error) {
+            console.error('Error updating price ticker:', error);
+        }
 
         // Update trade summary
         if (typeof window.updateTradeSummary === 'function') {
-            window.updateTradeSummary();
+            try {
+                window.updateTradeSummary();
+            } catch (error) {
+                console.error('Error updating trade summary:', error);
+            }
         }
 
-        // Update charts
-        updatePortfolioChart();
-        updatePortfolioAllocationChart();
+        // Update asset price in trade form
+        try {
+            updateAssetPrice();
+        } catch (error) {
+            console.error('Error updating asset price:', error);
+        }
+
+        // Update charts - safely
+        try {
+            updatePortfolioChart();
+        } catch (error) {
+            console.error('Error updating portfolio chart:', error);
+        }
+
+        try {
+            updatePortfolioAllocationChart();
+        } catch (error) {
+            console.error('Error updating portfolio allocation chart:', error);
+        }
 
         console.log('UI updated successfully');
     } catch (error) {
@@ -167,34 +207,48 @@ window.updateRoundProgress = function() {
     }
 }
 
-// Update market data
+// Update market data - robust version that handles missing elements
 window.updateMarketData = function() {
-    let tableBody = document.getElementById('market-data-table');
-    if (!tableBody) {
-        console.warn('Market data table not found, trying alternative ID');
-        // Try alternative ID
-        tableBody = document.querySelector('#market-data-table tbody');
+    try {
+        // Try multiple possible IDs for the market data table
+        let tableBody = document.getElementById('market-data-table') ||
+                        document.getElementById('asset-prices-table') ||
+                        document.querySelector('#market-data-table tbody');
+
         if (!tableBody) {
-            console.error('Could not find market data table');
+            // If we still can't find it, try to find any table that might be the market data table
+            const tables = document.querySelectorAll('table');
+            for (const table of tables) {
+                if (table.id.includes('market') || table.id.includes('asset') ||
+                    table.className.includes('market') || table.className.includes('asset')) {
+                    tableBody = table.querySelector('tbody') || table;
+                    break;
+                }
+            }
+        }
+
+        if (!tableBody) {
+            console.warn('Market data table not found, skipping update');
             return;
         }
-    }
-    if (!tableBody) return;
 
-    // Clear existing rows
-    tableBody.innerHTML = '';
+        // Clear existing rows
+        tableBody.innerHTML = '';
 
-    // Add Cash row first
-    const cashRow = document.createElement('tr');
-    cashRow.innerHTML = `
-        <td>Cash</td>
-        <td class="price-cell">$1.00</td>
-        <td class="text-secondary">0.00%</td>
-        <td>${playerState.cash.toFixed(6)}</td>
-        <td>$${playerState.cash.toFixed(2)}</td>
-        <td>${(playerState.cash / (window.calculatePortfolioValue() + playerState.cash) * 100).toFixed(2)}%</td>
-    `;
-    tableBody.appendChild(cashRow);
+        // Add Cash row first
+        const cashRow = document.createElement('tr');
+        cashRow.innerHTML = `
+            <td>Cash</td>
+            <td class="price-cell">$1.00</td>
+            <td class="text-secondary">0.00%</td>
+            <td>${playerState.cash.toFixed(6)}</td>
+            <td>$${playerState.cash.toFixed(2)}</td>
+            <td>${(playerState.cash / (window.calculatePortfolioValue() + playerState.cash) * 100).toFixed(2)}%</td>
+            <td>
+                <!-- No action button for cash -->
+            </td>
+        `;
+        tableBody.appendChild(cashRow);
 
     // Add rows for each asset
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
@@ -237,21 +291,60 @@ window.updateMarketData = function() {
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(2)}%</td>
             <td>
-                <button class="btn btn-sm btn-primary select-asset-btn" data-asset="${asset}">Select</button>
+                <button class="btn btn-sm btn-primary trade-btn buy" data-asset="${asset}">Buy</button>
+                <button class="btn btn-sm btn-danger trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
             </td>
         `;
 
         tableBody.appendChild(row);
     }
+
+    // Add event listeners to the trade buttons
+    const tradeButtons = document.querySelectorAll('.trade-btn');
+    tradeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const asset = this.getAttribute('data-asset');
+            const action = this.classList.contains('buy') ? 'buy' : 'sell';
+            console.log(`Trade button clicked for ${asset}, action: ${action}`);
+
+            // Set the asset and action in the trade form
+            const assetSelect = document.getElementById('asset-select') || document.getElementById('trade-asset-select');
+            const actionSelect = document.getElementById('action-select') || document.getElementById('trade-action');
+
+            if (assetSelect) assetSelect.value = asset;
+            if (actionSelect) actionSelect.value = action;
+
+            // Update the asset price display
+            if (typeof updateAssetPrice === 'function') {
+                updateAssetPrice();
+            } else if (typeof window.updateAssetPrice === 'function') {
+                window.updateAssetPrice();
+            }
+
+            // Show the trade panel if it exists
+            if (typeof showTradePanel === 'function') {
+                showTradePanel(asset, action);
+            } else if (typeof window.showTradePanel === 'function') {
+                window.showTradePanel(asset, action);
+            }
+        });
+    });
+    } catch (error) {
+        console.error('Error in updateMarketData:', error);
+    }
 }
 
-// Update price ticker
+// Update price ticker - robust version that handles missing elements
 window.updatePriceTicker = function() {
-    const ticker = document.getElementById('price-ticker');
-    if (!ticker) return;
+    try {
+        const ticker = document.getElementById('price-ticker');
+        if (!ticker) {
+            console.warn('Price ticker not found, skipping update');
+            return;
+        }
 
-    // Clear existing items
-    ticker.innerHTML = '';
+        // Clear existing items
+        ticker.innerHTML = '';
 
     // Add items for each asset
     for (const [asset, price] of Object.entries(gameState.assetPrices)) {
@@ -286,12 +379,19 @@ window.updatePriceTicker = function() {
 
         ticker.appendChild(tickerItem);
     }
+    } catch (error) {
+        console.error('Error in updatePriceTicker:', error);
+    }
 }
 
-// Update portfolio chart
+// Update portfolio chart - robust version that handles missing elements
 window.updatePortfolioChart = function() {
-    const canvas = document.getElementById('portfolio-chart');
-    if (!canvas) return;
+    try {
+        const canvas = document.getElementById('portfolio-chart');
+        if (!canvas) {
+            console.warn('Portfolio chart canvas not found, skipping update');
+            return;
+        }
 
     // Get portfolio value history (handle both naming conventions)
     const portfolioValueHistory = playerState.portfolio_value_history || playerState.portfolioValueHistory || [];
@@ -368,6 +468,9 @@ window.updatePortfolioChart = function() {
                 }
             }
         });
+    }
+    } catch (error) {
+        console.error('Error in updatePortfolioChart:', error);
     }
 }
 
@@ -531,16 +634,32 @@ window.updatePortfolioAllocationChart = function() {
     }
 }
 
-// Update asset price charts
+// Update asset price charts - robust version that handles missing elements
 window.updateAssetPriceCharts = function() {
-    // Update Real Estate & Gold chart
-    updateRealEstateGoldChart();
+    try {
+        // Update Real Estate & Gold chart
+        if (typeof updateRealEstateGoldChart === 'function') {
+            updateRealEstateGoldChart();
+        } else if (typeof window.updateRealEstateGoldChart === 'function') {
+            window.updateRealEstateGoldChart();
+        }
 
-    // Update Bonds, Commodities & S&P chart
-    updateBondsCommoditiesSPChart();
+        // Update Bonds, Commodities & S&P chart
+        if (typeof updateBondsCommoditiesSPChart === 'function') {
+            updateBondsCommoditiesSPChart();
+        } else if (typeof window.updateBondsCommoditiesSPChart === 'function') {
+            window.updateBondsCommoditiesSPChart();
+        }
 
-    // Update Bitcoin chart
-    updateBitcoinChart();
+        // Update Bitcoin chart
+        if (typeof updateBitcoinChart === 'function') {
+            updateBitcoinChart();
+        } else if (typeof window.updateBitcoinChart === 'function') {
+            window.updateBitcoinChart();
+        }
+    } catch (error) {
+        console.error('Error in updateAssetPriceCharts:', error);
+    }
 }
 
 // Update Real Estate & Gold chart
