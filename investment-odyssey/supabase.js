@@ -323,16 +323,15 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
     const realReturn = (totalValue / cpi * 100) - initialValue;
     const realPercentReturn = (realReturn / initialValue) * 100;
 
-    // Create leaderboard entry
+    // Create leaderboard entry - match the exact schema from db-setup.sql
     const leaderboardEntry = {
       game_id: gameId,
       user_id: currentUser.id,
       user_name: currentUser.name || 'Anonymous',
+      game_mode: 'single',
       section_id: currentUser.section_id,
-      final_value: totalValue,
-      percent_return: percentReturn,
-      real_return: realPercentReturn
-      // Removed completed_at field as it's not in the database schema
+      final_value: totalValue
+      // No percent_return or real_return fields in the schema
     };
 
     console.log('Leaderboard entry:', leaderboardEntry);
@@ -688,11 +687,12 @@ async function completeGame(gameId) {
       try {
         const leaderboardEntry = {
           user_id: currentUser.id,
-          user_name: currentUser.name,
+          user_name: currentUser.name || 'Anonymous',
           game_mode: 'single',
           game_id: gameId,
           section_id: gameSession.section_id,
           final_value: playerState.total_value
+          // Ensure we only include fields that exist in the schema
         };
 
         console.log('Upserting leaderboard entry:', leaderboardEntry);

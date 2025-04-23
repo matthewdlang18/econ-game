@@ -210,7 +210,7 @@ function loadGameInterface() {
     const changeSymbol = priceChange >= 0 ? '+' : '';
 
     assetRows += `
-      <tr data-asset="${asset}">
+      <tr data-asset="${asset}" class="asset-row" onclick="showTradePanel('${asset}', 'buy')">
         <td class="asset-name">${asset}</td>
         <td class="price">$${price.toFixed(2)}</td>
         <td class="change ${changeClass}">${changeSymbol}${priceChangePercent.toFixed(2)}%</td>
@@ -336,7 +336,6 @@ function loadGameInterface() {
                   <th>Quantity</th>
                   <th>Value</th>
                   <th>% of Portfolio</th>
-                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,32 +349,159 @@ function loadGameInterface() {
         <div class="trade-panel" style="display: none;">
           <h3>Trade <span id="trade-asset-name"></span></h3>
           <div class="trade-form">
-            <div class="form-group">
-              <label for="trade-action">Action:</label>
-              <select id="trade-action">
-                <option value="buy">Buy</option>
-                <option value="sell">Sell</option>
-              </select>
+            <div class="row mb-3">
+              <!-- Asset Selection and Action -->
+              <div class="col-md-6">
+                <div class="form-group mb-2">
+                  <label for="trade-asset-select">Select Asset</label>
+                  <select class="form-control form-control-sm" id="trade-asset-select" required>
+                    <option value="">-- Select Asset --</option>
+                    <option value="Bitcoin">Bitcoin</option>
+                    <option value="Bonds">Bonds</option>
+                    <option value="Commodities">Commodities</option>
+                    <option value="Gold">Gold</option>
+                    <option value="Real Estate">Real Estate</option>
+                    <option value="S&P 500">S&P 500</option>
+                  </select>
+                </div>
+                <div class="form-group mb-2">
+                  <label for="trade-action">Action</label>
+                  <select class="form-control form-control-sm" id="trade-action" required>
+                    <option value="buy">Buy</option>
+                    <option value="sell">Sell</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Current Price: $<span id="current-price-display">0.00</span></label>
+                </div>
+              </div>
+
+              <!-- Trade Summary -->
+              <div class="col-md-6">
+                <div class="card bg-light mb-2">
+                  <div class="card-body p-2">
+                    <h6 class="card-title mb-2">Trade Summary</h6>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span>Quantity:</span>
+                      <span id="quantity-display">0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1">
+                      <span>Total Cost:</span>
+                      <span>$<span id="total-cost-display">0.00</span></span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <span>Available Cash:</span>
+                      <span>$<span id="available-cash-display">0.00</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="trade-quantity">Quantity:</label>
-              <input type="number" id="trade-quantity" min="0" step="0.01" value="1">
+            <!-- Amount and Quantity Inputs -->
+            <div class="row">
+              <!-- Dollar Amount Input -->
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-body p-2">
+                    <h6 class="card-title">Amount ($)</h6>
+                    <div class="form-group mb-2">
+                      <div class="input-group input-group-sm">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text">$</span>
+                        </div>
+                        <input type="number" class="form-control form-control-sm" id="amount-input" min="0.01" step="0.01" required>
+                      </div>
+                    </div>
+                    <div class="form-group mb-0">
+                      <label for="amount-percentage">Percentage:</label>
+                      <div class="btn-group btn-group-sm w-100 mt-1">
+                        <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="25">25%</button>
+                        <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="50">50%</button>
+                        <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="75">75%</button>
+                        <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="100">100%</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quantity Input -->
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-body p-2">
+                    <h6 class="card-title">Quantity (<span id="quantity-unit">units</span>)</h6>
+                    <div class="form-group mb-2">
+                      <div class="input-group input-group-sm">
+                        <input type="number" class="form-control form-control-sm" id="trade-quantity" min="0.000001" step="0.000001" required>
+                      </div>
+                    </div>
+                    <div class="form-group mb-0">
+                      <label for="quantity-percentage">Percentage:</label>
+                      <div class="btn-group btn-group-sm w-100 mt-1">
+                        <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="25">25%</button>
+                        <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="50">50%</button>
+                        <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="75">75%</button>
+                        <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="100">100%</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="quantity-shortcuts">
-              <button class="quantity-btn" data-percent="25">25%</button>
-              <button class="quantity-btn" data-percent="50">50%</button>
-              <button class="quantity-btn" data-percent="75">75%</button>
-              <button class="quantity-btn" data-percent="100">100%</button>
+            <!-- Portfolio Diversification -->
+            <div class="row mt-3">
+              <div class="col-12">
+                <h5 class="mb-2">Portfolio Actions</h5>
+                <div class="card mb-3">
+                  <div class="card-body p-2">
+                    <h6 class="card-title mb-2">Select Assets for Diversification</h6>
+                    <div class="row mb-2">
+                      <div class="col-6">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-bitcoin" value="Bitcoin" checked>
+                          <label class="custom-control-label" for="diversify-bitcoin">Bitcoin</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-bonds" value="Bonds" checked>
+                          <label class="custom-control-label" for="diversify-bonds">Bonds</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-commodities" value="Commodities" checked>
+                          <label class="custom-control-label" for="diversify-commodities">Commodities</label>
+                        </div>
+                      </div>
+                      <div class="col-6">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-gold" value="Gold" checked>
+                          <label class="custom-control-label" for="diversify-gold">Gold</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-real-estate" value="Real Estate" checked>
+                          <label class="custom-control-label" for="diversify-real-estate">Real Estate</label>
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-sp500" value="S&P 500" checked>
+                          <label class="custom-control-label" for="diversify-sp500">S&P 500</label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                      <button id="select-all-assets-btn" class="btn btn-outline-secondary btn-sm">Select All</button>
+                      <button id="deselect-all-assets-btn" class="btn btn-outline-secondary btn-sm">Deselect All</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <button id="buy-all-btn" class="btn btn-success btn-sm">Distribute Cash Evenly</button>
+                  <button id="buy-selected-btn" class="btn btn-success btn-sm">Distribute to Selected</button>
+                  <button id="sell-all-btn" class="btn btn-danger btn-sm">Sell All Assets</button>
+                </div>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="trade-total">Total:</label>
-              <span id="trade-total">$0.00</span>
-            </div>
-
-            <div class="trade-buttons">
+            <div class="trade-buttons mt-3">
               <button id="execute-trade-btn" class="primary-btn">Execute Trade</button>
               <button id="cancel-trade-btn" class="secondary-btn">Cancel</button>
             </div>
@@ -1114,7 +1240,17 @@ function showGameResults() {
   `;
 
   // Add event listeners for the buttons
-  document.getElementById('play-again-btn').addEventListener('click', startSinglePlayerGame);
+  document.getElementById('play-again-btn').addEventListener('click', function() {
+    // Start a new single player game
+    if (typeof startSinglePlayerGame === 'function') {
+      startSinglePlayerGame();
+    } else if (typeof window.startSinglePlayerGame === 'function') {
+      window.startSinglePlayerGame();
+    } else {
+      // Fallback: reload the page
+      window.location.reload();
+    }
+  });
   document.getElementById('back-to-welcome').addEventListener('click', () => {
     gameScreen.style.display = 'none';
     welcomeScreen.style.display = 'block';
