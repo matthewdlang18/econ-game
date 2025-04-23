@@ -112,14 +112,49 @@ window.updateElementText = function(id, text) {
 
 // Update round progress
 window.updateRoundProgress = function() {
+    // Get current round from various possible sources
+    let currentRound = 0;
+    if (typeof window.currentRound !== 'undefined' && window.currentRound !== null) {
+        currentRound = window.currentRound;
+    } else if (gameState && typeof gameState.roundNumber !== 'undefined') {
+        currentRound = gameState.roundNumber;
+    } else if (gameState && typeof gameState.round_number !== 'undefined') {
+        currentRound = gameState.round_number;
+    }
+
+    console.log('Current round for progress bar:', currentRound);
+
+    // Get max rounds
+    let maxRounds = 20; // Default
+    if (gameState && typeof gameState.maxRounds !== 'undefined') {
+        maxRounds = gameState.maxRounds;
+    } else if (gameState && typeof gameState.max_rounds !== 'undefined') {
+        maxRounds = gameState.max_rounds;
+    }
+
+    console.log('Max rounds for progress bar:', maxRounds);
+
     // Update round displays
-    updateElementText('current-round-display', window.currentRound);
-    updateElementText('market-round-display', window.currentRound);
+    updateElementText('current-round-display', currentRound);
+    updateElementText('market-round-display', currentRound);
 
     // Update progress bar
     const progressBar = document.getElementById('round-progress');
     if (progressBar) {
-        const progress = (window.currentRound / gameState.maxRounds) * 100;
+        // Calculate progress percentage, ensuring it's a valid number
+        let progress = 0;
+        if (maxRounds > 0) {
+            progress = (currentRound / maxRounds) * 100;
+        }
+
+        // Ensure progress is a valid number
+        if (isNaN(progress)) {
+            progress = 0;
+        }
+
+        console.log('Progress bar percentage:', progress);
+
+        // Update progress bar
         progressBar.style.width = progress + '%';
         progressBar.setAttribute('aria-valuenow', progress);
         progressBar.textContent = progress.toFixed(0) + '%';
@@ -514,6 +549,12 @@ window.initializeCharts = function() {
     console.log('Initializing charts...');
 
     try {
+        // Make sure Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not available');
+            return;
+        }
+
         // Destroy all existing charts to prevent errors
         if (typeof window.destroyAllCharts === 'function') {
             window.destroyAllCharts();
@@ -523,6 +564,17 @@ window.initializeCharts = function() {
 
         // Wait a moment for the DOM to be ready and charts to be destroyed
         setTimeout(() => {
+            // Double-check that all charts are destroyed
+            if (typeof Chart.getChart === 'function') {
+                const canvases = document.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
+                    const chartInstance = Chart.getChart(canvas.id);
+                    if (chartInstance) {
+                        console.log(`Found existing chart on ${canvas.id}, destroying it`);
+                        chartInstance.destroy();
+                    }
+                });
+            }
         // Initialize portfolio value chart
         const portfolioValueCanvas = document.getElementById('portfolio-value-chart');
         if (portfolioValueCanvas) {
@@ -811,7 +863,7 @@ window.initializeCharts = function() {
         }
 
         console.log('Charts initialized successfully');
-        }, 300); // End of setTimeout - increased to 300ms for better reliability
+        }, 500); // End of setTimeout - increased to 500ms for better reliability
     } catch (error) {
         console.error('Error initializing charts:', error);
     }
@@ -821,32 +873,69 @@ window.initializeCharts = function() {
 window.destroyAllCharts = function() {
     console.log('Destroying all charts...');
     try {
-        // Get all canvas elements
-        const canvases = document.querySelectorAll('canvas');
-        console.log(`Found ${canvases.length} canvas elements`);
+        // First, try to destroy charts by reference
+        const chartRefs = [
+            'portfolioChart', 'portfolioAllocationChart', 'realEstateGoldChart',
+            'bondsCommoditiesSPChart', 'bitcoinChart', 'cpiChart'
+        ];
 
-        // Clear each canvas
-        canvases.forEach(canvas => {
+        chartRefs.forEach(ref => {
             try {
-                // Try to get the chart instance from the canvas
-                const chartInstance = Chart.getChart(canvas);
-                if (chartInstance) {
-                    console.log(`Destroying chart on canvas ${canvas.id}`);
-                    chartInstance.destroy();
-                } else {
-                    console.log(`No chart instance found for canvas ${canvas.id}`);
-                    // Clear the canvas manually
+                if (window[ref]) {
+                    console.log(`Destroying chart by reference: ${ref}`);
+                    window[ref].destroy();
+                    window[ref] = null;
+                }
+            } catch (refError) {
+                console.error(`Error destroying chart reference ${ref}:`, refError);
+            }
+        });
+
+        // Then, try to destroy all charts using Chart.getChart
+        if (typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
+            // Get all canvas elements
+            const canvases = document.querySelectorAll('canvas');
+            console.log(`Found ${canvases.length} canvas elements`);
+
+            // Clear each canvas
+            canvases.forEach(canvas => {
+                try {
+                    // Try to get the chart instance from the canvas
+                    const chartInstance = Chart.getChart(canvas.id);
+                    if (chartInstance) {
+                        console.log(`Destroying chart on canvas ${canvas.id}`);
+                        chartInstance.destroy();
+                    } else {
+                        console.log(`No chart instance found for canvas ${canvas.id}`);
+                    }
+
+                    // Clear the canvas manually anyway
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                     }
+                } catch (canvasError) {
+                    console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
                 }
-            } catch (canvasError) {
-                console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
-            }
-        });
+            });
+        } else {
+            console.warn('Chart.getChart is not available, using fallback method');
 
-        // Reset chart references
+            // Fallback: try to clear all canvases manually
+            const canvases = document.querySelectorAll('canvas');
+            canvases.forEach(canvas => {
+                try {
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                } catch (canvasError) {
+                    console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
+                }
+            });
+        }
+
+        // Reset all chart references to be safe
         window.portfolioChart = null;
         window.portfolioAllocationChart = null;
         window.realEstateGoldChart = null;
@@ -1455,8 +1544,25 @@ window.initializePortfolioActionListeners = function() {
     const buyAllBtn = document.getElementById('buy-all-btn');
     if (buyAllBtn) {
         buyAllBtn.addEventListener('click', function() {
-            // Implement buy all assets functionality
             console.log('Buy all assets button clicked');
+            if (typeof window.buyAllAssets === 'function') {
+                window.buyAllAssets();
+            } else if (typeof buyAllAssets === 'function') {
+                buyAllAssets();
+            }
+        });
+    }
+
+    // Buy selected assets button
+    const buySelectedBtn = document.getElementById('buy-selected-btn');
+    if (buySelectedBtn) {
+        buySelectedBtn.addEventListener('click', function() {
+            console.log('Buy selected assets button clicked');
+            if (typeof window.buySelectedAssets === 'function') {
+                window.buySelectedAssets();
+            } else if (typeof buySelectedAssets === 'function') {
+                buySelectedAssets();
+            }
         });
     }
 
@@ -1464,8 +1570,34 @@ window.initializePortfolioActionListeners = function() {
     const sellAllBtn = document.getElementById('sell-all-btn');
     if (sellAllBtn) {
         sellAllBtn.addEventListener('click', function() {
-            // Implement sell all assets functionality
             console.log('Sell all assets button clicked');
+            if (typeof window.sellAllAssets === 'function') {
+                window.sellAllAssets();
+            } else if (typeof sellAllAssets === 'function') {
+                sellAllAssets();
+            }
+        });
+    }
+
+    // Select all assets button
+    const selectAllBtn = document.getElementById('select-all-assets-btn');
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            console.log('Select all assets button clicked');
+            document.querySelectorAll('.diversify-asset').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        });
+    }
+
+    // Deselect all assets button
+    const deselectAllBtn = document.getElementById('deselect-all-assets-btn');
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            console.log('Deselect all assets button clicked');
+            document.querySelectorAll('.diversify-asset').forEach(checkbox => {
+                checkbox.checked = false;
+            });
         });
     }
 

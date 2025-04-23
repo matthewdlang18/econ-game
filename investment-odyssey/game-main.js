@@ -322,6 +322,67 @@ function loadGameInterface() {
             </div>
         </div>
 
+        <!-- Portfolio Diversification -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Portfolio Diversification</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6 class="mb-2">Select Assets for Diversification</h6>
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-bitcoin" value="Bitcoin" checked>
+                                            <label class="custom-control-label" for="diversify-bitcoin">Bitcoin</label>
+                                        </div>
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-bonds" value="Bonds" checked>
+                                            <label class="custom-control-label" for="diversify-bonds">Bonds</label>
+                                        </div>
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-commodities" value="Commodities" checked>
+                                            <label class="custom-control-label" for="diversify-commodities">Commodities</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-gold" value="Gold" checked>
+                                            <label class="custom-control-label" for="diversify-gold">Gold</label>
+                                        </div>
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-real-estate" value="Real Estate" checked>
+                                            <label class="custom-control-label" for="diversify-real-estate">Real Estate</label>
+                                        </div>
+                                        <div class="custom-control custom-checkbox mb-2">
+                                            <input type="checkbox" class="custom-control-input diversify-asset" id="diversify-sp500" value="S&P 500" checked>
+                                            <label class="custom-control-label" for="diversify-sp500">S&P 500</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between mt-2">
+                                    <button id="select-all-assets-btn" class="btn btn-outline-secondary btn-sm">Select All</button>
+                                    <button id="deselect-all-assets-btn" class="btn btn-outline-secondary btn-sm">Deselect All</button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-2">Diversification Actions</h6>
+                                <p class="small text-muted mb-3">Distribute your cash across multiple assets to reduce risk.</p>
+                                <div class="d-flex justify-content-between">
+                                    <button id="buy-all-btn" class="btn btn-success btn-sm">Distribute Cash Evenly</button>
+                                    <button id="buy-selected-btn" class="btn btn-success btn-sm">Distribute to Selected</button>
+                                    <button id="sell-all-btn" class="btn btn-danger btn-sm">Sell All Assets</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Game Controls -->
         <div class="row mb-3">
             <div class="col-12">
