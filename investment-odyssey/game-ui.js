@@ -5,11 +5,6 @@ window.updateUI = function() {
     try {
         console.log('Updating UI...');
 
-        // First destroy all charts to prevent errors
-        if (typeof window.destroyAllCharts === 'function') {
-            window.destroyAllCharts();
-        }
-
         // Normalize game state if available
         if (window.normalizeGameState && window.gameState) {
             window.gameState = window.normalizeGameState(window.gameState);
@@ -50,7 +45,34 @@ window.updateUI = function() {
             updateAssetPrice();
         }
 
-        // Update charts with a delay to ensure DOM is ready
+        // Update trade history display
+        if (typeof window.updateTradeHistory === 'function') {
+            window.updateTradeHistory();
+        } else if (typeof updateTradeHistory === 'function') {
+            updateTradeHistory();
+        }
+
+        // First destroy all charts to prevent errors
+        if (typeof window.destroyAllCharts === 'function') {
+            window.destroyAllCharts();
+        }
+
+        // Force cleanup of any Chart.js instances
+        if (typeof Chart !== 'undefined' && typeof Chart.instances === 'object') {
+            console.log('Cleaning up Chart.js instances registry');
+            Object.keys(Chart.instances).forEach(key => {
+                try {
+                    if (Chart.instances[key]) {
+                        Chart.instances[key].destroy();
+                        delete Chart.instances[key];
+                    }
+                } catch (error) {
+                    console.error(`Error destroying Chart.instances[${key}]:`, error);
+                }
+            });
+        }
+
+        // Update charts with a longer delay to ensure DOM is ready
         setTimeout(() => {
             try {
                 // Update portfolio chart
@@ -60,32 +82,53 @@ window.updateUI = function() {
                     updatePortfolioChart();
                 }
 
-                // Update portfolio allocation chart
-                if (typeof window.updatePortfolioAllocationChart === 'function') {
-                    window.updatePortfolioAllocationChart();
-                } else if (typeof updatePortfolioAllocationChart === 'function') {
-                    updatePortfolioAllocationChart();
-                }
+                // Wait a bit more for the portfolio allocation chart
+                setTimeout(() => {
+                    try {
+                        // Update portfolio allocation chart
+                        if (typeof window.updatePortfolioAllocationChart === 'function') {
+                            window.updatePortfolioAllocationChart();
+                        } else if (typeof updatePortfolioAllocationChart === 'function') {
+                            updatePortfolioAllocationChart();
+                        }
+                    } catch (error) {
+                        console.error('Error updating portfolio allocation chart:', error);
+                    }
+                }, 100);
 
-                // Update asset price charts
-                if (typeof window.updateAssetPriceCharts === 'function') {
-                    window.updateAssetPriceCharts();
-                } else if (typeof updateAssetPriceCharts === 'function') {
-                    updateAssetPriceCharts();
-                }
+                // Wait a bit more for the asset price charts
+                setTimeout(() => {
+                    try {
+                        // Update asset price charts
+                        if (typeof window.updateAssetPriceCharts === 'function') {
+                            window.updateAssetPriceCharts();
+                        } else if (typeof updateAssetPriceCharts === 'function') {
+                            updateAssetPriceCharts();
+                        }
+                    } catch (error) {
+                        console.error('Error updating asset price charts:', error);
+                    }
+                }, 200);
 
-                // Update comparative returns chart
-                if (typeof window.updateComparativeReturnsChart === 'function') {
-                    window.updateComparativeReturnsChart();
-                } else if (typeof updateComparativeReturnsChart === 'function') {
-                    updateComparativeReturnsChart();
-                }
+                // Wait a bit more for the comparative returns chart
+                setTimeout(() => {
+                    try {
+                        // Update comparative returns chart
+                        if (typeof window.updateComparativeReturnsChart === 'function') {
+                            window.updateComparativeReturnsChart();
+                        } else if (typeof updateComparativeReturnsChart === 'function') {
+                            updateComparativeReturnsChart();
+                        }
+                    } catch (error) {
+                        console.error('Error updating comparative returns chart:', error);
+                    }
+                }, 300);
 
-                console.log('Charts updated successfully');
+                console.log('Charts update process started');
             } catch (chartError) {
-                console.error('Error updating charts:', chartError);
+                console.error('Error in chart update process:', chartError);
             }
-        }, 200); // 200ms delay for chart updates
+        }, 300); // 300ms delay before starting chart updates
 
         console.log('UI updated successfully');
     } catch (error) {
@@ -408,6 +451,16 @@ window.updatePortfolioAllocationChart = function() {
     try {
         console.log('Updating portfolio allocation chart...');
 
+        // Get the chart container
+        const chartContainer = document.querySelector('.chart-container');
+        if (!chartContainer) {
+            console.error('Chart container not found');
+            return;
+        }
+
+        // Create a unique ID for this chart instance to avoid conflicts
+        const chartId = 'portfolio-allocation-' + Date.now();
+
         // First, ensure any existing chart is properly destroyed
         if (window.portfolioAllocationChart) {
             try {
@@ -419,188 +472,135 @@ window.updatePortfolioAllocationChart = function() {
             }
         }
 
-        // Try to find and destroy any chart on the canvas using Chart.getChart
-        if (typeof Chart !== 'undefined' && typeof Chart.getChart === 'function') {
+        // Force cleanup of any Chart.js instances
+        if (typeof Chart !== 'undefined') {
             try {
-                // Try both by ID and by element
-                const canvas = document.getElementById('portfolio-allocation-chart');
-                if (canvas) {
+                // Try to destroy all charts on the container
+                const canvases = chartContainer.querySelectorAll('canvas');
+                canvases.forEach(canvas => {
                     try {
-                        const existingChart = Chart.getChart(canvas);
-                        if (existingChart) {
-                            console.log('Found existing chart via Chart.getChart(canvas), destroying it');
-                            existingChart.destroy();
+                        if (typeof Chart.getChart === 'function') {
+                            const chart = Chart.getChart(canvas);
+                            if (chart) {
+                                console.log(`Destroying chart on canvas ${canvas.id}`);
+                                chart.destroy();
+                            }
                         }
                     } catch (e) {
-                        console.log('No chart found on canvas element');
-                    }
-                }
-
-                try {
-                    const existingChart = Chart.getChart('portfolio-allocation-chart');
-                    if (existingChart) {
-                        console.log('Found existing chart via Chart.getChart(id), destroying it');
-                        existingChart.destroy();
-                    }
-                } catch (e) {
-                    console.log('No chart found by ID');
-                }
-            } catch (chartError) {
-                console.error('Error checking for existing chart:', chartError);
-            }
-        }
-
-        // Force garbage collection by removing any lingering references
-        if (typeof Chart !== 'undefined' && typeof Chart.instances === 'object') {
-            console.log('Checking Chart.instances registry for portfolio allocation chart');
-            Object.keys(Chart.instances).forEach(key => {
-                try {
-                    const instance = Chart.instances[key];
-                    if (instance && instance.canvas &&
-                        (instance.canvas.id === 'portfolio-allocation-chart' ||
-                         instance.canvas.id.includes('portfolio-allocation'))) {
-                        console.log(`Destroying chart instance with key ${key}`);
-                        instance.destroy();
-                        delete Chart.instances[key];
-                    }
-                } catch (error) {
-                    console.error(`Error checking Chart.instances[${key}]:`, error);
-                }
-            });
-        }
-
-        // Get or recreate the canvas
-        let canvas = document.getElementById('portfolio-allocation-chart');
-        if (!canvas) {
-            console.log('Portfolio allocation chart canvas not found, looking for container to recreate it');
-            const container = document.querySelector('.chart-container');
-            if (container) {
-                // Remove any existing canvas
-                const existingCanvas = container.querySelector('canvas');
-                if (existingCanvas) {
-                    container.removeChild(existingCanvas);
-                }
-
-                // Create a new canvas
-                canvas = document.createElement('canvas');
-                canvas.id = 'portfolio-allocation-chart';
-                container.appendChild(canvas);
-                console.log('Created new portfolio allocation chart canvas');
-            } else {
-                console.error('Chart container not found, cannot create canvas');
-                return;
-            }
-        } else {
-            // Clear the canvas manually
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // Replace the canvas with a new one to ensure clean state
-            const parent = canvas.parentNode;
-            if (parent) {
-                const newCanvas = document.createElement('canvas');
-                newCanvas.id = 'portfolio-allocation-chart';
-                newCanvas.width = canvas.width;
-                newCanvas.height = canvas.height;
-                newCanvas.className = canvas.className;
-                parent.replaceChild(newCanvas, canvas);
-                canvas = newCanvas;
-                console.log('Replaced portfolio allocation chart canvas');
-            }
-        }
-
-        // Wait a short moment to ensure the DOM is updated
-        setTimeout(() => {
-            try {
-                // Prepare data for portfolio allocation chart
-                const portfolioData = [];
-                const portfolioLabels = [];
-                const portfolioColors = [
-                    '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01', '#1976D2'
-                ];
-
-                // Add assets to portfolio data
-                let colorIndex = 0;
-                if (playerState && playerState.portfolio) {
-                    for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
-                        if (quantity > 0) {
-                            const price = gameState?.assetPrices?.[asset] || 0;
-                            const value = quantity * price;
-                            if (value > 0) {
-                                portfolioData.push(value);
-                                portfolioLabels.push(asset);
-                                colorIndex = (colorIndex + 1) % portfolioColors.length;
-                            }
-                        }
-                    }
-                }
-
-                // Add cash to portfolio allocation
-                if (playerState && playerState.cash > 0) {
-                    portfolioData.push(playerState.cash);
-                    portfolioLabels.push('Cash');
-                }
-
-                // Check if we have any data to display
-                if (portfolioData.length === 0) {
-                    console.log('No portfolio data to display');
-                    // Add default data to avoid empty chart
-                    portfolioData.push(10000);
-                    portfolioLabels.push('Cash');
-                }
-
-                console.log('Creating new portfolio allocation chart with data:', portfolioData, portfolioLabels);
-
-                // Get the context
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    console.error('Could not get 2D context for portfolio allocation chart');
-                    return;
-                }
-
-                // Create chart with a unique ID to avoid conflicts
-                window.portfolioAllocationChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: portfolioLabels,
-                        datasets: [{
-                            data: portfolioData,
-                            backgroundColor: portfolioColors,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Portfolio Allocation',
-                                font: {
-                                    size: 16
-                                }
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const value = context.raw;
-                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                        const percentage = ((value / total) * 100).toFixed(1);
-                                        return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
-                                    }
-                                }
-                            }
-                        }
+                        // Ignore errors, just trying to clean up
                     }
                 });
 
-                console.log('Portfolio allocation chart created successfully');
-            } catch (error) {
-                console.error('Error creating portfolio allocation chart:', error);
+                // Also check the Chart.instances registry
+                if (typeof Chart.instances === 'object') {
+                    Object.keys(Chart.instances).forEach(key => {
+                        try {
+                            Chart.instances[key].destroy();
+                        } catch (e) {
+                            // Ignore errors, just trying to clean up
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error cleaning up charts:', e);
             }
-        }, 200); // Longer delay to ensure DOM is ready
+        }
+
+        // Remove all existing canvases from the container
+        chartContainer.innerHTML = '';
+
+        // Create a new canvas with the unique ID
+        const canvas = document.createElement('canvas');
+        canvas.id = chartId;
+        chartContainer.appendChild(canvas);
+
+        // Prepare data for portfolio allocation chart
+        const portfolioData = [];
+        const portfolioLabels = [];
+        const portfolioColors = [
+            '#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8F00FF', '#FF6D01', '#1976D2'
+        ];
+
+        // Add assets to portfolio data
+        let colorIndex = 0;
+        if (playerState && playerState.portfolio) {
+            for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
+                if (quantity > 0) {
+                    // Get the price from gameState
+                    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                                       gameState?.assetPrices || gameState?.asset_prices || {};
+                    const price = assetPrices[asset] || 0;
+                    const value = quantity * price;
+
+                    if (value > 0) {
+                        portfolioData.push(value);
+                        portfolioLabels.push(asset);
+                        colorIndex = (colorIndex + 1) % portfolioColors.length;
+                    }
+                }
+            }
+        }
+
+        // Add cash to portfolio allocation
+        if (playerState && playerState.cash > 0) {
+            portfolioData.push(playerState.cash);
+            portfolioLabels.push('Cash');
+        }
+
+        // Check if we have any data to display
+        if (portfolioData.length === 0) {
+            console.log('No portfolio data to display');
+            // Add default data to avoid empty chart
+            portfolioData.push(10000);
+            portfolioLabels.push('Cash');
+        }
+
+        console.log('Creating new portfolio allocation chart with data:', portfolioData, portfolioLabels);
+
+        // Get the context
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Could not get 2D context for portfolio allocation chart');
+            return;
+        }
+
+        // Create the chart
+        window.portfolioAllocationChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: portfolioLabels,
+                datasets: [{
+                    data: portfolioData,
+                    backgroundColor: portfolioColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Portfolio Allocation',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Portfolio allocation chart created successfully with ID:', chartId);
     } catch (error) {
         console.error('Error updating portfolio allocation chart:', error);
     }
@@ -1730,32 +1730,58 @@ window.initializeTradePanel = function() {
         // Add event listeners for quantity input
         if (tradeQuantity) {
             tradeQuantity.addEventListener('input', function() {
-                const quantity = parseFloat(this.value) || 0;
-                const asset = assetSelect ? assetSelect.value : '';
-                const price = asset ? (gameState.assetPrices[asset] || 0) : 0;
+                try {
+                    const quantity = parseFloat(this.value) || 0;
+                    const asset = assetSelect ? assetSelect.value : '';
+                    if (!asset) {
+                        console.log('No asset selected for quantity input');
+                        return;
+                    }
 
-                console.log(`Quantity input changed: ${quantity} for ${asset} at $${price}`);
+                    // Get the current price
+                    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                                       gameState?.assetPrices || gameState?.asset_prices || {};
+                    const price = assetPrices[asset] || 0;
 
-                // Update amount
-                if (tradeAmount && !tradeAmount._updating && price > 0) {
-                    tradeQuantity._updating = true;
-                    tradeAmount.value = (quantity * price).toFixed(2);
-                    tradeQuantity._updating = false;
-                    console.log(`Updated amount to: ${tradeAmount.value}`);
-                }
+                    if (price <= 0) {
+                        console.log(`Invalid price (${price}) for ${asset}`);
+                        return;
+                    }
 
-                // Update sliders and percentage inputs
-                if (typeof window.updateTradeSliders === 'function') {
-                    window.updateTradeSliders();
-                } else if (typeof updateTradeSliders === 'function') {
-                    updateTradeSliders();
-                }
+                    console.log(`Quantity input changed: ${quantity} for ${asset} at $${price}`);
 
-                // Update trade summary
-                if (typeof window.updateTradeSummary === 'function') {
-                    window.updateTradeSummary();
-                } else if (typeof updateTradeSummary === 'function') {
-                    updateTradeSummary();
+                    // Update amount - IMPORTANT: This is the key bidirectional connection
+                    if (tradeAmount && price > 0) {
+                        // Set a flag to prevent infinite loop
+                        if (!window._updatingTradeFields) {
+                            window._updatingTradeFields = true;
+
+                            // Calculate the amount based on quantity
+                            const amount = quantity * price;
+                            tradeAmount.value = amount.toFixed(2);
+                            console.log(`Updated amount to: ${tradeAmount.value}`);
+
+                            // Update sliders and percentage inputs
+                            if (typeof window.updateTradeSliders === 'function') {
+                                window.updateTradeSliders();
+                            }
+
+                            // Update trade summary
+                            if (typeof window.updateTradeSummary === 'function') {
+                                window.updateTradeSummary();
+                            } else if (typeof updateTradeSummary === 'function') {
+                                updateTradeSummary();
+                            }
+
+                            // Clear the flag after a short delay
+                            setTimeout(() => {
+                                window._updatingTradeFields = false;
+                            }, 50);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error in quantity input handler:', error);
+                    window._updatingTradeFields = false;
                 }
             });
         }
@@ -1763,32 +1789,58 @@ window.initializeTradePanel = function() {
         // Add event listeners for amount input
         if (tradeAmount) {
             tradeAmount.addEventListener('input', function() {
-                const amount = parseFloat(this.value) || 0;
-                const asset = assetSelect ? assetSelect.value : '';
-                const price = asset ? (gameState.assetPrices[asset] || 0) : 0;
+                try {
+                    const amount = parseFloat(this.value) || 0;
+                    const asset = assetSelect ? assetSelect.value : '';
+                    if (!asset) {
+                        console.log('No asset selected for amount input');
+                        return;
+                    }
 
-                console.log(`Amount input changed: $${amount} for ${asset} at $${price}`);
+                    // Get the current price
+                    const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
+                                       gameState?.assetPrices || gameState?.asset_prices || {};
+                    const price = assetPrices[asset] || 0;
 
-                // Update quantity
-                if (tradeQuantity && !tradeQuantity._updating && price > 0) {
-                    tradeAmount._updating = true;
-                    tradeQuantity.value = (amount / price).toFixed(6);
-                    tradeAmount._updating = false;
-                    console.log(`Updated quantity to: ${tradeQuantity.value}`);
-                }
+                    if (price <= 0) {
+                        console.log(`Invalid price (${price}) for ${asset}`);
+                        return;
+                    }
 
-                // Update sliders and percentage inputs
-                if (typeof window.updateTradeSliders === 'function') {
-                    window.updateTradeSliders();
-                } else if (typeof updateTradeSliders === 'function') {
-                    updateTradeSliders();
-                }
+                    console.log(`Amount input changed: $${amount} for ${asset} at $${price}`);
 
-                // Update trade summary
-                if (typeof window.updateTradeSummary === 'function') {
-                    window.updateTradeSummary();
-                } else if (typeof updateTradeSummary === 'function') {
-                    updateTradeSummary();
+                    // Update quantity - IMPORTANT: This is the key bidirectional connection
+                    if (tradeQuantity && price > 0) {
+                        // Set a flag to prevent infinite loop
+                        if (!window._updatingTradeFields) {
+                            window._updatingTradeFields = true;
+
+                            // Calculate the quantity based on amount
+                            const quantity = amount / price;
+                            tradeQuantity.value = quantity.toFixed(6);
+                            console.log(`Updated quantity to: ${tradeQuantity.value}`);
+
+                            // Update sliders and percentage inputs
+                            if (typeof window.updateTradeSliders === 'function') {
+                                window.updateTradeSliders();
+                            }
+
+                            // Update trade summary
+                            if (typeof window.updateTradeSummary === 'function') {
+                                window.updateTradeSummary();
+                            } else if (typeof updateTradeSummary === 'function') {
+                                updateTradeSummary();
+                            }
+
+                            // Clear the flag after a short delay
+                            setTimeout(() => {
+                                window._updatingTradeFields = false;
+                            }, 50);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error in amount input handler:', error);
+                    window._updatingTradeFields = false;
                 }
             });
         }
@@ -2246,6 +2298,100 @@ window.showNotification = function(message, type = 'info', duration = 5000) {
                 notification.remove();
             }, 300);
         });
+    }
+};
+
+// Update trade history display
+window.updateTradeHistory = function() {
+    try {
+        console.log('Updating trade history display...');
+
+        // Get the trade history container
+        const tradeHistoryContainer = document.getElementById('trade-history-container');
+        if (!tradeHistoryContainer) {
+            console.error('Trade history container not found');
+            return;
+        }
+
+        // Clear existing content
+        tradeHistoryContainer.innerHTML = '';
+
+        // Get trade history from player state
+        let tradeHistory = [];
+
+        // Check both possible property names
+        if (playerState?.tradeHistory && Array.isArray(playerState.tradeHistory)) {
+            tradeHistory = playerState.tradeHistory;
+        } else if (playerState?.trade_history && Array.isArray(playerState.trade_history)) {
+            tradeHistory = playerState.trade_history;
+        }
+
+        if (tradeHistory.length === 0) {
+            tradeHistoryContainer.innerHTML = '<p class="text-center">No trades yet.</p>';
+            return;
+        }
+
+        // Sort trade history by timestamp (newest first)
+        tradeHistory.sort((a, b) => {
+            const timeA = new Date(a.timestamp);
+            const timeB = new Date(b.timestamp);
+            return timeB - timeA;
+        });
+
+        // Create table
+        const table = document.createElement('table');
+        table.className = 'table table-striped table-sm';
+
+        // Create table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>Round</th>
+                <th>Asset</th>
+                <th>Action</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Total</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+
+        // Create table body
+        const tbody = document.createElement('tbody');
+
+        // Add rows for each trade
+        tradeHistory.forEach(trade => {
+            const row = document.createElement('tr');
+
+            // Get the round number
+            const round = trade.round || 0;
+
+            // Get the action and set the appropriate class
+            const action = trade.action || '';
+            const actionClass = action === 'buy' ? 'text-success' : 'text-danger';
+
+            // Get the total value
+            const total = trade.cost || trade.value || (trade.price * trade.quantity) || 0;
+
+            // Format the row
+            row.innerHTML = `
+                <td>${round}</td>
+                <td>${trade.asset || ''}</td>
+                <td class="${actionClass}">${action.toUpperCase()}</td>
+                <td>${parseFloat(trade.quantity).toFixed(6)}</td>
+                <td>$${parseFloat(trade.price).toFixed(2)}</td>
+                <td>$${parseFloat(total).toFixed(2)}</td>
+            `;
+
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        tradeHistoryContainer.appendChild(table);
+
+        console.log(`Trade history updated with ${tradeHistory.length} trades`);
+    } catch (error) {
+        console.error('Error updating trade history:', error);
     }
 };
 
