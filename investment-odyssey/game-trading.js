@@ -52,7 +52,11 @@ function executeTrade() {
 
         if (!assetSelect || !actionSelect || !quantityInput) {
             console.error('Missing required elements for executeTrade');
-            showNotification('Error: Missing form elements', 'danger');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Error: Missing form elements', 'danger');
+            } else {
+                alert('Error: Missing form elements');
+            }
             return;
         }
 
@@ -63,12 +67,20 @@ function executeTrade() {
         console.log(`Trade details: Asset=${assetName}, Action=${action}, Quantity=${quantity}`);
 
         if (!assetName) {
-            showNotification('Please select an asset', 'warning');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Please select an asset', 'warning');
+            } else {
+                alert('Please select an asset');
+            }
             return;
         }
 
         if (quantity <= 0) {
-            showNotification('Please enter a valid quantity', 'warning');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Please enter a valid quantity', 'warning');
+            } else {
+                alert('Please enter a valid quantity');
+            }
             return;
         }
 
@@ -76,7 +88,11 @@ function executeTrade() {
         const price = gameState.assetPrices[assetName] || 0;
 
         if (price <= 0) {
-            showNotification('Invalid asset price', 'danger');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification('Invalid asset price', 'danger');
+            } else {
+                alert('Invalid asset price');
+            }
             return;
         }
 
@@ -87,7 +103,11 @@ function executeTrade() {
             console.log(`Buy details: Price=${price}, Cost=${cost}, Cash=${playerState.cash}`);
 
             if (playerState.cash < cost) {
-                showNotification(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`, 'warning');
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`, 'warning');
+                } else {
+                    alert(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`);
+                }
                 return;
             }
 
@@ -115,7 +135,11 @@ function executeTrade() {
                 round: window.currentRound || 0
             });
 
-            showNotification(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`, 'success');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`, 'success');
+            } else {
+                alert(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`);
+            }
         } else {
             // Check if player has enough of the asset
             const currentQuantity = playerState.portfolio[assetName] || 0;
@@ -123,7 +147,11 @@ function executeTrade() {
             console.log(`Sell details: CurrentQuantity=${currentQuantity}, SellingQuantity=${quantity}`);
 
             if (currentQuantity < quantity) {
-                showNotification(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`, 'warning');
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`, 'warning');
+                } else {
+                    alert(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`);
+                }
                 return;
             }
 
@@ -154,7 +182,11 @@ function executeTrade() {
                 round: window.currentRound || 0
             });
 
-            showNotification(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`, 'success');
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`, 'success');
+            } else {
+                alert(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`);
+            }
         }
 
         // Update UI
@@ -193,7 +225,11 @@ function executeTrade() {
         console.log('Trade executed successfully');
     } catch (error) {
         console.error('Error executing trade:', error);
-        showNotification('An error occurred while executing the trade', 'danger');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('An error occurred while executing the trade', 'danger');
+        } else {
+            alert('An error occurred while executing the trade');
+        }
     }
 }
 
@@ -478,18 +514,32 @@ function updateTradeSummary() {
         }
 
         // Handle amount input changes
-        if (amountInput && price > 0 && amountInput === document.activeElement && quantityInput) {
-            const amount = parseFloat(amountInput.value) || 0;
-            if (action === 'buy') {
+        if (amountInput && price > 0 && quantityInput) {
+            // If amount input is the active element, update quantity based on amount
+            if (amountInput === document.activeElement) {
+                const amount = parseFloat(amountInput.value) || 0;
                 const calculatedQuantity = amount / price;
-                quantityInput.value = calculatedQuantity.toFixed(6);
+                // Set the quantity without triggering the input event
+                if (!quantityInput._updating) {
+                    quantityInput._updating = true;
+                    quantityInput.value = calculatedQuantity.toFixed(6);
+                    quantityInput._updating = false;
+                }
             }
         }
 
         // Handle quantity input changes
-        if (quantityInput && price > 0 && quantityInput === document.activeElement && amountInput) {
-            const calculatedAmount = quantity * price;
-            amountInput.value = calculatedAmount.toFixed(2);
+        if (quantityInput && price > 0 && amountInput) {
+            // If quantity input is the active element, update amount based on quantity
+            if (quantityInput === document.activeElement) {
+                const calculatedAmount = quantity * price;
+                // Set the amount without triggering the input event
+                if (!amountInput._updating) {
+                    amountInput._updating = true;
+                    amountInput.value = calculatedAmount.toFixed(2);
+                    amountInput._updating = false;
+                }
+            }
         }
 
         console.log('Trade summary updated successfully');
