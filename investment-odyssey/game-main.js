@@ -639,10 +639,16 @@ async function startSinglePlayerGame() {
         gameState.CPIHistory.push(gameState.CPI);
 
         // Update UI to show initial state
-        if (typeof window.updateUI === 'function') {
-            window.updateUI();
-        } else {
-            console.error('updateUI function not found');
+        try {
+            if (typeof window.updateUI === 'function') {
+                window.updateUI();
+            } else if (typeof updateUI === 'function') {
+                updateUI();
+            } else {
+                console.error('updateUI function not found');
+            }
+        } catch (error) {
+            console.error('Error updating UI:', error);
         }
 
         // Show notification

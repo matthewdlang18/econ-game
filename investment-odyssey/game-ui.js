@@ -11,33 +11,70 @@ window.updateUI = function() {
         }
 
         // Update market data table
-        updateMarketData();
+        if (typeof window.updateMarketData === 'function') {
+            window.updateMarketData();
+        } else if (typeof updateMarketData === 'function') {
+            updateMarketData();
+        }
 
         // Update price ticker
-        updatePriceTicker();
+        if (typeof window.updatePriceTicker === 'function') {
+            window.updatePriceTicker();
+        } else if (typeof updatePriceTicker === 'function') {
+            updatePriceTicker();
+        }
 
         // Update charts
-        updatePortfolioChart();
-        updatePortfolioAllocationChart();
-        updateAssetPriceCharts();
-        updateComparativeReturnsChart();
+        if (typeof window.updatePortfolioChart === 'function') {
+            window.updatePortfolioChart();
+        } else if (typeof updatePortfolioChart === 'function') {
+            updatePortfolioChart();
+        }
+
+        if (typeof window.updatePortfolioAllocationChart === 'function') {
+            window.updatePortfolioAllocationChart();
+        } else if (typeof updatePortfolioAllocationChart === 'function') {
+            updatePortfolioAllocationChart();
+        }
+
+        if (typeof window.updateAssetPriceCharts === 'function') {
+            window.updateAssetPriceCharts();
+        } else if (typeof updateAssetPriceCharts === 'function') {
+            updateAssetPriceCharts();
+        }
+
+        if (typeof window.updateComparativeReturnsChart === 'function') {
+            window.updateComparativeReturnsChart();
+        } else if (typeof updateComparativeReturnsChart === 'function') {
+            updateComparativeReturnsChart();
+        }
 
         // Update asset price in trade form
         if (typeof window.updateAssetPrice === 'function') {
             window.updateAssetPrice();
+        } else if (typeof updateAssetPrice === 'function') {
+            updateAssetPrice();
         }
 
         // Update cash and portfolio displays
-        updateCashAndPortfolioDisplays();
+        if (typeof window.updateCashAndPortfolioDisplays === 'function') {
+            window.updateCashAndPortfolioDisplays();
+        } else if (typeof updateCashAndPortfolioDisplays === 'function') {
+            updateCashAndPortfolioDisplays();
+        }
 
         // Update round progress
-        updateRoundProgress();
+        if (typeof window.updateRoundProgress === 'function') {
+            window.updateRoundProgress();
+        } else if (typeof updateRoundProgress === 'function') {
+            updateRoundProgress();
+        }
 
         console.log('UI updated successfully');
     } catch (error) {
         console.error('Error in updateUI function:', error);
     }
-}
+};
 
 // Calculate portfolio value
 window.calculatePortfolioValue = function() {
@@ -1203,6 +1240,9 @@ window.initializeTradeFormListeners = function() {
 
     // Also add direct event listeners to all trade buttons
     window.addTradeButtonListeners();
+
+    // Initialize trade form controls
+    window.initializeTradeFormControls();
 };
 
 // Add direct event listeners to all trade buttons
@@ -1243,6 +1283,10 @@ window.debugShowTradePanel = function() {
         console.error('Trade panel not found');
     }
 };
+
+// Initialize trade form controls
+window.initializeTradeFormControls = function() {
+    console.log('Initializing trade form controls');
 
     // Add event listener for trade action change
     const tradeAction = document.getElementById('trade-action');
@@ -1293,35 +1337,103 @@ window.debugShowTradePanel = function() {
 
 
 // Set amount percentage for trade
-window.setAmountPercentage = function(percent) {
-    console.log(`Setting amount to ${percent}%`);
+window.setAmountPercentage = function(percentage) {
+    console.log(`Setting amount percentage to ${percentage}%`);
 
+    // Get the trade panel elements
     const assetName = document.getElementById('trade-asset-name').textContent;
     const action = document.getElementById('trade-action').value;
     const quantityInput = document.getElementById('trade-quantity');
 
-    if (!quantityInput) return;
+    if (!assetName || !quantityInput) {
+        console.error('Missing required elements for setAmountPercentage');
+        return;
+    }
 
-    // Handle different property naming conventions
+    // Only apply to buy actions
+    if (action !== 'buy') {
+        console.log('setAmountPercentage only applies to buy actions');
+        return;
+    }
+
+    // Get asset price
     const assetPrices = window.gameState?.assetPrices || window.gameState?.asset_prices ||
                        gameState?.assetPrices || gameState?.asset_prices || {};
     const price = assetPrices[assetName] || 0;
 
-    if (action === 'buy') {
-        // Calculate max quantity based on cash
-        const maxQuantity = playerState.cash / price;
-        const quantity = (maxQuantity * percent / 100).toFixed(2);
-        quantityInput.value = quantity;
-    } else if (action === 'sell') {
-        // Calculate max quantity based on holdings
-        const maxQuantity = playerState.portfolio[assetName] || 0;
-        const quantity = (maxQuantity * percent / 100).toFixed(2);
-        quantityInput.value = quantity;
+    if (price <= 0) {
+        console.error('Invalid asset price');
+        return;
     }
+
+    // Calculate quantity based on percentage of cash
+    const cash = playerState.cash;
+    const amount = cash * (percentage / 100);
+    const quantity = amount / price;
+
+    // Update quantity input
+    quantityInput.value = quantity.toFixed(6);
 
     // Update trade summary
     window.updateTradeSummary();
-}
+};
+
+
+// Show notification message
+window.showNotification = function(message, type = 'info', duration = 5000) {
+    console.log(`Showing notification: ${message} (${type})`);
+
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('notification-container');
+
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'notification-container';
+        notificationContainer.style.position = 'fixed';
+        notificationContainer.style.top = '20px';
+        notificationContainer.style.right = '20px';
+        notificationContainer.style.zIndex = '9999';
+        notificationContainer.style.maxWidth = '350px';
+        document.body.appendChild(notificationContainer);
+    }
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show`;
+    notification.role = 'alert';
+    notification.style.marginBottom = '10px';
+    notification.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+
+    // Add notification content
+    notification.innerHTML = `
+        <div>${message}</div>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    `;
+
+    // Add notification to container
+    notificationContainer.appendChild(notification);
+
+    // Auto-remove notification after duration
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, duration);
+
+    // Add click event to close button
+    const closeButton = notification.querySelector('.close');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        });
+    }
+};
 
 // Initialize portfolio action listeners
 window.initializePortfolioActionListeners = function() {
