@@ -509,6 +509,9 @@ async function createNextRoundState(gameId, previousState) {
     } catch (error) {
       console.error('Error getting final game state:', error);
     }
+
+    // If we get here, something went wrong, but we'll return the newGameState anyway
+    return newGameState;
   } catch (error) {
     console.error('Error in createNextRoundState:', error);
     return null;

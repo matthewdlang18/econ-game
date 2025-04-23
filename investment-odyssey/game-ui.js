@@ -1464,6 +1464,66 @@ window.executeTrade = function() {
     }
 }
 
+// Advance to next round function
+window.advanceToNextRound = async function() {
+    try {
+        console.log('Advancing to next round...');
+
+        // Check if we're using Supabase
+        if (window.gameSession && window.gameSupabase) {
+            console.log('Using Supabase for next round');
+
+            // Get the current game state
+            const currentGameState = await window.gameSupabase.getGameState(window.gameSession.id, window.gameSession.current_round);
+            if (!currentGameState) {
+                console.error('Failed to get current game state');
+                window.showNotification('Error: Failed to get current game state', 'danger');
+                return;
+            }
+
+            // Create the next round state
+            const nextGameState = await window.gameSupabase.createNextRoundState(window.gameSession.id, currentGameState);
+            if (!nextGameState) {
+                console.error('Failed to create next round state');
+                window.showNotification('Error: Failed to create next round state', 'danger');
+                return;
+            }
+
+            // Check if game is over
+            if (nextGameState.gameOver) {
+                console.log('Game over!');
+                window.showNotification('Game over! Check your results.', 'success');
+                // TODO: Show game over screen
+                return;
+            }
+
+            // Update the game state
+            window.gameState = nextGameState;
+            window.currentRound = nextGameState.round_number;
+
+            // Update the UI
+            window.updateUI();
+
+            // Show notification
+            window.showNotification(`Advanced to round ${window.currentRound}`, 'success');
+        } else {
+            console.log('Using local nextRound function');
+            // Use the local nextRound function
+            if (typeof window.nextRound === 'function') {
+                window.nextRound();
+            } else if (typeof nextRound === 'function') {
+                nextRound();
+            } else {
+                console.error('No nextRound function found');
+                window.showNotification('Error: Could not advance to next round', 'danger');
+            }
+        }
+    } catch (error) {
+        console.error('Error advancing to next round:', error);
+        window.showNotification('Error advancing to next round', 'danger');
+    }
+};
+
 // Initialize event listeners
 window.initializeEventListeners = function() {
     console.log('Initializing event listeners');
