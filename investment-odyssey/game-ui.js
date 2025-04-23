@@ -515,9 +515,13 @@ window.initializeCharts = function() {
 
     try {
         // Destroy all existing charts to prevent errors
-        destroyAllCharts();
+        if (typeof window.destroyAllCharts === 'function') {
+            window.destroyAllCharts();
+        } else if (typeof destroyAllCharts === 'function') {
+            destroyAllCharts();
+        }
 
-        // Wait a moment for the DOM to be ready
+        // Wait a moment for the DOM to be ready and charts to be destroyed
         setTimeout(() => {
         // Initialize portfolio value chart
         const portfolioValueCanvas = document.getElementById('portfolio-value-chart');
@@ -807,7 +811,7 @@ window.initializeCharts = function() {
         }
 
         console.log('Charts initialized successfully');
-        }, 100); // End of setTimeout
+        }, 300); // End of setTimeout - increased to 300ms for better reliability
     } catch (error) {
         console.error('Error initializing charts:', error);
     }
@@ -817,31 +821,39 @@ window.initializeCharts = function() {
 window.destroyAllCharts = function() {
     console.log('Destroying all charts...');
     try {
-        // Destroy existing charts to prevent errors
-        if (window.portfolioChart) {
-            window.portfolioChart.destroy();
-            window.portfolioChart = null;
-        }
-        if (window.portfolioAllocationChart) {
-            window.portfolioAllocationChart.destroy();
-            window.portfolioAllocationChart = null;
-        }
-        if (window.realEstateGoldChart) {
-            window.realEstateGoldChart.destroy();
-            window.realEstateGoldChart = null;
-        }
-        if (window.bondsCommoditiesSPChart) {
-            window.bondsCommoditiesSPChart.destroy();
-            window.bondsCommoditiesSPChart = null;
-        }
-        if (window.bitcoinChart) {
-            window.bitcoinChart.destroy();
-            window.bitcoinChart = null;
-        }
-        if (window.cpiChart) {
-            window.cpiChart.destroy();
-            window.cpiChart = null;
-        }
+        // Get all canvas elements
+        const canvases = document.querySelectorAll('canvas');
+        console.log(`Found ${canvases.length} canvas elements`);
+
+        // Clear each canvas
+        canvases.forEach(canvas => {
+            try {
+                // Try to get the chart instance from the canvas
+                const chartInstance = Chart.getChart(canvas);
+                if (chartInstance) {
+                    console.log(`Destroying chart on canvas ${canvas.id}`);
+                    chartInstance.destroy();
+                } else {
+                    console.log(`No chart instance found for canvas ${canvas.id}`);
+                    // Clear the canvas manually
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+                }
+            } catch (canvasError) {
+                console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
+            }
+        });
+
+        // Reset chart references
+        window.portfolioChart = null;
+        window.portfolioAllocationChart = null;
+        window.realEstateGoldChart = null;
+        window.bondsCommoditiesSPChart = null;
+        window.bitcoinChart = null;
+        window.cpiChart = null;
+
         console.log('All charts destroyed successfully');
     } catch (error) {
         console.error('Error destroying charts:', error);

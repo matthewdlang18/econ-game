@@ -415,6 +415,27 @@ async function createNextRoundState(gameId, previousState) {
     }
 
     console.log('Saving new game state to Supabase');
+
+    // First check if a state for this round already exists
+    const { data: existingState, error: checkError } = await supabase
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id)
+      .eq('round_number', newRoundNumber)
+      .single();
+
+    // If there's already a state for this round, use it instead of creating a new one
+    if (existingState) {
+      console.log('Found existing game state for this round, using it instead');
+      return existingState;
+    }
+
+    // If there was an error other than 'not found', log it but continue
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.warn('Error checking for existing game state:', checkError);
+    }
+
     // Save new game state to Supabase
     const { data, error: gameStateError } = await supabase
       .from('game_states')
@@ -424,6 +445,26 @@ async function createNextRoundState(gameId, previousState) {
 
     if (gameStateError) {
       console.error('Error creating new game state:', gameStateError);
+
+      // If it's a duplicate key error, try to get the existing state
+      if (gameStateError.code === '23505') {
+        console.log('Duplicate key error, trying to get existing state');
+        const { data: existingData, error: getError } = await supabase
+          .from('game_states')
+          .select('*')
+          .eq('game_id', gameId)
+          .eq('user_id', currentUser.id)
+          .eq('round_number', newRoundNumber)
+          .single();
+
+        if (getError) {
+          console.error('Error getting existing game state:', getError);
+          return null;
+        }
+
+        return existingData;
+      }
+
       return null;
     }
 
@@ -530,23 +571,64 @@ async function completeGame(gameId) {
       return false;
     }
 
-    // Add to leaderboard
-    const { error: leaderboardError } = await supabase
+    // Check if entry already exists in leaderboard
+    const { data: existingEntry, error: checkError } = await supabase
       .from('leaderboard')
-      .insert([
-        {
-          user_id: currentUser.id,
-          user_name: currentUser.name,
-          game_mode: 'single',
-          game_id: gameId,
-          section_id: gameSession.section_id,
-          final_value: playerState.total_value
-        }
-      ]);
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .eq('game_id', gameId)
+      .single();
 
-    if (leaderboardError) {
-      console.error('Error adding to leaderboard:', leaderboardError);
-      return false;
+    if (existingEntry) {
+      console.log('Entry already exists in leaderboard, updating instead');
+
+      // Update existing entry
+      const { error: updateError } = await supabase
+        .from('leaderboard')
+        .update({ final_value: playerState.total_value })
+        .eq('user_id', currentUser.id)
+        .eq('game_id', gameId);
+
+      if (updateError) {
+        console.error('Error updating leaderboard entry:', updateError);
+        return false;
+      }
+    } else {
+      // Add new entry to leaderboard
+      const { error: leaderboardError } = await supabase
+        .from('leaderboard')
+        .insert([
+          {
+            user_id: currentUser.id,
+            user_name: currentUser.name,
+            game_mode: 'single',
+            game_id: gameId,
+            section_id: gameSession.section_id,
+            final_value: playerState.total_value
+          }
+        ]);
+
+      if (leaderboardError) {
+        console.error('Error adding to leaderboard:', leaderboardError);
+
+        // If it's a duplicate key error, try to update instead
+        if (leaderboardError.code === '23505') {
+          console.log('Duplicate key error, trying to update instead');
+
+          const { error: updateError } = await supabase
+            .from('leaderboard')
+            .update({ final_value: playerState.total_value })
+            .eq('user_id', currentUser.id)
+            .eq('game_id', gameId);
+
+          if (updateError) {
+            console.error('Error updating leaderboard entry:', updateError);
+            return false;
+          }
+        } else {
+          return false;
+        }
+      }
     }
 
     // Mark game as inactive
