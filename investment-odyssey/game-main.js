@@ -262,6 +262,38 @@ function loadGameInterface() {
             </div>
         </div>
 
+        <!-- Market Data Panel -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Market Data</h5>
+                        <span class="badge badge-danger">Round ${typeof currentRound !== 'undefined' ? currentRound : 0}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0" id="market-data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Asset</th>
+                                        <th>Price</th>
+                                        <th>Change</th>
+                                        <th>Quantity</th>
+                                        <th>Value</th>
+                                        <th>% of Portfolio</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${assetRows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Dashboard Grid -->
         <div class="row">
             <!-- Portfolio Summary Panel -->
@@ -305,31 +337,145 @@ function loadGameInterface() {
                 </div>
             </div>
 
-            <!-- Market Data Panel -->
+            <!-- Trading Panel -->
             <div class="col-md-8 mb-3">
                 <div class="card h-100">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Market Data</h5>
-                        <span class="badge badge-danger">Round ${typeof currentRound !== 'undefined' ? currentRound : 0}</span>
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Trading Panel</h5>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0" id="market-data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Asset</th>
-                                        <th>Price</th>
-                                        <th>Change</th>
-                                        <th>Quantity</th>
-                                        <th>Value</th>
-                                        <th>% of Portfolio</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${assetRows}
-                                </tbody>
-                            </table>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <!-- Asset Selection and Action -->
+                            <div class="col-md-6">
+                                <div class="form-group mb-2">
+                                    <label for="trade-asset-select" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Asset</label>
+                                    <select class="form-control form-control-sm" id="trade-asset-select" required>
+                                        <option value="">Select an asset...</option>
+                                        <option value="Bitcoin">Bitcoin</option>
+                                        <option value="Bonds">Bonds</option>
+                                        <option value="Commodities">Commodities</option>
+                                        <option value="Gold">Gold</option>
+                                        <option value="Real Estate">Real Estate</option>
+                                        <option value="S&P 500">S&P 500</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label for="trade-action" style="font-size: 0.85rem; margin-bottom: 0.25rem;">Action</label>
+                                    <select class="form-control form-control-sm" id="trade-action" required>
+                                        <option value="buy">Buy</option>
+                                        <option value="sell">Sell</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label style="font-size: 0.85rem;">Current Price: $<span id="current-price-display">0.00</span></label>
+                                </div>
+                            </div>
+
+                            <!-- Trade Summary -->
+                            <div class="col-md-6">
+                                <div class="card bg-light mb-2">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title mb-2" style="font-size: 0.85rem;">Trade Summary</h6>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span style="font-size: 0.85rem;">Quantity:</span>
+                                            <span style="font-size: 0.85rem;" id="summary-quantity">0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span style="font-size: 0.85rem;">Total Cost:</span>
+                                            <span style="font-size: 0.85rem;">$<span id="summary-cost">0.00</span></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span style="font-size: 0.85rem;">Available Cash:</span>
+                                            <span style="font-size: 0.85rem;">$<span id="summary-cash">0.00</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="execute-trade-btn" class="btn btn-primary btn-sm btn-block">Execute Trade</button>
+                            </div>
+                        </div>
+
+                        <!-- Amount and Quantity Inputs (Both Visible) -->
+                        <div class="row">
+                            <!-- Dollar Amount Input -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title" style="font-size: 0.85rem;">Amount ($)</h6>
+                                        <div class="form-group mb-2">
+                                            <div class="input-group input-group-sm">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">$</span>
+                                                </div>
+                                                <input type="number" class="form-control form-control-sm" id="trade-amount" min="0.01" step="0.01" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <input type="range" class="form-control-range" id="amount-slider" min="0" max="100" value="0" step="1">
+                                            <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
+                                                <span>0%</span>
+                                                <span>25%</span>
+                                                <span>50%</span>
+                                                <span>75%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-0">
+                                            <label for="amount-percentage" style="font-size: 0.8rem;">Percentage:</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control form-control-sm" id="amount-percentage" min="0" max="100" value="0" step="1">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="btn-group btn-group-sm w-100 mt-1">
+                                                <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="25">25%</button>
+                                                <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="50">50%</button>
+                                                <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="75">75%</button>
+                                                <button type="button" class="btn btn-outline-secondary amount-percent-btn" data-percent="100">100%</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quantity Input -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body p-2">
+                                        <h6 class="card-title" style="font-size: 0.85rem;">Quantity (<span id="quantity-unit">units</span>)</h6>
+                                        <div class="form-group mb-2">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control form-control-sm" id="trade-quantity" min="0.000001" step="0.000001" required>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-2">
+                                            <input type="range" class="form-control-range" id="quantity-slider" min="0" max="100" value="0" step="1">
+                                            <div class="d-flex justify-content-between" style="font-size: 0.7rem;">
+                                                <span>0%</span>
+                                                <span>25%</span>
+                                                <span>50%</span>
+                                                <span>75%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                        <div class="form-group mb-0">
+                                            <label for="quantity-percentage" style="font-size: 0.8rem;">Percentage:</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control form-control-sm" id="quantity-percentage" min="0" max="100" value="0" step="1">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">%</span>
+                                                </div>
+                                            </div>
+                                            <div class="btn-group btn-group-sm w-100 mt-1">
+                                                <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="25">25%</button>
+                                                <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="50">50%</button>
+                                                <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="75">75%</button>
+                                                <button type="button" class="btn btn-outline-secondary quantity-percent-btn" data-percent="100">100%</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

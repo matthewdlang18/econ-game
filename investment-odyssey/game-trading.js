@@ -45,23 +45,29 @@ function executeTrade() {
         console.log('Executing trade...');
 
         // Get trade form elements
-        const assetName = document.getElementById('trade-asset-name').textContent;
+        const assetSelect = document.getElementById('trade-asset-select');
         const actionSelect = document.getElementById('trade-action');
         const quantityInput = document.getElementById('trade-quantity');
         const amountInput = document.getElementById('trade-amount');
 
-        if (!assetName || !actionSelect || !quantityInput) {
+        if (!assetSelect || !actionSelect || !quantityInput) {
             console.error('Missing required elements for executeTrade');
             showNotification('Error: Missing form elements', 'danger');
             return;
         }
 
+        const assetName = assetSelect.value;
         const action = actionSelect.value;
         const quantity = parseFloat(quantityInput.value) || 0;
 
         console.log(`Trade details: Asset=${assetName}, Action=${action}, Quantity=${quantity}`);
 
-        if (!assetName || quantity <= 0) {
+        if (!assetName) {
+            showNotification('Please select an asset', 'warning');
+            return;
+        }
+
+        if (quantity <= 0) {
             showNotification('Please enter a valid quantity', 'warning');
             return;
         }
@@ -404,7 +410,7 @@ function updateTradeSummary() {
         console.log('Updating trade summary...');
 
         // Get trade form elements
-        const assetName = document.getElementById('trade-asset-name').textContent;
+        const assetSelect = document.getElementById('trade-asset-select');
         const actionSelect = document.getElementById('trade-action');
         const quantityInput = document.getElementById('trade-quantity');
         const amountInput = document.getElementById('trade-amount');
@@ -414,8 +420,14 @@ function updateTradeSummary() {
         const currentPrice = document.getElementById('current-price-display');
         const executeTradeBtn = document.getElementById('execute-trade-btn');
 
+        if (!assetSelect) {
+            console.error('Asset select not found');
+            return;
+        }
+
+        const assetName = assetSelect.value;
         if (!assetName) {
-            console.error('Asset name not found');
+            console.log('No asset selected');
             return;
         }
 
@@ -524,13 +536,22 @@ function generateTradeHistoryRows() {
 
 // Update asset price in trade form
 function updateAssetPrice() {
-    const assetSelect = document.getElementById('trade-asset');
+    const assetSelect = document.getElementById('trade-asset-select');
     const currentPriceDisplay = document.getElementById('current-price-display');
 
-    if (!assetSelect || !currentPriceDisplay) return;
+    if (!assetSelect || !currentPriceDisplay) {
+        console.error('Asset select or price display not found');
+        return;
+    }
 
     const asset = assetSelect.value;
-    const price = asset ? (gameState.assetPrices[asset] || 0) : 0;
+    if (!asset) {
+        console.log('No asset selected');
+        return;
+    }
+
+    const price = gameState.assetPrices[asset] || 0;
+    console.log(`Updating price for ${asset}: $${price.toFixed(2)}`);
 
     currentPriceDisplay.textContent = price.toFixed(2);
 

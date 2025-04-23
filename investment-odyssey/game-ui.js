@@ -112,52 +112,73 @@ window.updateElementText = function(id, text) {
 
 // Update round progress
 window.updateRoundProgress = function() {
-    // Get current round from various possible sources
-    let currentRound = 0;
-    if (typeof window.currentRound !== 'undefined' && window.currentRound !== null) {
-        currentRound = window.currentRound;
-    } else if (gameState && typeof gameState.roundNumber !== 'undefined') {
-        currentRound = gameState.roundNumber;
-    } else if (gameState && typeof gameState.round_number !== 'undefined') {
-        currentRound = gameState.round_number;
-    }
+    try {
+        console.log('Updating round progress...');
 
-    console.log('Current round for progress bar:', currentRound);
-
-    // Get max rounds
-    let maxRounds = 20; // Default
-    if (gameState && typeof gameState.maxRounds !== 'undefined') {
-        maxRounds = gameState.maxRounds;
-    } else if (gameState && typeof gameState.max_rounds !== 'undefined') {
-        maxRounds = gameState.max_rounds;
-    }
-
-    console.log('Max rounds for progress bar:', maxRounds);
-
-    // Update round displays
-    updateElementText('current-round-display', currentRound);
-    updateElementText('market-round-display', currentRound);
-
-    // Update progress bar
-    const progressBar = document.getElementById('round-progress');
-    if (progressBar) {
-        // Calculate progress percentage, ensuring it's a valid number
-        let progress = 0;
-        if (maxRounds > 0) {
-            progress = (currentRound / maxRounds) * 100;
+        // Get current round from various possible sources
+        let currentRound = 0;
+        if (typeof window.currentRound !== 'undefined' && window.currentRound !== null) {
+            currentRound = parseInt(window.currentRound) || 0;
+        } else if (gameState && typeof gameState.roundNumber !== 'undefined') {
+            currentRound = parseInt(gameState.roundNumber) || 0;
+        } else if (gameState && typeof gameState.round_number !== 'undefined') {
+            currentRound = parseInt(gameState.round_number) || 0;
         }
 
-        // Ensure progress is a valid number
-        if (isNaN(progress)) {
-            progress = 0;
+        console.log('Current round for progress bar:', currentRound);
+
+        // Get max rounds
+        let maxRounds = 20; // Default
+        if (gameState && typeof gameState.maxRounds !== 'undefined') {
+            maxRounds = parseInt(gameState.maxRounds) || 20;
+        } else if (gameState && typeof gameState.max_rounds !== 'undefined') {
+            maxRounds = parseInt(gameState.max_rounds) || 20;
         }
 
-        console.log('Progress bar percentage:', progress);
+        console.log('Max rounds for progress bar:', maxRounds);
+
+        // Update round displays
+        const currentRoundDisplay = document.getElementById('current-round-display');
+        if (currentRoundDisplay) {
+            currentRoundDisplay.textContent = currentRound;
+        }
+
+        const marketRoundDisplay = document.getElementById('market-round-display');
+        if (marketRoundDisplay) {
+            marketRoundDisplay.textContent = currentRound;
+        }
 
         // Update progress bar
-        progressBar.style.width = progress + '%';
-        progressBar.setAttribute('aria-valuenow', progress);
-        progressBar.textContent = progress.toFixed(0) + '%';
+        const progressBar = document.getElementById('round-progress');
+        if (progressBar) {
+            // Calculate progress percentage, ensuring it's a valid number
+            let progress = 0;
+            if (maxRounds > 0) {
+                progress = (currentRound / maxRounds) * 100;
+            }
+
+            // Ensure progress is a valid number
+            if (isNaN(progress) || !isFinite(progress)) {
+                console.warn('Invalid progress value:', progress);
+                progress = 0;
+            }
+
+            // Ensure progress is between 0 and 100
+            progress = Math.max(0, Math.min(100, progress));
+
+            console.log('Progress bar percentage:', progress);
+
+            // Update progress bar
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = Math.round(progress) + '%';
+        } else {
+            console.error('Progress bar element not found');
+        }
+
+        console.log('Round progress updated successfully');
+    } catch (error) {
+        console.error('Error updating round progress:', error);
     }
 }
 
@@ -231,8 +252,7 @@ window.updateMarketData = function() {
             <td>$${value.toFixed(2)}</td>
             <td>${percentage.toFixed(2)}%</td>
             <td>
-                <button class="btn btn-sm btn-success trade-btn buy" data-asset="${asset}">Buy</button>
-                <button class="btn btn-sm btn-danger trade-btn sell" data-asset="${asset}" ${quantity <= 0 ? 'disabled' : ''}>Sell</button>
+                <button class="btn btn-sm btn-primary select-asset-btn" data-asset="${asset}">Select</button>
             </td>
         `;
 
@@ -950,6 +970,17 @@ window.destroyAllCharts = function() {
                     if (ctx) {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
                     }
+
+                    // Replace the canvas with a new one
+                    const parent = canvas.parentNode;
+                    if (parent) {
+                        const newCanvas = document.createElement('canvas');
+                        newCanvas.id = canvas.id;
+                        newCanvas.width = canvas.width;
+                        newCanvas.height = canvas.height;
+                        newCanvas.className = canvas.className;
+                        parent.replaceChild(newCanvas, canvas);
+                    }
                 } catch (canvasError) {
                     console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
                 }
@@ -964,6 +995,17 @@ window.destroyAllCharts = function() {
                     const ctx = canvas.getContext('2d');
                     if (ctx) {
                         ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    }
+
+                    // Replace the canvas with a new one
+                    const parent = canvas.parentNode;
+                    if (parent) {
+                        const newCanvas = document.createElement('canvas');
+                        newCanvas.id = canvas.id;
+                        newCanvas.width = canvas.width;
+                        newCanvas.height = canvas.height;
+                        newCanvas.className = canvas.className;
+                        parent.replaceChild(newCanvas, canvas);
                     }
                 } catch (canvasError) {
                     console.error(`Error clearing canvas ${canvas.id}:`, canvasError);
@@ -1026,10 +1068,10 @@ window.showTradePanel = function(asset, action = 'buy') {
     tradePanel.style.display = 'block';
     tradePanel.style.zIndex = '9999';
 
-    // Set the asset name
-    const assetNameElement = document.getElementById('trade-asset-name');
-    if (assetNameElement) {
-        assetNameElement.textContent = asset;
+    // Set the asset in the dropdown
+    const assetSelect = document.getElementById('trade-asset-select');
+    if (assetSelect) {
+        assetSelect.value = asset;
     }
 
     // Set the action
@@ -1044,21 +1086,53 @@ window.showTradePanel = function(asset, action = 'buy') {
                        gameState?.assetPrices || gameState?.asset_prices || {};
     const price = assetPrices[asset] || 0;
 
-    const priceElement = document.getElementById('trade-price');
+    const priceElement = document.getElementById('current-price-display');
     if (priceElement) {
-        priceElement.textContent = `$${price.toFixed(2)}`;
+        priceElement.textContent = price.toFixed(2);
     }
 
-    // Reset quantity
+    // Reset quantity and amount
     const quantityInput = document.getElementById('trade-quantity');
     if (quantityInput) {
-        quantityInput.value = '1';
+        quantityInput.value = '';
+    }
+
+    const amountInput = document.getElementById('trade-amount');
+    if (amountInput) {
+        amountInput.value = '';
+    }
+
+    // Reset sliders
+    const quantitySlider = document.getElementById('quantity-slider');
+    if (quantitySlider) {
+        quantitySlider.value = 0;
+    }
+
+    const amountSlider = document.getElementById('amount-slider');
+    if (amountSlider) {
+        amountSlider.value = 0;
+    }
+
+    // Reset percentage inputs
+    const quantityPercentage = document.getElementById('quantity-percentage');
+    if (quantityPercentage) {
+        quantityPercentage.value = 0;
+    }
+
+    const amountPercentage = document.getElementById('amount-percentage');
+    if (amountPercentage) {
+        amountPercentage.value = 0;
     }
 
     // Update trade summary
-    updateTradeSummary();
+    if (typeof window.updateTradeSummary === 'function') {
+        window.updateTradeSummary();
+    } else if (typeof updateTradeSummary === 'function') {
+        updateTradeSummary();
+    }
 
-    // No need to set display again, already set above
+    // Scroll to the trading panel
+    tradePanel.scrollIntoView({ behavior: 'smooth' });
 }
 
 // Update trade summary
@@ -1364,25 +1438,54 @@ window.initializeEventListeners = function() {
 window.initializeTradeFormListeners = function() {
     console.log('Initializing trade form listeners');
 
-    // Add event listeners for trade buttons - both delegation and direct
+    // Add event listeners for select asset buttons
     document.addEventListener('click', function(event) {
-        if (event.target.classList.contains('trade-btn')) {
-            console.log('Trade button clicked:', event.target);
+        if (event.target.classList.contains('select-asset-btn')) {
+            console.log('Select asset button clicked:', event.target);
             const asset = event.target.getAttribute('data-asset');
-            const action = event.target.classList.contains('buy') ? 'buy' : 'sell';
-            console.log(`Trade button clicked for ${asset}, action: ${action}`);
-            window.showTradePanel(asset, action);
+            console.log(`Select asset button clicked for ${asset}`);
+
+            // Set the asset in the dropdown
+            const assetSelect = document.getElementById('trade-asset-select');
+            if (assetSelect) {
+                assetSelect.value = asset;
+                assetSelect.dispatchEvent(new Event('change'));
+            }
+
+            // Scroll to the trading panel
+            const tradingPanel = document.querySelector('.trading-panel');
+            if (tradingPanel) {
+                tradingPanel.scrollIntoView({ behavior: 'smooth' });
+            }
         }
     });
-
-    // Also add direct event listeners to all trade buttons
-    window.addTradeButtonListeners();
 
     // Initialize trade form controls
     window.initializeTradeFormControls();
 
     // Initialize trade panel with advanced controls
     window.initializeTradePanel();
+
+    // Add event listener for asset selection dropdown
+    const assetSelect = document.getElementById('trade-asset-select');
+    if (assetSelect) {
+        assetSelect.addEventListener('change', function() {
+            const asset = this.value;
+            if (asset) {
+                // Update current price display
+                const price = gameState.assetPrices[asset] || 0;
+                const currentPriceDisplay = document.getElementById('current-price-display');
+                if (currentPriceDisplay) {
+                    currentPriceDisplay.textContent = price.toFixed(2);
+                }
+
+                // Update trade summary
+                if (typeof window.updateTradeSummary === 'function') {
+                    window.updateTradeSummary();
+                }
+            }
+        });
+    }
 };
 
 // Initialize trade panel with advanced controls
@@ -1612,15 +1715,26 @@ window.updateTradeSliders = function() {
         const tradeQuantity = document.getElementById('trade-quantity');
         const tradeAmount = document.getElementById('trade-amount');
         const tradeAction = document.getElementById('trade-action');
+        const assetSelect = document.getElementById('trade-asset-select');
         const quantitySlider = document.getElementById('quantity-slider');
         const amountSlider = document.getElementById('amount-slider');
         const quantityPercentage = document.getElementById('quantity-percentage');
         const amountPercentage = document.getElementById('amount-percentage');
 
-        if (!tradeAction) return;
+        if (!tradeAction || !assetSelect) {
+            console.log('Missing required elements for updateTradeSliders');
+            return;
+        }
 
         const action = tradeAction.value;
-        const asset = document.getElementById('trade-asset-name').textContent;
+        const asset = assetSelect.value;
+
+        if (!asset) {
+            console.log('No asset selected');
+            return;
+        }
+
+        console.log(`Updating trade sliders for ${asset}, action: ${action}`);
 
         // Update quantity slider and percentage for sell action
         if (action === 'sell' && tradeQuantity && quantitySlider && quantityPercentage) {
@@ -1631,6 +1745,9 @@ window.updateTradeSliders = function() {
                 const percent = Math.min(100, Math.round((quantity / availableQuantity) * 100));
                 quantitySlider.value = percent;
                 quantityPercentage.value = percent;
+                console.log(`Sell: ${quantity}/${availableQuantity} = ${percent}%`);
+            } else {
+                console.log(`No ${asset} available to sell`);
             }
         }
 
@@ -1643,6 +1760,9 @@ window.updateTradeSliders = function() {
                 const percent = Math.min(100, Math.round((amount / availableCash) * 100));
                 amountSlider.value = percent;
                 amountPercentage.value = percent;
+                console.log(`Buy: $${amount}/$${availableCash} = ${percent}%`);
+            } else {
+                console.log('No cash available to buy');
             }
         }
     } catch (error) {
