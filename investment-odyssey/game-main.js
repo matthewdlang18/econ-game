@@ -701,7 +701,7 @@ function loadGameInterface() {
             <div class="modal-content">
                 <span class="close-modal">&times;</span>
                 <h3>Trade History</h3>
-                <div class="trade-history-container">
+                <div id="trade-history-container" class="trade-history-container">
                     <table class="table table-sm table-hover trade-history-table">
                         <thead>
                             <tr>

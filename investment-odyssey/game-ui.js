@@ -1664,6 +1664,9 @@ window.initializeTradePanel = function() {
     try {
         console.log('Initializing trade panel with advanced controls...');
 
+        // Reset the updating flag to prevent infinite loops
+        window._updatingTradeFields = false;
+
         const tradePanel = document.querySelector('.trade-panel');
         const cancelTradeBtn = document.getElementById('cancel-trade-btn');
         const executeTradeBtn = document.getElementById('execute-trade-btn');
