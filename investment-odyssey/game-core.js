@@ -221,7 +221,7 @@ function restartGame() {
     }
 }
 
-// Advance to next round
+// Advance to next round - simplified version
 async function nextRound() {
     try {
         console.log('Starting nextRound function');
@@ -238,100 +238,79 @@ async function nextRound() {
         gameState.roundNumber = window.currentRound;
         console.log('Round number incremented to:', window.currentRound);
 
-        try {
-            // Generate new prices
-            console.log('Generating new prices...');
-            generateNewPrices();
-            console.log('New prices generated:', gameState.assetPrices);
-        } catch (priceError) {
-            console.error('Error generating new prices:', priceError);
-        }
+        // Generate new prices
+        console.log('Generating new prices...');
+        for (const asset in gameState.assetPrices) {
+            // Simple random price change between -10% and +15%
+            const changePercent = -0.1 + Math.random() * 0.25;
+            const newPrice = gameState.assetPrices[asset] * (1 + changePercent);
+            gameState.assetPrices[asset] = newPrice;
 
-        try {
-            // Update CPI
-            console.log('Updating CPI...');
-            updateCPI();
-            console.log('New CPI:', gameState.CPI);
-        } catch (cpiError) {
-            console.error('Error updating CPI:', cpiError);
-        }
-
-        try {
-            // Generate cash injection
-            console.log('Generating cash injection...');
-            generateCashInjection();
-            console.log('Cash injection generated:', gameState.lastCashInjection);
-        } catch (cashError) {
-            console.error('Error generating cash injection:', cashError);
-        }
-
-        try {
-            // Calculate portfolio value
-            console.log('Calculating portfolio value...');
-            const portfolioValue = calculatePortfolioValue();
-            console.log('Portfolio value calculated:', portfolioValue);
-
-            // Add to portfolio value history
-            playerState.portfolioValueHistory[window.currentRound] = portfolioValue + playerState.cash;
-            console.log('Portfolio value history updated');
-        } catch (portfolioError) {
-            console.error('Error calculating portfolio value:', portfolioError);
-        }
-
-        try {
-            // Update UI
-            console.log('Updating UI...');
-            if (typeof window.updateUI === 'function') {
-                window.updateUI();
-                console.log('UI updated');
-            } else {
-                console.error('updateUI function not found');
+            // Add to price history
+            if (!gameState.priceHistory[asset]) {
+                gameState.priceHistory[asset] = [];
             }
-        } catch (updateError) {
-            console.error('Error in updateUI function:', updateError);
+            gameState.priceHistory[asset].push(newPrice);
         }
 
-        try {
-            // Check if game is over
-            if (window.currentRound >= gameState.maxRounds) {
-                console.log('Game is over, calling endGame()');
-                endGame();
-            }
-        } catch (endGameError) {
-            console.error('Error checking if game is over:', endGameError);
+        // Update CPI
+        const cpiChange = -0.01 + Math.random() * 0.04; // Between -1% and 3%
+        gameState.CPI = gameState.CPI * (1 + cpiChange);
+        gameState.CPIHistory.push(gameState.CPI);
+
+        // Calculate portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        console.log('Portfolio value calculated:', portfolioValue);
+
+        // Add to portfolio value history
+        if (!playerState.portfolioValueHistory) {
+            playerState.portfolioValueHistory = [];
+        }
+        playerState.portfolioValueHistory[window.currentRound] = portfolioValue + playerState.cash;
+
+        // Update UI
+        if (typeof window.updateUI === 'function') {
+            window.updateUI();
+        } else {
+            console.error('updateUI function not found');
         }
 
-        try {
-            // If connected to Supabase, save to database
-            if (window.gameSession && window.gameSupabase) {
-                console.log('Saving game state to database...');
-                if (typeof window.gameSupabase.saveGameState === 'function') {
-                    await window.gameSupabase.saveGameState(window.gameSession.id, window.currentRound, gameState);
-                    if (typeof window.gameSupabase.savePlayerState === 'function') {
-                        await window.gameSupabase.savePlayerState(window.gameSession.id, playerState);
-                    }
-                    console.log('Game state saved to database');
-                } else {
-                    console.log('Supabase save functions not available, using local storage instead');
-                    saveGameState();
-                }
-            } else {
+        // Check if game is over
+        if (window.currentRound >= gameState.maxRounds) {
+            console.log('Game is over, calling endGame()');
+            endGame();
+            return;
+        }
+
+        // If connected to Supabase, save to database
+        if (window.gameSession && window.gameSupabase) {
+            console.log('Saving game state to database...');
+            try {
+                // Create next round state in Supabase
+                await window.gameSupabase.createNextRoundState(window.gameSession.id, gameState);
+                await window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+                console.log('Game state saved to database');
+            } catch (error) {
+                console.error('Error saving to database:', error);
                 // Save to local storage as fallback
                 saveGameState();
             }
-        } catch (saveError) {
-            console.error('Error saving game state to database:', saveError);
-            // Try to save to local storage as fallback
-            try {
-                saveGameState();
-            } catch (localSaveError) {
-                console.error('Error saving to local storage:', localSaveError);
-            }
+        } else {
+            // Save to local storage
+            saveGameState();
+        }
+
+        // Show notification
+        if (typeof window.showNotification === 'function') {
+            window.showNotification(`Advanced to round ${window.currentRound}`, 'success');
         }
 
         console.log('nextRound function completed successfully');
     } catch (error) {
         console.error('Error in nextRound function:', error);
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Error advancing to next round', 'danger');
+        }
     }
 }
 

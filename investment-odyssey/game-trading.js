@@ -39,7 +39,7 @@ function setQuantityPercentage(percentage) {
     }
 }
 
-// Execute trade
+// Execute trade - simplified version based on templates
 function executeTrade() {
     try {
         console.log('Executing trade...');
@@ -48,15 +48,10 @@ function executeTrade() {
         const assetSelect = document.getElementById('trade-asset-select');
         const actionSelect = document.getElementById('trade-action');
         const quantityInput = document.getElementById('trade-quantity');
-        const amountInput = document.getElementById('trade-amount');
 
         if (!assetSelect || !actionSelect || !quantityInput) {
             console.error('Missing required elements for executeTrade');
-            if (typeof window.showNotification === 'function') {
-                window.showNotification('Error: Missing form elements', 'danger');
-            } else {
-                alert('Error: Missing form elements');
-            }
+            window.showNotification('Error: Missing form elements', 'danger');
             return;
         }
 
@@ -67,20 +62,12 @@ function executeTrade() {
         console.log(`Trade details: Asset=${assetName}, Action=${action}, Quantity=${quantity}`);
 
         if (!assetName) {
-            if (typeof window.showNotification === 'function') {
-                window.showNotification('Please select an asset', 'warning');
-            } else {
-                alert('Please select an asset');
-            }
+            window.showNotification('Please select an asset', 'warning');
             return;
         }
 
         if (quantity <= 0) {
-            if (typeof window.showNotification === 'function') {
-                window.showNotification('Please enter a valid quantity', 'warning');
-            } else {
-                alert('Please enter a valid quantity');
-            }
+            window.showNotification('Please enter a valid quantity', 'warning');
             return;
         }
 
@@ -88,11 +75,7 @@ function executeTrade() {
         const price = gameState.assetPrices[assetName] || 0;
 
         if (price <= 0) {
-            if (typeof window.showNotification === 'function') {
-                window.showNotification('Invalid asset price', 'danger');
-            } else {
-                alert('Invalid asset price');
-            }
+            window.showNotification('Invalid asset price', 'danger');
             return;
         }
 
@@ -103,11 +86,7 @@ function executeTrade() {
             console.log(`Buy details: Price=${price}, Cost=${cost}, Cash=${playerState.cash}`);
 
             if (playerState.cash < cost) {
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`, 'warning');
-                } else {
-                    alert(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`);
-                }
+                window.showNotification(`Not enough cash to complete this purchase. You need $${cost.toFixed(2)} but have $${playerState.cash.toFixed(2)}`, 'warning');
                 return;
             }
 
@@ -132,14 +111,10 @@ function executeTrade() {
                 price: price,
                 cost: cost,
                 timestamp: new Date(),
-                round: window.currentRound || 0
+                round: gameState.roundNumber || 0
             });
 
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`, 'success');
-            } else {
-                alert(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`);
-            }
+            window.showNotification(`Successfully bought ${quantity.toFixed(6)} ${assetName} for $${cost.toFixed(2)}`, 'success');
         } else {
             // Check if player has enough of the asset
             const currentQuantity = playerState.portfolio[assetName] || 0;
@@ -147,11 +122,7 @@ function executeTrade() {
             console.log(`Sell details: CurrentQuantity=${currentQuantity}, SellingQuantity=${quantity}`);
 
             if (currentQuantity < quantity) {
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`, 'warning');
-                } else {
-                    alert(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`);
-                }
+                window.showNotification(`Not enough of this asset to sell. You have ${currentQuantity.toFixed(6)} but are trying to sell ${quantity.toFixed(6)}`, 'warning');
                 return;
             }
 
@@ -179,25 +150,18 @@ function executeTrade() {
                 price: price,
                 value: value,
                 timestamp: new Date(),
-                round: window.currentRound || 0
+                round: gameState.roundNumber || 0
             });
 
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`, 'success');
-            } else {
-                alert(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`);
-            }
+            window.showNotification(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`, 'success');
         }
 
         // Update UI
-        if (typeof window.updateUI === 'function') {
-            window.updateUI();
-        } else if (typeof updateUI === 'function') {
-            updateUI();
-        }
+        updateUI();
 
         // Reset form
         quantityInput.value = '';
+        const amountInput = document.getElementById('trade-amount');
         if (amountInput) {
             amountInput.value = '';
         }
@@ -205,31 +169,21 @@ function executeTrade() {
         // Update trade summary
         if (typeof window.updateTradeSummary === 'function') {
             window.updateTradeSummary();
-        } else if (typeof updateTradeSummary === 'function') {
-            updateTradeSummary();
         }
 
         // Save game state
-        if (typeof window.saveGameState === 'function') {
-            window.saveGameState();
-        } else if (typeof saveGameState === 'function') {
+        if (window.gameSession && window.gameSupabase) {
+            // Save to Supabase
+            window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+        } else {
+            // Save to local storage
             saveGameState();
-        }
-
-        // Hide trade panel
-        const tradePanel = document.querySelector('.trade-panel');
-        if (tradePanel) {
-            tradePanel.style.display = 'none';
         }
 
         console.log('Trade executed successfully');
     } catch (error) {
         console.error('Error executing trade:', error);
-        if (typeof window.showNotification === 'function') {
-            window.showNotification('An error occurred while executing the trade', 'danger');
-        } else {
-            alert('An error occurred while executing the trade');
-        }
+        window.showNotification('An error occurred while executing the trade', 'danger');
     }
 }
 

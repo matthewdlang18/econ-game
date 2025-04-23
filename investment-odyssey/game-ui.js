@@ -1,134 +1,59 @@
 // UI Functions for Investment Odyssey
 
-// Update UI
+// Update UI - simplified version based on templates
 window.updateUI = function() {
     try {
         console.log('Updating UI...');
 
-        // Normalize game state if available
-        if (window.normalizeGameState && window.gameState) {
-            window.gameState = window.normalizeGameState(window.gameState);
+        // Update round displays
+        const currentRoundDisplay = document.getElementById('current-round');
+        if (currentRoundDisplay) {
+            currentRoundDisplay.textContent = gameState.roundNumber || 0;
+        }
+
+        // Update progress bar
+        const progressBar = document.getElementById('round-progress');
+        if (progressBar) {
+            const progress = ((gameState.roundNumber || 0) / (gameState.maxRounds || 20)) * 100;
+            progressBar.style.width = progress + '%';
+            progressBar.setAttribute('aria-valuenow', progress);
+            progressBar.textContent = Math.round(progress) + '%';
+        }
+
+        // Calculate portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        const totalValue = playerState.cash + portfolioValue;
+
+        // Update portfolio summary
+        const cashDisplay = document.getElementById('cash-display');
+        if (cashDisplay) {
+            cashDisplay.textContent = playerState.cash.toFixed(2);
+        }
+
+        const portfolioValueDisplay = document.getElementById('portfolio-value-display');
+        if (portfolioValueDisplay) {
+            portfolioValueDisplay.textContent = portfolioValue.toFixed(2);
+        }
+
+        const totalValueDisplay = document.getElementById('total-value-display');
+        if (totalValueDisplay) {
+            totalValueDisplay.textContent = totalValue.toFixed(2);
         }
 
         // Update market data table
-        if (typeof window.updateMarketData === 'function') {
-            window.updateMarketData();
-        } else if (typeof updateMarketData === 'function') {
-            updateMarketData();
-        }
+        updateMarketData();
 
         // Update price ticker
-        if (typeof window.updatePriceTicker === 'function') {
-            window.updatePriceTicker();
-        } else if (typeof updatePriceTicker === 'function') {
-            updatePriceTicker();
+        updatePriceTicker();
+
+        // Update trade summary
+        if (typeof window.updateTradeSummary === 'function') {
+            window.updateTradeSummary();
         }
 
-        // Update cash and portfolio displays
-        if (typeof window.updateCashAndPortfolioDisplays === 'function') {
-            window.updateCashAndPortfolioDisplays();
-        } else if (typeof updateCashAndPortfolioDisplays === 'function') {
-            updateCashAndPortfolioDisplays();
-        }
-
-        // Update round progress
-        if (typeof window.updateRoundProgress === 'function') {
-            window.updateRoundProgress();
-        } else if (typeof updateRoundProgress === 'function') {
-            updateRoundProgress();
-        }
-
-        // Update asset price in trade form
-        if (typeof window.updateAssetPrice === 'function') {
-            window.updateAssetPrice();
-        } else if (typeof updateAssetPrice === 'function') {
-            updateAssetPrice();
-        }
-
-        // Update trade history display
-        if (typeof window.updateTradeHistory === 'function') {
-            window.updateTradeHistory();
-        } else if (typeof updateTradeHistory === 'function') {
-            updateTradeHistory();
-        }
-
-        // First destroy all charts to prevent errors
-        if (typeof window.destroyAllCharts === 'function') {
-            window.destroyAllCharts();
-        }
-
-        // Force cleanup of any Chart.js instances
-        if (typeof Chart !== 'undefined' && typeof Chart.instances === 'object') {
-            console.log('Cleaning up Chart.js instances registry');
-            Object.keys(Chart.instances).forEach(key => {
-                try {
-                    if (Chart.instances[key]) {
-                        Chart.instances[key].destroy();
-                        delete Chart.instances[key];
-                    }
-                } catch (error) {
-                    console.error(`Error destroying Chart.instances[${key}]:`, error);
-                }
-            });
-        }
-
-        // Update charts with a longer delay to ensure DOM is ready
-        setTimeout(() => {
-            try {
-                // Update portfolio chart
-                if (typeof window.updatePortfolioChart === 'function') {
-                    window.updatePortfolioChart();
-                } else if (typeof updatePortfolioChart === 'function') {
-                    updatePortfolioChart();
-                }
-
-                // Wait a bit more for the portfolio allocation chart
-                setTimeout(() => {
-                    try {
-                        // Update portfolio allocation chart
-                        if (typeof window.updatePortfolioAllocationChart === 'function') {
-                            window.updatePortfolioAllocationChart();
-                        } else if (typeof updatePortfolioAllocationChart === 'function') {
-                            updatePortfolioAllocationChart();
-                        }
-                    } catch (error) {
-                        console.error('Error updating portfolio allocation chart:', error);
-                    }
-                }, 100);
-
-                // Wait a bit more for the asset price charts
-                setTimeout(() => {
-                    try {
-                        // Update asset price charts
-                        if (typeof window.updateAssetPriceCharts === 'function') {
-                            window.updateAssetPriceCharts();
-                        } else if (typeof updateAssetPriceCharts === 'function') {
-                            updateAssetPriceCharts();
-                        }
-                    } catch (error) {
-                        console.error('Error updating asset price charts:', error);
-                    }
-                }, 200);
-
-                // Wait a bit more for the comparative returns chart
-                setTimeout(() => {
-                    try {
-                        // Update comparative returns chart
-                        if (typeof window.updateComparativeReturnsChart === 'function') {
-                            window.updateComparativeReturnsChart();
-                        } else if (typeof updateComparativeReturnsChart === 'function') {
-                            updateComparativeReturnsChart();
-                        }
-                    } catch (error) {
-                        console.error('Error updating comparative returns chart:', error);
-                    }
-                }, 300);
-
-                console.log('Charts update process started');
-            } catch (chartError) {
-                console.error('Error in chart update process:', chartError);
-            }
-        }, 300); // 300ms delay before starting chart updates
+        // Update charts
+        updatePortfolioChart();
+        updatePortfolioAllocationChart();
 
         console.log('UI updated successfully');
     } catch (error) {
@@ -1464,65 +1389,92 @@ window.executeTrade = function() {
     }
 }
 
-// Advance to next round function
-window.advanceToNextRound = async function() {
+// Advance to next round function - simplified version based on templates
+window.nextRound = function() {
     try {
-        console.log('Advancing to next round...');
+        console.log('Starting nextRound function');
 
-        // Check if we're using Supabase
-        if (window.gameSession && window.gameSupabase) {
-            console.log('Using Supabase for next round');
-
-            // Get the current game state
-            const currentGameState = await window.gameSupabase.getGameState(window.gameSession.id, window.gameSession.current_round);
-            if (!currentGameState) {
-                console.error('Failed to get current game state');
-                window.showNotification('Error: Failed to get current game state', 'danger');
-                return;
+        // Check if we've already reached the maximum number of rounds
+        if (gameState.roundNumber >= gameState.maxRounds) {
+            console.log('Maximum rounds reached, ending game');
+            if (typeof window.endGame === 'function') {
+                window.endGame();
             }
+            return;
+        }
 
-            // Create the next round state
-            const nextGameState = await window.gameSupabase.createNextRoundState(window.gameSession.id, currentGameState);
-            if (!nextGameState) {
-                console.error('Failed to create next round state');
-                window.showNotification('Error: Failed to create next round state', 'danger');
-                return;
+        // Increment round number
+        gameState.roundNumber++;
+        window.currentRound = gameState.roundNumber;
+        console.log('Round number incremented to:', gameState.roundNumber);
+
+        // Generate new prices
+        console.log('Generating new prices...');
+        for (const asset in gameState.assetPrices) {
+            // Simple random price change between -10% and +15%
+            const changePercent = -0.1 + Math.random() * 0.25;
+            const newPrice = gameState.assetPrices[asset] * (1 + changePercent);
+            gameState.assetPrices[asset] = newPrice;
+
+            // Add to price history
+            if (!gameState.priceHistory[asset]) {
+                gameState.priceHistory[asset] = [];
             }
+            gameState.priceHistory[asset].push(newPrice);
+        }
 
-            // Check if game is over
-            if (nextGameState.gameOver) {
-                console.log('Game over!');
-                window.showNotification('Game over! Check your results.', 'success');
-                // TODO: Show game over screen
-                return;
-            }
+        // Update CPI
+        const cpiChange = -0.01 + Math.random() * 0.04; // Between -1% and 3%
+        gameState.CPI = gameState.CPI * (1 + cpiChange);
+        gameState.CPIHistory.push(gameState.CPI);
 
-            // Update the game state
-            window.gameState = nextGameState;
-            window.currentRound = nextGameState.round_number;
+        // Calculate portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        console.log('Portfolio value calculated:', portfolioValue);
 
-            // Update the UI
-            window.updateUI();
+        // Add to portfolio value history
+        if (!playerState.portfolioValueHistory) {
+            playerState.portfolioValueHistory = [];
+        }
+        playerState.portfolioValueHistory[gameState.roundNumber] = portfolioValue + playerState.cash;
 
-            // Show notification
-            window.showNotification(`Advanced to round ${window.currentRound}`, 'success');
-        } else {
-            console.log('Using local nextRound function');
-            // Use the local nextRound function
-            if (typeof window.nextRound === 'function') {
-                window.nextRound();
-            } else if (typeof nextRound === 'function') {
-                nextRound();
-            } else {
-                console.error('No nextRound function found');
-                window.showNotification('Error: Could not advance to next round', 'danger');
+        // Update UI
+        console.log('Updating UI...');
+        updateUI();
+
+        // Check if game is over
+        if (gameState.roundNumber >= gameState.maxRounds) {
+            console.log('Game is over, calling endGame()');
+            if (typeof window.endGame === 'function') {
+                window.endGame();
             }
         }
+
+        // Save game state
+        console.log('Saving game state...');
+        if (window.gameSession && window.gameSupabase) {
+            // Save to Supabase
+            window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+
+            // Create next round state in Supabase
+            window.gameSupabase.createNextRoundState(window.gameSession.id, gameState);
+        } else {
+            // Save to local storage
+            saveGameState();
+        }
+
+        // Show notification
+        window.showNotification(`Advanced to round ${gameState.roundNumber}`, 'success');
+
+        console.log('nextRound function completed successfully');
     } catch (error) {
-        console.error('Error advancing to next round:', error);
+        console.error('Error in nextRound function:', error);
         window.showNotification('Error advancing to next round', 'danger');
     }
 };
+
+// Alias for nextRound
+window.advanceToNextRound = window.nextRound;
 
 // Initialize event listeners
 window.initializeEventListeners = function() {
