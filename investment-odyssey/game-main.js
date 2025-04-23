@@ -540,6 +540,38 @@ function loadGameInterface() {
         window.initializeEventListeners();
     } else {
         console.error('initializeEventListeners function not found');
+        // Try to add event listeners directly
+        const tradeButtons = document.querySelectorAll('.trade-btn');
+        console.log(`Found ${tradeButtons.length} trade buttons directly`);
+
+        tradeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const asset = this.getAttribute('data-asset');
+                const action = this.classList.contains('buy') ? 'buy' : 'sell';
+                console.log(`Direct listener added: Trade button clicked for ${asset}, action: ${action}`);
+                if (typeof window.showTradePanel === 'function') {
+                    window.showTradePanel(asset, action);
+                } else {
+                    console.error('showTradePanel function not found');
+                }
+            });
+        });
+
+        // Add debug button listener
+        const debugTradeBtn = document.getElementById('debug-trade-btn');
+        if (debugTradeBtn) {
+            debugTradeBtn.addEventListener('click', function() {
+                console.log('Debug trade panel button clicked directly');
+                const tradePanel = document.querySelector('.trade-panel');
+                if (tradePanel) {
+                    tradePanel.style.display = 'block';
+                    tradePanel.style.zIndex = '9999';
+                    console.log('Trade panel forced visible directly');
+                } else {
+                    console.error('Trade panel not found directly');
+                }
+            });
+        }
     }
 
     // Initialize charts - using the function from game-ui.js
@@ -607,10 +639,18 @@ async function startSinglePlayerGame() {
         gameState.CPIHistory.push(gameState.CPI);
 
         // Update UI to show initial state
-        updateUI();
+        if (typeof window.updateUI === 'function') {
+            window.updateUI();
+        } else {
+            console.error('updateUI function not found');
+        }
 
         // Show notification
-        showNotification('Game started! You have $10,000 to invest. Click "Next Round" to advance the game.', 'success');
+        if (typeof window.showNotification === 'function') {
+            window.showNotification('Game started! You have $10,000 to invest. Click "Next Round" to advance the game.', 'success');
+        } else {
+            console.log('Game started! You have $10,000 to invest. Click "Next Round" to advance the game.');
+        }
     } catch (error) {
         console.error('Error starting single player game:', error);
         alert('An error occurred while starting the game. Please try again.');

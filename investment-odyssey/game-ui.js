@@ -39,10 +39,23 @@ window.updateUI = function() {
     }
 }
 
+// Calculate portfolio value
+window.calculatePortfolioValue = function() {
+    let value = 0;
+    if (!playerState || !playerState.portfolio || !gameState || !gameState.assetPrices) return value;
+
+    for (const [asset, quantity] of Object.entries(playerState.portfolio)) {
+        const price = gameState.assetPrices[asset] || 0;
+        value += price * quantity;
+    }
+
+    return value;
+};
+
 // Update cash and portfolio displays
 window.updateCashAndPortfolioDisplays = function() {
     // Calculate portfolio value
-    const portfolioValue = calculatePortfolioValue();
+    const portfolioValue = window.calculatePortfolioValue();
     const totalValue = playerState.cash + portfolioValue;
 
     // Update displays
@@ -101,7 +114,7 @@ window.updateMarketData = function() {
         <td class="text-secondary">0.00%</td>
         <td>${playerState.cash.toFixed(6)}</td>
         <td>$${playerState.cash.toFixed(2)}</td>
-        <td>${(playerState.cash / (calculatePortfolioValue() + playerState.cash) * 100).toFixed(2)}%</td>
+        <td>${(playerState.cash / (window.calculatePortfolioValue() + playerState.cash) * 100).toFixed(2)}%</td>
     `;
     tableBody.appendChild(cashRow);
 
@@ -135,7 +148,7 @@ window.updateMarketData = function() {
         // Get portfolio quantity and value
         const quantity = playerState.portfolio[asset] || 0;
         const value = quantity * price;
-        const portfolioTotal = calculatePortfolioValue() + playerState.cash;
+        const portfolioTotal = window.calculatePortfolioValue() + playerState.cash;
         const percentage = portfolioTotal > 0 ? (value / portfolioTotal) * 100 : 0;
 
         row.innerHTML = `
@@ -1275,7 +1288,7 @@ window.debugShowTradePanel = function() {
             }
         });
     }
-}
+};
 
 
 
@@ -1307,7 +1320,7 @@ window.setAmountPercentage = function(percent) {
     }
 
     // Update trade summary
-    updateTradeSummary();
+    window.updateTradeSummary();
 }
 
 // Initialize portfolio action listeners
@@ -1337,7 +1350,7 @@ window.initializePortfolioActionListeners = function() {
         if (event.target.classList.contains('portfolio-action-btn')) {
             const asset = event.target.getAttribute('data-asset');
             const action = event.target.getAttribute('data-action');
-            showTradePanel(asset, action);
+            window.showTradePanel(asset, action);
         }
     });
 }
