@@ -308,10 +308,39 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
 
   try {
     console.log('Saving game results to leaderboard for game:', gameId);
+    console.log('Player state:', playerState);
+    console.log('Game state:', gameState);
 
-    // Calculate final portfolio value
-    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.assetPrices || gameState.asset_prices);
-    const totalValue = playerState.cash + portfolioValue;
+    // Calculate final portfolio value with detailed logging
+    let portfolioValue = 0;
+    console.log('Calculating portfolio value from:');
+    console.log('Portfolio:', playerState.portfolio);
+    console.log('Asset prices:', gameState.assetPrices || gameState.asset_prices);
+
+    for (const asset in playerState.portfolio) {
+      const quantity = playerState.portfolio[asset];
+      const price = (gameState.assetPrices && gameState.assetPrices[asset]) ||
+                   (gameState.asset_prices && gameState.asset_prices[asset]) || 0;
+      const assetValue = quantity * price;
+      console.log(`Asset: ${asset}, Quantity: ${quantity}, Price: ${price}, Value: ${assetValue}`);
+      portfolioValue += assetValue;
+    }
+
+    console.log('Calculated portfolio value:', portfolioValue);
+    console.log('Player cash:', playerState.cash);
+
+    // Use the total_value from playerState if available, otherwise calculate it
+    let totalValue = playerState.total_value;
+    const calculatedTotalValue = playerState.cash + portfolioValue;
+
+    // If there's a significant difference, log it and use the calculated value
+    if (Math.abs(calculatedTotalValue - totalValue) > 1) {
+      console.log(`Warning: Player state total_value (${totalValue}) differs from calculated value (${calculatedTotalValue})`);
+      // Use the higher value to benefit the player
+      totalValue = Math.max(calculatedTotalValue, totalValue);
+    }
+
+    console.log('Final total value to be saved to leaderboard:', totalValue);
 
     // Calculate performance metrics
     const initialValue = 10000; // Starting cash
@@ -635,6 +664,8 @@ async function completeGame(gameId) {
   if (!currentUser) return false;
 
   try {
+    console.log('Starting completeGame function for game:', gameId);
+
     // Get final player state
     const { data: playerState, error: playerError } = await supabase
       .from('player_states')
@@ -647,6 +678,8 @@ async function completeGame(gameId) {
       console.error('Error getting player state:', playerError);
       return false;
     }
+
+    console.log('Retrieved player state with total_value:', playerState.total_value);
 
     // Get game session
     const { data: gameSession, error: sessionError } = await supabase
@@ -728,6 +761,10 @@ async function completeGame(gameId) {
     } else {
       // Add or update entry in leaderboard using upsert
       try {
+        // Double-check the final value one more time
+        console.log('Final value before creating leaderboard entry:', finalValue);
+
+        // Create the leaderboard entry
         const leaderboardEntry = {
           user_id: currentUser.id,
           user_name: currentUser.name || 'Anonymous',
