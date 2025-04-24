@@ -258,6 +258,9 @@ async function nextRound() {
         gameState.CPI = gameState.CPI * (1 + cpiChange);
         gameState.CPIHistory.push(gameState.CPI);
 
+        // Add cash injection this round
+        if (typeof generateCashInjection === 'function') generateCashInjection();
+
         // Calculate portfolio value
         const portfolioValue = calculatePortfolioValue();
         console.log('Portfolio value calculated:', portfolioValue);
@@ -426,25 +429,17 @@ function generateNewPrices() {
     }
 }
 
-// Generate cash injection
+// Generate cash injection with growing base and variability
 function generateCashInjection() {
-    // Determine if there should be a cash injection this round
-    const injectionProbability = 0.2; // 20% chance each round
-
-    if (Math.random() < injectionProbability) {
-        // Generate a random cash injection between $500 and $2000
-        const injectionAmount = 500 + Math.random() * 1500;
-        gameState.lastCashInjection = injectionAmount;
-        gameState.totalCashInjected += injectionAmount;
-
-        // Add to player's cash
-        playerState.cash += injectionAmount;
-
-        // Show notification
-        showNotification(`Cash injection! You received $${injectionAmount.toFixed(2)}.`, 'success');
-    } else {
-        gameState.lastCashInjection = 0;
-    }
+    const baseAmount = 5000 + (gameState.roundNumber * 500); // growing base
+    const variability = 1000;
+    const injectionAmount = baseAmount + (Math.random() * 2 - 1) * variability;
+    // Update player cash and totals
+    playerState.cash += injectionAmount;
+    gameState.lastCashInjection = injectionAmount;
+    gameState.totalCashInjected = (gameState.totalCashInjected || 0) + injectionAmount;
+    // Notify user
+    showNotification(`Cash injection: $${injectionAmount.toFixed(2)}`, 'success');
 }
 
 // Calculate portfolio value
@@ -478,6 +473,9 @@ function endGame() {
         // Calculate inflation-adjusted return
         const realReturn = (totalValue / gameState.CPI * 100) - initialValue;
         const realPercentReturn = (realReturn / initialValue) * 100;
+
+        // Debug: log totalValue and realReturn
+        console.log('Debug endGame values:', { totalValue, initialValue, realReturn, realPercentReturn });
 
         // Save to leaderboard if connected to Supabase
         if (window.gameSession && window.gameSupabase) {

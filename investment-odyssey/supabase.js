@@ -310,7 +310,7 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
     console.log('Saving game results to leaderboard for game:', gameId);
 
     // Calculate final portfolio value
-    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.asset_prices || gameState.assetPrices);
+    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.assetPrices || gameState.asset_prices);
     const totalValue = playerState.cash + portfolioValue;
 
     // Calculate performance metrics
