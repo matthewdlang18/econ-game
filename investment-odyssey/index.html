@@ -87,7 +87,55 @@
 
     <main class="container py-4">
       <div id="welcome-screen">
-        <!-- Welcome screen content moved to game-main.js -->
+        <div class="jumbotron bg-white shadow-sm">
+          <h2 class="display-4">Welcome to Investment Odyssey</h2>
+          <p class="lead">An interactive financial market simulation game designed to help you understand investment strategies, risk management, and portfolio diversification through hands-on experience.</p>
+          <hr class="my-4">
+          <div class="game-description">
+            <h3>About the Game</h3>
+            <p>Investment Odyssey simulates real market behavior using correlation-based asset price generation and includes special mechanics like Bitcoin's 4-year cycle to provide an educational yet engaging experience.</p>
+
+            <div class="card bg-light mb-4">
+              <div class="card-body">
+                <h4 class="card-title">Key Features:</h4>
+                <ul class="mb-0">
+                  <li>Learn investment concepts through practical application</li>
+                  <li>Experience realistic market behavior without risking real money</li>
+                  <li>Understand correlation effects on portfolio diversification</li>
+                  <li>Gain insights into cryptocurrency market cycles</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="game-modes">
+            <h3>Game Modes</h3>
+            <div class="row mt-4">
+              <div class="col-md-6 mb-3">
+                <div class="card h-100 shadow-sm">
+                  <div class="card-body">
+                    <h4 class="card-title">Single Player</h4>
+                    <p class="card-text">Play at your own pace and test different investment strategies.</p>
+                  </div>
+                  <div class="card-footer bg-white border-top-0">
+                    <button id="single-player-btn" class="btn btn-primary btn-block">Start Single Player</button>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <div class="card h-100 shadow-sm">
+                  <div class="card-body">
+                    <h4 class="card-title">Class Mode</h4>
+                    <p class="card-text">Join your class session and compete with classmates.</p>
+                  </div>
+                  <div class="card-footer bg-white border-top-0">
+                    <button id="class-mode-btn" class="btn btn-primary btn-block">Join Class Game</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div id="game-screen" style="display:none;">
         <!-- Game interface will be loaded here -->

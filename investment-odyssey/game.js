@@ -50,17 +50,18 @@ const assetInfo = {
   }
 };
 
-// DOM Elements
-const singlePlayerBtn = document.getElementById('single-player-btn');
-const classModeBtn = document.getElementById('class-mode-btn');
+// DOM Elements will be queried upon DOMContentLoaded
+// (buttons may not exist until welcome screen is rendered)
 const welcomeScreen = document.getElementById('welcome-screen');
 const gameScreen = document.getElementById('game-screen');
 
 // Initialize the game
 document.addEventListener('DOMContentLoaded', () => {
-  // Set up event listeners
-  singlePlayerBtn.addEventListener('click', startSinglePlayerGame);
-  classModeBtn.addEventListener('click', joinClassGame);
+  // Query buttons and set up event listeners
+  const singlePlayerBtn = document.getElementById('single-player-btn');
+  const classModeBtn = document.getElementById('class-mode-btn');
+  if (singlePlayerBtn) singlePlayerBtn.addEventListener('click', startSinglePlayerGame);
+  if (classModeBtn) classModeBtn.addEventListener('click', joinClassGame);
 
   // Check if we have user data passed from the parent window
   window.addEventListener('message', (event) => {
