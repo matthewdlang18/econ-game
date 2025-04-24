@@ -97,74 +97,6 @@ function redirectToLogin() {
   window.location.href = '../index.html';
 }
 
-// Show notification to the user
-window.showNotification = function(message, type = 'info', duration = 5000) {
-  // Create notification container if it doesn't exist
-  let notificationContainer = document.getElementById('notification-container');
-  if (!notificationContainer) {
-    notificationContainer = document.createElement('div');
-    notificationContainer.id = 'notification-container';
-    notificationContainer.style.position = 'fixed';
-    notificationContainer.style.top = '20px';
-    notificationContainer.style.right = '20px';
-    notificationContainer.style.zIndex = '9999';
-    document.body.appendChild(notificationContainer);
-  }
-
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.className = `notification ${type}`;
-  notification.style.backgroundColor = type === 'success' ? '#4CAF50' :
-                                      type === 'danger' ? '#f44336' :
-                                      type === 'warning' ? '#ff9800' : '#2196F3';
-  notification.style.color = 'white';
-  notification.style.padding = '15px';
-  notification.style.marginBottom = '10px';
-  notification.style.borderRadius = '5px';
-  notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-  notification.style.minWidth = '250px';
-  notification.style.opacity = '0';
-  notification.style.transition = 'opacity 0.3s ease-in-out';
-
-  // Add message
-  notification.innerHTML = message;
-
-  // Add close button
-  const closeBtn = document.createElement('span');
-  closeBtn.innerHTML = '&times;';
-  closeBtn.style.float = 'right';
-  closeBtn.style.cursor = 'pointer';
-  closeBtn.style.marginLeft = '10px';
-  closeBtn.style.fontWeight = 'bold';
-  closeBtn.onclick = function() {
-    notification.style.opacity = '0';
-    setTimeout(() => {
-      notificationContainer.removeChild(notification);
-    }, 300);
-  };
-  notification.insertBefore(closeBtn, notification.firstChild);
-
-  // Add to container
-  notificationContainer.appendChild(notification);
-
-  // Show notification with animation
-  setTimeout(() => {
-    notification.style.opacity = '1';
-  }, 10);
-
-  // Auto-remove after duration
-  setTimeout(() => {
-    if (notification.parentNode === notificationContainer) {
-      notification.style.opacity = '0';
-      setTimeout(() => {
-        if (notification.parentNode === notificationContainer) {
-          notificationContainer.removeChild(notification);
-        }
-      }, 300);
-    }
-  }, duration);
-};
-
 // Start a single player game
 async function startSinglePlayerGame() {
   // Create a new game session
@@ -247,29 +179,8 @@ function loadGameInterface() {
   const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
 
-  console.log('Portfolio value in loadGameInterface:', portfolioValue);
-  console.log('Total value in loadGameInterface:', totalValue);
-
   // Update player state with new total value
   playerState.total_value = totalValue;
-
-  // Make sure the portfolio value history is updated
-  if (!playerState.portfolio_value_history) {
-    playerState.portfolio_value_history = [totalValue];
-  } else if (playerState.portfolio_value_history.length <= currentRound) {
-    playerState.portfolio_value_history[currentRound] = totalValue;
-  }
-
-  // Update all portfolio value displays in the UI
-  const portfolioValueDisplays = document.querySelectorAll('.stat-value');
-  portfolioValueDisplays.forEach(display => {
-    const label = display.previousElementSibling.textContent;
-    if (label.includes('Total Value')) {
-      display.textContent = `$${totalValue.toFixed(2)}`;
-    } else if (label.includes('Invested')) {
-      display.textContent = `$${portfolioValue.toFixed(2)}`;
-    }
-  });
 
   // Calculate performance metrics
   const initialValue = 10000; // Starting cash
@@ -747,11 +658,6 @@ function loadGameInterface() {
   // Initialize charts
   initializeCharts(portfolioLabels, portfolioData, portfolioColors);
 
-  // Update the portfolio value chart if it exists
-  if (window.portfolioValueChart) {
-    updatePortfolioValueChart();
-  }
-
   // Add event listeners for trading
   document.querySelectorAll('.trade-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -896,24 +802,13 @@ function initializeCharts(portfolioLabels, portfolioData, portfolioColors) {
     roundLabels.push(`Round ${i}`);
   }
 
-  // Log the portfolio value history for debugging
-  console.log('Portfolio value history:', playerState.portfolio_value_history);
-
-  // Make sure we have valid data
-  let portfolioValueHistory = playerState.portfolio_value_history;
-  if (!Array.isArray(portfolioValueHistory) || portfolioValueHistory.length === 0) {
-    portfolioValueHistory = [playerState.total_value || 10000];
-    console.log('Created new portfolio value history:', portfolioValueHistory);
-  }
-
-  // Store the chart instance in a global variable so we can update it later
-  window.portfolioValueChart = new Chart(valueHistoryCtx, {
+  new Chart(valueHistoryCtx, {
     type: 'line',
     data: {
       labels: roundLabels,
       datasets: [{
         label: 'Portfolio Value',
-        data: portfolioValueHistory,
+        data: playerState.portfolio_value_history,
         borderColor: '#4285F4',
         backgroundColor: 'rgba(66, 133, 244, 0.1)',
         borderWidth: 2,
@@ -1094,16 +989,8 @@ function showTradePanel(asset, action) {
     const portfolioValue = calculatePortfolioValue();
     playerState.total_value = playerState.cash + portfolioValue;
 
-    console.log('New portfolio value after trade:', portfolioValue);
-    console.log('New total value after trade:', playerState.total_value);
-
     // Update portfolio value history
-    if (!playerState.portfolio_value_history) {
-      playerState.portfolio_value_history = [];
-    }
     playerState.portfolio_value_history.push(playerState.total_value);
-
-    console.log('Updated portfolio value history:', playerState.portfolio_value_history);
 
     // Save player state to Supabase
     const updated = await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
@@ -1120,11 +1007,6 @@ function showTradePanel(asset, action) {
   // Function to hide the trade panel
   function hideTradePanel() {
     tradePanel.style.display = 'none';
-
-    // Update the portfolio value chart if it exists
-    if (typeof updatePortfolioValueChart === 'function') {
-      updatePortfolioValueChart();
-    }
   }
 }
 
@@ -1141,78 +1023,6 @@ function calculatePortfolioValue() {
   return portfolioValue;
 }
 
-// Update the portfolio value chart
-function updatePortfolioValueChart() {
-  // Check if the chart exists
-  if (!window.portfolioValueChart) {
-    console.warn('Portfolio value chart not found');
-    return;
-  }
-
-  // Make sure we have valid data
-  if (!playerState.portfolio_value_history || !Array.isArray(playerState.portfolio_value_history)) {
-    playerState.portfolio_value_history = [playerState.total_value || 10000];
-  }
-
-  // Create labels for each round
-  const roundLabels = [];
-  for (let i = 0; i < playerState.portfolio_value_history.length; i++) {
-    roundLabels.push(`Round ${i}`);
-  }
-
-  // Update the chart data
-  window.portfolioValueChart.data.labels = roundLabels;
-  window.portfolioValueChart.data.datasets[0].data = playerState.portfolio_value_history;
-
-  // Log the updated data
-  console.log('Updating portfolio value chart with data:', playerState.portfolio_value_history);
-
-  // Update the chart
-  window.portfolioValueChart.update();
-}
-
-// Generate cash injection
-function generateCashInjection() {
-  // Base amount increases each round to simulate growing economy
-  const baseAmount = 5000 + (currentRound * 500); // Starts at 5000, increases by 500 each round
-  const variability = 1000; // Higher variability for more dynamic gameplay
-
-  // Generate random cash injection with increasing trend
-  const cashInjection = baseAmount + (Math.random() * 2 - 1) * variability;
-
-  console.log(`Generating cash injection: ${cashInjection.toFixed(2)}`);
-
-  // Update player cash
-  playerState.cash += cashInjection;
-
-  // Update game state tracking
-  if (!gameState.lastCashInjection) gameState.lastCashInjection = 0;
-  if (!gameState.totalCashInjected) gameState.totalCashInjected = 0;
-
-  gameState.lastCashInjection = cashInjection;
-  gameState.totalCashInjected += cashInjection;
-
-  // Update total value
-  playerState.total_value = playerState.cash + calculatePortfolioValue();
-
-  // Show notification to user
-  window.showNotification(`Cash injection: $${cashInjection.toFixed(2)}`, 'success');
-
-  // Update the UI to show the new cash amount
-  const cashDisplay = document.querySelector('.stat-value:nth-child(2)');
-  if (cashDisplay) {
-    cashDisplay.textContent = `$${playerState.cash.toFixed(2)}`;
-  }
-
-  // Update the total value display
-  const totalValueDisplay = document.querySelector('.stat-value:nth-child(1)');
-  if (totalValueDisplay) {
-    totalValueDisplay.textContent = `$${playerState.total_value.toFixed(2)}`;
-  }
-
-  return cashInjection;
-}
-
 // Advance to the next round
 async function advanceToNextRound() {
   console.log('Advancing to next round...');
@@ -1224,21 +1034,6 @@ async function advanceToNextRound() {
     // Check if the game is over
     if (nextGameState && nextGameState.gameOver) {
       console.log('Game over detected');
-
-      // Calculate final portfolio value before completing the game
-      const portfolioValue = calculatePortfolioValue();
-      const totalValue = playerState.cash + portfolioValue;
-
-      // Update player state with final values
-      playerState.total_value = totalValue;
-      console.log('Final game values - Portfolio Value:', portfolioValue, 'Total Value:', totalValue);
-
-      // Save the updated player state to the database
-      const updated = await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
-      if (!updated) {
-        console.error('Failed to save final player state before completing game');
-      }
-
       // Complete the game and show results
       const completed = await window.gameSupabase.completeGame(gameSession.id);
       if (!completed) {
@@ -1247,7 +1042,7 @@ async function advanceToNextRound() {
       }
 
       // Show game results
-      await showGameResults();
+      showGameResults();
       return;
     }
 
@@ -1267,28 +1062,6 @@ async function advanceToNextRound() {
     currentRound = gameState.round_number || gameState.roundNumber || 0;
     console.log('Updated to round:', currentRound);
 
-    // Generate cash injection for this round
-    if (currentRound > 0) { // Only inject cash after the first round
-      // IMPORTANT: Apply cash injection directly here
-      const cashInjection = generateCashInjection();
-      console.log(`Cash injection for round ${currentRound}: $${cashInjection.toFixed(2)}`);
-
-      // Force update the UI to show the new cash amount
-      const cashDisplay = document.querySelector('.stat-item:nth-child(2) .stat-value');
-      if (cashDisplay) {
-        cashDisplay.textContent = `$${playerState.cash.toFixed(2)}`;
-      }
-
-      // Force update the total value display
-      const totalValueDisplay = document.querySelector('.stat-item:nth-child(1) .stat-value');
-      if (totalValueDisplay) {
-        totalValueDisplay.textContent = `$${playerState.total_value.toFixed(2)}`;
-      }
-
-      // Save the updated player state immediately
-      await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
-    }
-
     // Calculate new portfolio value
     if (playerState) {
       const portfolioValue = window.calculatePortfolioValue ?
@@ -1296,7 +1069,6 @@ async function advanceToNextRound() {
         calculatePortfolioValue();
 
       playerState.total_value = playerState.cash + portfolioValue;
-      console.log('Updated total value after round:', playerState.total_value);
 
       // Update portfolio value history
       if (!playerState.portfolio_value_history) {
@@ -1314,17 +1086,7 @@ async function advanceToNextRound() {
       }
 
       // Save updated player state
-      const updated = await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
-      if (updated) {
-        console.log('Successfully saved player state with total value:', playerState.total_value);
-      } else {
-        console.error('Failed to save player state');
-      }
-    }
-
-    // Update the portfolio value chart
-    if (typeof updatePortfolioValueChart === 'function') {
-      updatePortfolioValueChart();
+      await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
     }
 
     // Reload the game interface
@@ -1435,101 +1197,10 @@ function showAssetInfo(asset) {
 }
 
 // Show game results
-async function showGameResults() {
-  // Calculate final portfolio value with detailed logging
-  console.log('Player portfolio:', playerState.portfolio);
-  console.log('Asset prices:', gameState.asset_prices);
-
-  let portfolioValue = 0;
-  for (const asset in playerState.portfolio) {
-    const quantity = playerState.portfolio[asset];
-    const price = gameState.asset_prices[asset];
-    const assetValue = quantity * price;
-    console.log(`Asset: ${asset}, Quantity: ${quantity}, Price: ${price}, Value: ${assetValue}`);
-    portfolioValue += assetValue;
-  }
-
-  console.log('Calculated portfolio value:', portfolioValue);
-  console.log('Player cash:', playerState.cash);
-
+function showGameResults() {
+  // Calculate final portfolio value
+  const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
-  console.log('Final total value:', totalValue);
-
-  // Update player state with final values
-  playerState.total_value = totalValue;
-
-  // Force update the portfolio_value_history array
-  if (!playerState.portfolio_value_history) {
-    playerState.portfolio_value_history = [];
-  }
-  playerState.portfolio_value_history.push(totalValue);
-
-  // DIRECT DATABASE UPDATE - This is the most important part to fix the issue
-  try {
-    // First, directly update the leaderboard with the final value
-    console.log('DIRECT LEADERBOARD UPDATE with final value:', totalValue);
-    const { data: leaderboardData, error: leaderboardError } = await supabase
-      .from('leaderboard')
-      .upsert([{
-        game_id: window.gameSession.id,
-        user_id: currentUser.id,
-        user_name: currentUser.name || 'Anonymous',
-        game_mode: 'single',
-        section_id: currentUser.section_id || null,
-        final_value: totalValue
-      }], { onConflict: 'game_id,user_id' })
-      .select();
-
-    if (leaderboardError) {
-      console.error('Direct leaderboard update failed:', leaderboardError);
-    } else {
-      console.log('Direct leaderboard update succeeded:', leaderboardData);
-    }
-  } catch (directError) {
-    console.error('Error in direct leaderboard update:', directError);
-  }
-
-  // Save the updated player state to the database
-  console.log('Saving final player state with total value:', totalValue);
-  if (window.gameSession && window.gameSupabase) {
-    try {
-      // First, directly update the player state in the database with the final value
-      const { data, error } = await supabase
-        .from('player_states')
-        .update({
-          total_value: totalValue,
-          cash: playerState.cash,
-          portfolio: playerState.portfolio,
-          portfolio_value_history: playerState.portfolio_value_history
-        })
-        .eq('game_id', window.gameSession.id)
-        .eq('user_id', currentUser.id);
-
-      if (error) {
-        console.error('Direct database update failed:', error);
-      } else {
-        console.log('Direct database update succeeded');
-      }
-
-      // Then use the normal update method
-      const updated = await window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
-      if (!updated) {
-        console.error('Failed to save final player state to database');
-      } else {
-        console.log('Successfully saved final player state with total value:', totalValue);
-
-        // Explicitly save to leaderboard with updated values
-        const savedToLeaderboard = await window.gameSupabase.saveToLeaderboard(window.gameSession.id, playerState, gameState);
-        if (savedToLeaderboard) {
-          console.log('Successfully saved to leaderboard with final value:', totalValue);
-        } else {
-          console.error('Failed to save to leaderboard');
-        }
-      }
-    } catch (error) {
-      console.error('Error saving final game state:', error);
-    }
-  }
 
   // Create a summary of the player's performance
   const initialValue = 10000; // Starting cash
