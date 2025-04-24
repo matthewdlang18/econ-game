@@ -97,6 +97,64 @@ function redirectToLogin() {
   window.location.href = '../index.html';
 }
 
+// Show a prominent cash injection notification
+function showCashInjectionNotification(amount) {
+  // Create a special notification for cash injections
+  const cashNotification = document.createElement('div');
+  cashNotification.className = 'cash-injection-notification';
+  cashNotification.innerHTML = `
+    <div class="cash-injection-header">Cash Injection Received!</div>
+    <div class="cash-injection-amount">+$${amount.toFixed(2)}</div>
+    <div class="cash-injection-message">This cash has been added to your account.</div>
+  `;
+
+  // Add to the game screen
+  const gameContent = document.querySelector('.game-content');
+  if (gameContent) {
+    // Position it
+    cashNotification.style.position = 'absolute';
+    cashNotification.style.top = '50%';
+    cashNotification.style.left = '50%';
+    cashNotification.style.transform = 'translate(-50%, -50%)';
+    cashNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.95)';
+    cashNotification.style.color = 'white';
+    cashNotification.style.padding = '20px';
+    cashNotification.style.borderRadius = '10px';
+    cashNotification.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
+    cashNotification.style.textAlign = 'center';
+    cashNotification.style.zIndex = '1000';
+    cashNotification.style.minWidth = '300px';
+
+    // Style the content
+    const header = cashNotification.querySelector('.cash-injection-header');
+    if (header) {
+      header.style.fontSize = '1.5em';
+      header.style.fontWeight = 'bold';
+      header.style.marginBottom = '10px';
+    }
+
+    const amountEl = cashNotification.querySelector('.cash-injection-amount');
+    if (amountEl) {
+      amountEl.style.fontSize = '2.5em';
+      amountEl.style.fontWeight = 'bold';
+      amountEl.style.margin = '15px 0';
+    }
+
+    // Add to DOM
+    gameContent.appendChild(cashNotification);
+
+    // Add animation
+    cashNotification.style.animation = 'fadeInOut 4s forwards';
+
+    // Remove after animation
+    setTimeout(() => {
+      if (cashNotification.parentNode === gameContent) {
+        gameContent.removeChild(cashNotification);
+      }
+    }, 4000);
+  }
+}
+
 // Show notification to the user
 window.showNotification = function(message, type = 'info', duration = 5000) {
   // Create notification container if it doesn't exist
@@ -1192,8 +1250,36 @@ function generateCashInjection() {
   gameState.lastCashInjection = cashInjection;
   gameState.totalCashInjected += cashInjection;
 
+  // Update total value
+  playerState.total_value = playerState.cash + calculatePortfolioValue();
+
   // Show notification to user
-  window.showNotification(`Cash injection: $${cashInjection.toFixed(2)}`, 'success');
+  window.showNotification(`Cash injection: $${cashInjection.toFixed(2)}`, 'success', 8000);
+
+  // Show a more prominent cash injection notification
+  showCashInjectionNotification(cashInjection);
+
+  // Update the UI to show the new cash amount
+  const cashDisplay = document.querySelector('.stat-item:nth-child(2) .stat-value');
+  if (cashDisplay) {
+    cashDisplay.textContent = `$${playerState.cash.toFixed(2)}`;
+    // Add a highlight animation
+    cashDisplay.style.animation = 'highlight-pulse 2s';
+    setTimeout(() => {
+      cashDisplay.style.animation = '';
+    }, 2000);
+  }
+
+  // Update the total value display
+  const totalValueDisplay = document.querySelector('.stat-item:nth-child(1) .stat-value');
+  if (totalValueDisplay) {
+    totalValueDisplay.textContent = `$${playerState.total_value.toFixed(2)}`;
+    // Add a highlight animation
+    totalValueDisplay.style.animation = 'highlight-pulse 2s';
+    setTimeout(() => {
+      totalValueDisplay.style.animation = '';
+    }, 2000);
+  }
 
   return cashInjection;
 }
@@ -1254,8 +1340,24 @@ async function advanceToNextRound() {
 
     // Generate cash injection for this round
     if (currentRound > 0) { // Only inject cash after the first round
+      // IMPORTANT: Apply cash injection directly here
       const cashInjection = generateCashInjection();
       console.log(`Cash injection for round ${currentRound}: $${cashInjection.toFixed(2)}`);
+
+      // Force update the UI to show the new cash amount
+      const cashDisplay = document.querySelector('.stat-item:nth-child(2) .stat-value');
+      if (cashDisplay) {
+        cashDisplay.textContent = `$${playerState.cash.toFixed(2)}`;
+      }
+
+      // Force update the total value display
+      const totalValueDisplay = document.querySelector('.stat-item:nth-child(1) .stat-value');
+      if (totalValueDisplay) {
+        totalValueDisplay.textContent = `$${playerState.total_value.toFixed(2)}`;
+      }
+
+      // Save the updated player state immediately
+      await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
     }
 
     // Calculate new portfolio value
@@ -1433,6 +1535,31 @@ async function showGameResults() {
   }
   playerState.portfolio_value_history.push(totalValue);
 
+  // DIRECT DATABASE UPDATE - This is the most important part to fix the issue
+  try {
+    // First, directly update the leaderboard with the final value
+    console.log('DIRECT LEADERBOARD UPDATE with final value:', totalValue);
+    const { data: leaderboardData, error: leaderboardError } = await supabase
+      .from('leaderboard')
+      .upsert([{
+        game_id: window.gameSession.id,
+        user_id: currentUser.id,
+        user_name: currentUser.name || 'Anonymous',
+        game_mode: 'single',
+        section_id: currentUser.section_id || null,
+        final_value: totalValue
+      }], { onConflict: 'game_id,user_id' })
+      .select();
+
+    if (leaderboardError) {
+      console.error('Direct leaderboard update failed:', leaderboardError);
+    } else {
+      console.log('Direct leaderboard update succeeded:', leaderboardData);
+    }
+  } catch (directError) {
+    console.error('Error in direct leaderboard update:', directError);
+  }
+
   // Save the updated player state to the database
   console.log('Saving final player state with total value:', totalValue);
   if (window.gameSession && window.gameSupabase) {
@@ -1440,7 +1567,12 @@ async function showGameResults() {
       // First, directly update the player state in the database with the final value
       const { data, error } = await supabase
         .from('player_states')
-        .update({ total_value: totalValue })
+        .update({
+          total_value: totalValue,
+          cash: playerState.cash,
+          portfolio: playerState.portfolio,
+          portfolio_value_history: playerState.portfolio_value_history
+        })
         .eq('game_id', window.gameSession.id)
         .eq('user_id', currentUser.id);
 
@@ -1475,7 +1607,7 @@ async function showGameResults() {
   const totalReturn = totalValue - initialValue;
   const percentReturn = (totalReturn / initialValue) * 100;
 
-  // Create the results screen
+  // Create the results screen with detailed breakdown
   gameScreen.innerHTML = `
     <div class="game-header">
       <h2>Game Complete!</h2>
@@ -1491,14 +1623,52 @@ async function showGameResults() {
         </div>
 
         <div class="result-item">
-          <span class="result-label">Final Portfolio Value:</span>
-          <span class="result-value">$${totalValue.toFixed(2)}</span>
+          <span class="result-label">Cash on Hand:</span>
+          <span class="result-value">$${playerState.cash.toFixed(2)}</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label">Portfolio Value:</span>
+          <span class="result-value">$${portfolioValue.toFixed(2)}</span>
+        </div>
+
+        <div class="result-item">
+          <span class="result-label">Final Total Value:</span>
+          <span class="result-value" style="font-weight: bold; font-size: 1.2em;">$${totalValue.toFixed(2)}</span>
         </div>
 
         <div class="result-item">
           <span class="result-label">Total Return:</span>
           <span class="result-value ${totalReturn >= 0 ? 'positive' : 'negative'}">$${totalReturn.toFixed(2)} (${percentReturn.toFixed(2)}%)</span>
         </div>
+      </div>
+
+      <div class="results-portfolio">
+        <h4>Final Portfolio Breakdown</h4>
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Asset</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(playerState.portfolio).map(([asset, quantity]) => {
+              const price = gameState.asset_prices[asset];
+              const value = quantity * price;
+              return `
+                <tr>
+                  <td>${asset}</td>
+                  <td>${quantity.toFixed(2)}</td>
+                  <td>$${price.toFixed(2)}</td>
+                  <td>$${value.toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
       </div>
 
       <div class="results-actions">

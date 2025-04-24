@@ -681,6 +681,51 @@ async function completeGame(gameId) {
 
     console.log('Retrieved player state with total_value:', playerState.total_value);
 
+    // IMPORTANT: Get the latest game state to calculate the final value correctly
+    const { data: latestGameState, error: gameStateError } = await supabase
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (gameStateError) {
+      console.error('Error getting latest game state:', gameStateError);
+      // Continue anyway with the player state we have
+    } else {
+      console.log('Retrieved latest game state:', latestGameState);
+
+      // Recalculate the portfolio value using the latest asset prices
+      let recalculatedPortfolioValue = 0;
+      for (const asset in playerState.portfolio) {
+        const quantity = playerState.portfolio[asset];
+        const price = latestGameState.asset_prices[asset];
+        recalculatedPortfolioValue += quantity * price;
+      }
+
+      const recalculatedTotalValue = playerState.cash + recalculatedPortfolioValue;
+      console.log('Recalculated portfolio value:', recalculatedPortfolioValue);
+      console.log('Recalculated total value:', recalculatedTotalValue);
+
+      // If the recalculated value is different, update the player state
+      if (Math.abs(recalculatedTotalValue - playerState.total_value) > 1) {
+        console.log(`Updating player state total_value from ${playerState.total_value} to ${recalculatedTotalValue}`);
+        playerState.total_value = recalculatedTotalValue;
+
+        // Update the player state in the database
+        const { error: updateError } = await supabase
+          .from('player_states')
+          .update({ total_value: recalculatedTotalValue })
+          .eq('game_id', gameId)
+          .eq('user_id', currentUser.id);
+
+        if (updateError) {
+          console.error('Error updating player state with recalculated value:', updateError);
+        }
+      }
+    }
+
     // Get game session
     const { data: gameSession, error: sessionError } = await supabase
       .from('game_sessions')
@@ -763,6 +808,23 @@ async function completeGame(gameId) {
       try {
         // Double-check the final value one more time
         console.log('Final value before creating leaderboard entry:', finalValue);
+
+        // IMPORTANT: Make one more direct check of the player state
+        const { data: freshPlayerState, error: freshPlayerError } = await supabase
+          .from('player_states')
+          .select('*')
+          .eq('game_id', gameId)
+          .eq('user_id', currentUser.id)
+          .single();
+
+        if (!freshPlayerError && freshPlayerState) {
+          console.log('Fresh player state total_value:', freshPlayerState.total_value);
+          // Use the higher value between finalValue and freshPlayerState.total_value
+          if (freshPlayerState.total_value > finalValue) {
+            console.log(`Using fresh player state total_value (${freshPlayerState.total_value}) instead of finalValue (${finalValue})`);
+            finalValue = freshPlayerState.total_value;
+          }
+        }
 
         // Create the leaderboard entry
         const leaderboardEntry = {

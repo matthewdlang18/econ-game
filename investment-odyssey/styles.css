@@ -253,6 +253,37 @@ footer {
   }
 }
 
+@keyframes highlight-pulse {
+  0% {
+    background-color: transparent;
+  }
+  20% {
+    background-color: rgba(40, 167, 69, 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  85% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+}
+
 .ticker-item {
   padding: 0 20px;
   border-right: 1px solid rgba(255,255,255,0.2);
@@ -476,6 +507,89 @@ footer {
 
 .neutral {
   color: #6c757d;
+}
+
+/* Results screen styles */
+.results-screen {
+  padding: 30px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+}
+
+.results-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.result-item {
+  background-color: var(--secondary-color);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.result-label {
+  font-size: 0.9em;
+  color: var(--light-text);
+  display: block;
+  margin-bottom: 5px;
+}
+
+.result-value {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.results-portfolio {
+  margin-top: 30px;
+  margin-bottom: 30px;
+}
+
+.results-portfolio h4 {
+  margin-bottom: 15px;
+  color: var(--primary-color);
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.results-table th,
+.results-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.results-table th {
+  background-color: var(--primary-color);
+  color: white;
+  font-weight: bold;
+}
+
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.results-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 30px;
 }
 
 /* Asset table styles - legacy */
