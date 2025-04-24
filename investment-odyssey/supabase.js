@@ -1,10 +1,8 @@
 // Investment Odyssey Supabase Integration
 
-// Use the same Supabase credentials as the main application
-const SUPABASE_URL = 'https://bvvkevmqnnlecghyraao.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2dmtldm1xbm5sZWNnaHlyYWFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5MDAzNDEsImV4cCI6MjA2MDQ3NjM0MX0.UY_H91jIbbZWq6A-l7XbdyF6s3rSoBVcJfawhZ2CyVg';
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Use the Supabase client that was initialized in supabase-init.js
+// This ensures we're using the same client throughout the application
+const supabase = window.supabase;
 
 // Store the current user profile
 let currentUser = null;
@@ -826,6 +824,52 @@ async function completeGame(gameId) {
   } catch (error) {
     console.error('Error in completeGame:', error);
     return false;
+  }
+}
+
+// Check for existing game session
+async function checkExistingGameSession(sectionId) {
+  try {
+    // Get current user
+    if (!currentUser) {
+      console.error('No current user found');
+      return null;
+    }
+
+    // Check for active class game for the user's section
+    if (!sectionId) {
+      sectionId = localStorage.getItem('section_id');
+      if (!sectionId) {
+        console.log('No section ID found');
+        return null;
+      }
+    }
+
+    // Query for active class game for this section
+    const { data: gameSessions, error } = await supabase
+      .from('game_sessions')
+      .select('*')
+      .eq('section_id', sectionId)
+      .eq('active', true)
+      .eq('type', 'class')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error('Error checking for existing game session:', error);
+      return null;
+    }
+
+    if (!gameSessions || gameSessions.length === 0) {
+      console.log('No active class game found for section:', sectionId);
+      return null;
+    }
+
+    console.log('Found active class game:', gameSessions[0]);
+    return gameSessions[0];
+  } catch (error) {
+    console.error('Error in checkExistingGameSession:', error);
+    return null;
   }
 }
 

@@ -834,10 +834,24 @@ async function startSinglePlayerGame() {
 // Join a class game
 async function joinClassGame() {
     try {
+        // Check if user has selected a section
+        const sectionId = localStorage.getItem('section_id');
+        if (!sectionId) {
+            // Show section selector modal
+            const modal = new bootstrap.Modal(document.getElementById('section-selector-modal'));
+            if (modal) {
+                modal.show();
+                alert('Please select your TA section first to join a class game.');
+            } else {
+                alert('Please select your TA section first to join a class game. Go to your profile to select a section.');
+            }
+            return;
+        }
+
         // Check if there's an active game session for the user's section
-        const existingSession = await window.gameSupabase.checkExistingGameSession();
+        const existingSession = await window.gameSupabase.checkExistingGameSession(sectionId);
         if (!existingSession) {
-            alert('No active class game found. Please ask your instructor to start a game.');
+            alert('No active class game found for your section. Please ask your TA to start a game.');
             return;
         }
 

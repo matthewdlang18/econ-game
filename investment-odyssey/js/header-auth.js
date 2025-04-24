@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Wait for Auth to be initialized
     const initHeaderAuth = () => {
-        // Check if Auth is available (from auth.js)
+        // Check if Auth is available (from supabase-auth.js)
         if (typeof window.Auth !== 'undefined') {
             console.log('Auth is available, using Auth system');
             updateUserDisplay();

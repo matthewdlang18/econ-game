@@ -1,5 +1,5 @@
 // Service Fallback for Investment Odyssey Leaderboard
-// This file is deprecated. Only Supabase is used.
+// This file provides a fallback Service object when Supabase is not available
 // It uses localStorage to store and retrieve game scores
 
 // Check if Service is already defined
@@ -286,11 +286,16 @@ if (typeof window.Service === 'undefined') {
     console.log('Service object found and available for leaderboard.');
 }
 
-// Add a method to check if we're using Firebase or localStorage
-// Fallback logic removed. Only Supabase is used.
-    // Fallback logic removed.
-    // Fallback logic removed.
-};
+// Add a method to check if we're using Supabase or localStorage
+if (typeof window.Service !== 'undefined') {
+    window.Service.isUsingSupabase = function() {
+        return typeof window.supabase !== 'undefined' &&
+               typeof window.supabase.from === 'function';
+    };
+}
 
 // Log the status of the Service object
-// Fallback logic removed.
+console.log('Service fallback initialized. Using Supabase:',
+    typeof window.Service !== 'undefined' &&
+    typeof window.Service.isUsingSupabase === 'function' &&
+    window.Service.isUsingSupabase());
