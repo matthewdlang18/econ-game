@@ -753,97 +753,109 @@ function generateTradeHistoryRows() {
 
 // Initialize charts using Chart.js
 function initializeCharts(portfolioLabels, portfolioData, portfolioColors) {
+  // Skip chart initialization if elements don't exist (we removed them in the simplified UI)
+  const portfolioAllocationChart = document.getElementById('portfolio-allocation-chart');
+  const portfolioValueChart = document.getElementById('portfolio-value-chart');
+
   // Portfolio Allocation Pie Chart
-  const allocationCtx = document.getElementById('portfolio-allocation-chart').getContext('2d');
-  new Chart(allocationCtx, {
-    type: 'pie',
-    data: {
-      labels: portfolioLabels,
-      datasets: [{
-        data: portfolioData,
-        backgroundColor: portfolioColors,
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'right',
-          labels: {
-            boxWidth: 12
-          }
-        },
-        title: {
-          display: true,
-          text: 'Portfolio Allocation'
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              const value = context.raw;
-              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percentage = ((value / total) * 100).toFixed(1);
-              return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+  if (portfolioAllocationChart) {
+    const allocationCtx = portfolioAllocationChart.getContext('2d');
+    new Chart(allocationCtx, {
+      type: 'pie',
+      data: {
+        labels: portfolioLabels,
+        datasets: [{
+          data: portfolioData,
+          backgroundColor: portfolioColors,
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 12
+            }
+          },
+          title: {
+            display: true,
+            text: 'Portfolio Allocation'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.raw;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${context.label}: $${value.toFixed(2)} (${percentage}%)`;
+              }
             }
           }
         }
       }
-    }
-  });
-
-  // Portfolio Value History Line Chart
-  const valueHistoryCtx = document.getElementById('portfolio-value-chart').getContext('2d');
-
-  // Create labels for each round
-  const roundLabels = [];
-  for (let i = 0; i <= currentRound; i++) {
-    roundLabels.push(`Round ${i}`);
+    });
+  } else {
+    console.log('Portfolio allocation chart element not found - skipping chart initialization');
   }
 
-  new Chart(valueHistoryCtx, {
-    type: 'line',
-    data: {
-      labels: roundLabels,
-      datasets: [{
-        label: 'Portfolio Value',
-        data: playerState.portfolio_value_history,
-        borderColor: '#4285F4',
-        backgroundColor: 'rgba(66, 133, 244, 0.1)',
-        borderWidth: 2,
-        fill: true,
-        tension: 0.1
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        title: {
-          display: true,
-          text: 'Portfolio Value History'
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              return `Value: $${context.raw.toFixed(2)}`;
+  // Portfolio Value History Line Chart
+  if (portfolioValueChart) {
+    const valueHistoryCtx = portfolioValueChart.getContext('2d');
+
+    // Create labels for each round
+    const roundLabels = [];
+    for (let i = 0; i <= currentRound; i++) {
+      roundLabels.push(`Round ${i}`);
+    }
+
+    new Chart(valueHistoryCtx, {
+      type: 'line',
+      data: {
+        labels: roundLabels,
+        datasets: [{
+          label: 'Portfolio Value',
+          data: playerState.portfolio_value_history,
+          borderColor: '#4285F4',
+          backgroundColor: 'rgba(66, 133, 244, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Portfolio Value History'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `Value: $${context.raw.toFixed(2)}`;
+              }
             }
           }
-        }
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          ticks: {
-            callback: function(value) {
-              return '$' + value.toFixed(0);
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            ticks: {
+              callback: function(value) {
+                return '$' + value.toFixed(0);
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  } else {
+    console.log('Portfolio value chart element not found - skipping chart initialization');
+  }
 }
 
 // Show the trade panel for a specific asset

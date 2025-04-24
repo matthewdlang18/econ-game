@@ -224,8 +224,9 @@ function buyAllAssets() {
     try {
         console.log('Buying all assets evenly...');
 
-        // Check if there are assets to buy
-        const assetNames = Object.keys(gameState.assetPrices);
+        // Check if there are assets to buy - handle different property names
+        const assetPrices = gameState.assetPrices || gameState.asset_prices || {};
+        const assetNames = Object.keys(assetPrices);
 
         if (assetNames.length === 0) {
             showNotification('No assets available to buy.', 'warning');
@@ -250,7 +251,7 @@ function buyAllAssets() {
 
         // Buy assets
         for (const asset of assetNames) {
-            const price = gameState.assetPrices[asset];
+            const price = assetPrices[asset];
             if (!price || price <= 0) {
                 console.log(`Price not available for ${asset}, skipping.`);
                 continue;
@@ -345,7 +346,8 @@ function buySelectedAssets() {
 
         // Buy each selected asset
         for (const asset of selectedAssets) {
-            const price = gameState.assetPrices[asset];
+            // Handle different property names for asset prices
+            const price = gameState.assetPrices?.[asset] || gameState.asset_prices?.[asset];
             if (!price) {
                 console.log(`Price not available for ${asset}, skipping.`);
                 continue;
@@ -417,7 +419,8 @@ function sellAllAssets() {
     // Sell assets
     for (const asset of assetNames) {
         const quantity = playerState.portfolio[asset];
-        const price = gameState.assetPrices[asset];
+        // Handle different property names for asset prices
+        const price = gameState.assetPrices?.[asset] || gameState.asset_prices?.[asset];
 
         if (quantity <= 0 || !price || price <= 0) continue;
 
@@ -495,8 +498,8 @@ function updateTradeSummary() {
         // Get action
         const action = actionSelect ? actionSelect.value : 'buy';
 
-        // Get asset price
-        const price = gameState.assetPrices[assetName] || 0;
+        // Get asset price - handle different property names
+        const price = gameState.assetPrices?.[assetName] || gameState.asset_prices?.[assetName] || 0;
 
         // Update current price display
         if (currentPrice) {
@@ -627,7 +630,8 @@ function updateAssetPrice() {
         return;
     }
 
-    const price = gameState.assetPrices[asset] || 0;
+    // Handle different property names for asset prices
+    const price = gameState.assetPrices?.[asset] || gameState.asset_prices?.[asset] || 0;
     console.log(`Updating price for ${asset}: $${price.toFixed(2)}`);
 
     currentPriceDisplay.textContent = price.toFixed(2);
