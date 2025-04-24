@@ -465,6 +465,21 @@ function endGame() {
         const portfolioValue = calculatePortfolioValue();
         const totalValue = playerState.cash + portfolioValue;
 
+        // Update player state with the final total value
+        playerState.total_value = totalValue;
+
+        // Make sure portfolio value history is updated with the final value
+        if (!playerState.portfolioValueHistory) {
+            playerState.portfolioValueHistory = [];
+        }
+        playerState.portfolioValueHistory[window.currentRound] = totalValue;
+
+        // Also update the snake_case version for database consistency
+        if (!playerState.portfolio_value_history) {
+            playerState.portfolio_value_history = [];
+        }
+        playerState.portfolio_value_history[window.currentRound] = totalValue;
+
         // Calculate performance metrics
         const initialValue = 10000; // Starting cash
         const totalReturn = totalValue - initialValue;
@@ -475,12 +490,15 @@ function endGame() {
         const realPercentReturn = (realReturn / initialValue) * 100;
 
         // Debug: log totalValue and realReturn
-        console.log('Debug endGame values:', { totalValue, initialValue, realReturn, realPercentReturn });
+        console.log('Debug endGame values:', { totalValue, initialValue, realReturn, realPercentReturn, portfolioValue, cash: playerState.cash });
 
         // Save to leaderboard if connected to Supabase
         if (window.gameSession && window.gameSupabase) {
             console.log('Saving to leaderboard...');
             try {
+                // Update player state with final values before saving to leaderboard
+                window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+
                 // Check if saveToLeaderboard function exists
                 if (typeof window.gameSupabase.saveToLeaderboard === 'function') {
                     window.gameSupabase.saveToLeaderboard(window.gameSession.id, playerState, gameState);

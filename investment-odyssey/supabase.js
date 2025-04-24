@@ -309,9 +309,40 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
   try {
     console.log('Saving game results to leaderboard for game:', gameId);
 
+    // Make sure we have the correct asset prices
+    let assetPrices = gameState.assetPrices || gameState.asset_prices;
+
+    // If we don't have asset prices in the provided gameState, fetch the latest from the database
+    if (!assetPrices || Object.keys(assetPrices).length === 0) {
+      console.log('Asset prices not found in provided gameState, fetching from database...');
+      const { data: latestGameState, error: gameStateError } = await supabase
+        .from('game_states')
+        .select('*')
+        .eq('game_id', gameId)
+        .order('round_number', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (gameStateError) {
+        console.error('Error getting latest game state:', gameStateError);
+      } else if (latestGameState) {
+        assetPrices = latestGameState.asset_prices;
+        console.log('Using asset prices from latest game state in database');
+      }
+    }
+
     // Calculate final portfolio value
-    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.assetPrices || gameState.asset_prices);
+    const portfolioValue = calculatePortfolioValue(playerState.portfolio, assetPrices);
     const totalValue = playerState.cash + portfolioValue;
+
+    // Log the values for debugging
+    console.log('Final values for leaderboard:', {
+      portfolioValue,
+      cash: playerState.cash,
+      totalValue,
+      portfolio: playerState.portfolio,
+      assetPrices
+    });
 
     // Calculate performance metrics
     const initialValue = 10000; // Starting cash
@@ -323,6 +354,18 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
     const realReturn = (totalValue / cpi * 100) - initialValue;
     const realPercentReturn = (realReturn / initialValue) * 100;
 
+    // Update player state with final total value
+    const { error: updatePlayerError } = await supabase
+      .from('player_states')
+      .update({ total_value: totalValue })
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id);
+
+    if (updatePlayerError) {
+      console.error('Error updating player state with final value:', updatePlayerError);
+      // Continue anyway to try to save to leaderboard
+    }
+
     // Create leaderboard entry - match the exact schema from db-setup.sql
     const leaderboardEntry = {
       game_id: gameId,
@@ -330,9 +373,11 @@ async function saveToLeaderboard(gameId, playerState, gameState) {
       user_name: currentUser.name || 'Anonymous',
       game_mode: 'single',
       section_id: currentUser.section_id,
-      final_value: totalValue
+      final_value: totalValue // Use the calculated total value
       // No percent_return or real_return fields in the schema
     };
+
+    console.log('Final leaderboard entry with total value:', totalValue);
 
     console.log('Leaderboard entry:', leaderboardEntry);
 
@@ -648,6 +693,43 @@ async function completeGame(gameId) {
       return false;
     }
 
+    // Get the latest game state to calculate the final portfolio value
+    const { data: gameState, error: gameStateError } = await supabase
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .order('round_number', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (gameStateError) {
+      console.error('Error getting game state:', gameStateError);
+      return false;
+    }
+
+    // Calculate the final portfolio value
+    const portfolioValue = calculatePortfolioValue(playerState.portfolio, gameState.asset_prices);
+    const totalValue = playerState.cash + portfolioValue;
+
+    // Update the player state with the final total value
+    console.log('Calculated final portfolio value:', {
+      portfolioValue,
+      cash: playerState.cash,
+      totalValue
+    });
+
+    // Update the player state with the final total value
+    const { error: updatePlayerError } = await supabase
+      .from('player_states')
+      .update({ total_value: totalValue })
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id);
+
+    if (updatePlayerError) {
+      console.error('Error updating player state with final value:', updatePlayerError);
+      // Continue anyway to try to save to leaderboard
+    }
+
     // Get game session
     const { data: gameSession, error: sessionError } = await supabase
       .from('game_sessions')
@@ -669,12 +751,12 @@ async function completeGame(gameId) {
       .single();
 
     if (existingEntry) {
-      console.log('Entry already exists in leaderboard, updating instead');
+      console.log('Entry already exists in leaderboard, updating with final value:', totalValue);
 
       // Update existing entry
       const { error: updateError } = await supabase
         .from('leaderboard')
-        .update({ final_value: playerState.total_value })
+        .update({ final_value: totalValue })
         .eq('user_id', currentUser.id)
         .eq('game_id', gameId);
 
@@ -691,7 +773,7 @@ async function completeGame(gameId) {
           game_mode: 'single',
           game_id: gameId,
           section_id: gameSession.section_id,
-          final_value: playerState.total_value
+          final_value: totalValue
           // Ensure we only include fields that exist in the schema
         };
 
@@ -711,7 +793,7 @@ async function completeGame(gameId) {
 
             const { error: updateError } = await supabase
               .from('leaderboard')
-              .update({ final_value: playerState.total_value })
+              .update({ final_value: totalValue }) // Use the calculated totalValue
               .eq('user_id', currentUser.id)
               .eq('game_id', gameId);
 

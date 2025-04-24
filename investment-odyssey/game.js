@@ -1202,10 +1202,36 @@ function showGameResults() {
   const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
 
+  // Update player state with the final total value
+  playerState.total_value = totalValue;
+
+  // Make sure portfolio value history is updated with the final value
+  if (!playerState.portfolio_value_history) {
+    playerState.portfolio_value_history = [];
+  }
+
+  // Add the final value to the history if it's not already there
+  if (!playerState.portfolio_value_history.includes(totalValue)) {
+    playerState.portfolio_value_history.push(totalValue);
+  }
+
+  // Log the final values for debugging
+  console.log('Final game values:', {
+    portfolioValue,
+    cash: playerState.cash,
+    totalValue,
+    portfolio: playerState.portfolio
+  });
+
   // Create a summary of the player's performance
   const initialValue = 10000; // Starting cash
   const totalReturn = totalValue - initialValue;
   const percentReturn = (totalReturn / initialValue) * 100;
+
+  // Save the final state to the database
+  if (window.gameSession && window.gameSupabase) {
+    window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+  }
 
   // Create the results screen
   gameScreen.innerHTML = `
