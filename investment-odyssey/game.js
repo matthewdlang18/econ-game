@@ -3,8 +3,6 @@
 // Game state variables
 let playerState = null;
 let gameState = null;
-let gameSession = null;
-let currentRound = 0;
 
 // Asset information for educational purposes
 const assetInfo = {
@@ -54,18 +52,11 @@ const assetInfo = {
 
 // DOM Elements will be queried upon DOMContentLoaded
 // (buttons may not exist until welcome screen is rendered)
-let welcomeScreen;
-let gameScreen;
+const welcomeScreen = document.getElementById('welcome-screen');
+const gameScreen = document.getElementById('game-screen');
 
 // Initialize the game
 document.addEventListener('DOMContentLoaded', () => {
-  // Initialize DOM elements
-  welcomeScreen = document.getElementById('welcome-screen');
-  gameScreen = document.getElementById('game-screen');
-
-  console.log('DOM loaded - welcomeScreen:', welcomeScreen);
-  console.log('DOM loaded - gameScreen:', gameScreen);
-
   // Query buttons and set up event listeners
   const singlePlayerBtn = document.getElementById('single-player-btn');
   const classModeBtn = document.getElementById('class-mode-btn');
@@ -104,64 +95,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // Redirect to login page if no user data is available
 function redirectToLogin() {
   window.location.href = '../index.html';
-}
-
-// Show a prominent cash injection notification
-function showCashInjectionNotification(amount) {
-  // Create a special notification for cash injections
-  const cashNotification = document.createElement('div');
-  cashNotification.className = 'cash-injection-notification';
-  cashNotification.innerHTML = `
-    <div class="cash-injection-header">Cash Injection Received!</div>
-    <div class="cash-injection-amount">+$${amount.toFixed(2)}</div>
-    <div class="cash-injection-message">This cash has been added to your account.</div>
-  `;
-
-  // Add to the game screen
-  const gameContent = document.querySelector('.game-content');
-  if (gameContent) {
-    // Position it
-    cashNotification.style.position = 'absolute';
-    cashNotification.style.top = '50%';
-    cashNotification.style.left = '50%';
-    cashNotification.style.transform = 'translate(-50%, -50%)';
-    cashNotification.style.backgroundColor = 'rgba(40, 167, 69, 0.95)';
-    cashNotification.style.color = 'white';
-    cashNotification.style.padding = '20px';
-    cashNotification.style.borderRadius = '10px';
-    cashNotification.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.3)';
-    cashNotification.style.textAlign = 'center';
-    cashNotification.style.zIndex = '1000';
-    cashNotification.style.minWidth = '300px';
-
-    // Style the content
-    const header = cashNotification.querySelector('.cash-injection-header');
-    if (header) {
-      header.style.fontSize = '1.5em';
-      header.style.fontWeight = 'bold';
-      header.style.marginBottom = '10px';
-    }
-
-    const amountEl = cashNotification.querySelector('.cash-injection-amount');
-    if (amountEl) {
-      amountEl.style.fontSize = '2.5em';
-      amountEl.style.fontWeight = 'bold';
-      amountEl.style.margin = '15px 0';
-    }
-
-    // Add to DOM
-    gameContent.appendChild(cashNotification);
-
-    // Add animation
-    cashNotification.style.animation = 'fadeInOut 4s forwards';
-
-    // Remove after animation
-    setTimeout(() => {
-      if (cashNotification.parentNode === gameContent) {
-        gameContent.removeChild(cashNotification);
-      }
-    }, 4000);
-  }
 }
 
 // Show notification to the user
@@ -234,210 +167,82 @@ window.showNotification = function(message, type = 'info', duration = 5000) {
 
 // Start a single player game
 async function startSinglePlayerGame() {
-  console.log('Starting single player game...');
-
-  // Check if DOM elements are available
-  if (!welcomeScreen || !gameScreen) {
-    console.error('DOM elements not initialized');
-    welcomeScreen = document.getElementById('welcome-screen');
-    gameScreen = document.getElementById('game-screen');
-
-    if (!welcomeScreen || !gameScreen) {
-      alert('Game interface not found. Please refresh the page and try again.');
-      return;
-    }
-  }
-
-  // Check if Supabase is initialized
-  if (!window.gameSupabase) {
-    console.error('Supabase not initialized');
-    alert('Game database not initialized. Please refresh the page and try again.');
+  // Create a new game session
+  gameSession = await window.gameSupabase.createSinglePlayerGame();
+  if (!gameSession) {
+    alert('Failed to create a new game. Please try again.');
     return;
   }
 
-  try {
-    // Create a new game session
-    console.log('Creating new game session...');
-    gameSession = await window.gameSupabase.createSinglePlayerGame();
-    if (!gameSession) {
-      console.error('Failed to create game session');
-      alert('Failed to create a new game. Please try again.');
-      return;
-    }
-    console.log('Game session created:', gameSession);
-
-    // Join the game session
-    console.log('Joining game session...');
-    const joined = await window.gameSupabase.joinGameSession(gameSession.id);
-    if (!joined) {
-      console.error('Failed to join game session');
-      alert('Failed to join the game. Please try again.');
-      return;
-    }
-    console.log('Successfully joined game session');
-
-    // Get initial player state
-    console.log('Getting player state...');
-    playerState = await window.gameSupabase.getPlayerState(gameSession.id);
-    if (!playerState) {
-      console.error('Failed to get player state');
-      alert('Failed to initialize player state. Please try again.');
-      return;
-    }
-    console.log('Player state:', playerState);
-
-    // Get initial game state
-    console.log('Getting game state...');
-    gameState = await window.gameSupabase.getGameState(gameSession.id, 0);
-    if (!gameState) {
-      console.error('Failed to get game state');
-      alert('Failed to initialize game state. Please try again.');
-      return;
-    }
-    console.log('Game state:', gameState);
-
-    // Initialize current round
-    currentRound = 0;
-    console.log('Current round set to:', currentRound);
-
-    // Show the game screen
-    console.log('Showing game screen...');
-    welcomeScreen.style.display = 'none';
-    gameScreen.style.display = 'block';
-
-    // Load the game interface
-    console.log('Loading game interface...');
-    loadGameInterface();
-    console.log('Game started successfully');
-  } catch (error) {
-    console.error('Error starting game:', error);
-    alert('An error occurred while starting the game. Please try again.');
+  // Join the game session
+  const joined = await window.gameSupabase.joinGameSession(gameSession.id);
+  if (!joined) {
+    alert('Failed to join the game. Please try again.');
+    return;
   }
+
+  // Get initial player state
+  playerState = await window.gameSupabase.getPlayerState(gameSession.id);
+  if (!playerState) {
+    alert('Failed to initialize player state. Please try again.');
+    return;
+  }
+
+  // Get initial game state
+  gameState = await window.gameSupabase.getGameState(gameSession.id, 0);
+  if (!gameState) {
+    alert('Failed to initialize game state. Please try again.');
+    return;
+  }
+
+  // Show the game screen
+  welcomeScreen.style.display = 'none';
+  gameScreen.style.display = 'block';
+
+  // Load the game interface
+  loadGameInterface();
 }
 
 // Join a class game
 async function joinClassGame() {
-  console.log('Joining class game...');
-
-  // Check if DOM elements are available
-  if (!welcomeScreen || !gameScreen) {
-    console.error('DOM elements not initialized');
-    welcomeScreen = document.getElementById('welcome-screen');
-    gameScreen = document.getElementById('game-screen');
-
-    if (!welcomeScreen || !gameScreen) {
-      alert('Game interface not found. Please refresh the page and try again.');
-      return;
-    }
-  }
-
-  // Check if Supabase is initialized
-  if (!window.gameSupabase) {
-    console.error('Supabase not initialized');
-    alert('Game database not initialized. Please refresh the page and try again.');
+  // Check if there's an active game session for the user's section
+  const existingSession = await window.gameSupabase.checkExistingGameSession();
+  if (!existingSession) {
+    alert('No active class game found. Please ask your instructor to start a game.');
     return;
   }
 
-  try {
-    // Check if there's an active game session for the user's section
-    console.log('Checking for existing game session...');
-    const existingSession = await window.gameSupabase.checkExistingGameSession();
-    if (!existingSession) {
-      console.log('No active class game found');
-      alert('No active class game found. Please ask your instructor to start a game.');
-      return;
-    }
-    console.log('Found existing game session:', existingSession);
-
-    // Join the existing game session
-    gameSession = existingSession;
-    console.log('Joining game session:', gameSession.id);
-    const joined = await window.gameSupabase.joinGameSession(gameSession.id);
-    if (!joined) {
-      console.error('Failed to join class game');
-      alert('Failed to join the class game. Please try again.');
-      return;
-    }
-    console.log('Successfully joined class game');
-
-    // Get player state
-    console.log('Getting player state...');
-    playerState = await window.gameSupabase.getPlayerState(gameSession.id);
-    if (!playerState) {
-      console.error('Failed to get player state');
-      alert('Failed to initialize player state. Please try again.');
-      return;
-    }
-    console.log('Player state:', playerState);
-
-    // Get current game state
-    currentRound = gameSession.current_round;
-    console.log('Current round:', currentRound);
-    console.log('Getting game state for round:', currentRound);
-    gameState = await window.gameSupabase.getGameState(gameSession.id, currentRound);
-    if (!gameState) {
-      console.error('Failed to get game state');
-      alert('Failed to initialize game state. Please try again.');
-      return;
-    }
-    console.log('Game state:', gameState);
-
-    // Show the game screen
-    console.log('Showing game screen...');
-    welcomeScreen.style.display = 'none';
-    gameScreen.style.display = 'block';
-
-    // Load the game interface
-    console.log('Loading game interface...');
-    loadGameInterface();
-    console.log('Class game joined successfully');
-
-    // Set up real-time subscription for game updates (not yet implemented)
-  } catch (error) {
-    console.error('Error joining class game:', error);
-    alert('An error occurred while joining the class game. Please try again.');
+  // Join the existing game session
+  gameSession = existingSession;
+  const joined = await window.gameSupabase.joinGameSession(gameSession.id);
+  if (!joined) {
+    alert('Failed to join the class game. Please try again.');
+    return;
   }
+
+  // Get player state
+  playerState = await window.gameSupabase.getPlayerState(gameSession.id);
+  if (!playerState) {
+    alert('Failed to initialize player state. Please try again.');
+    return;
+  }
+
+  // Get current game state
+  currentRound = gameSession.current_round;
+  gameState = await window.gameSupabase.getGameState(gameSession.id, currentRound);
+
+  // Show the game screen
+  welcomeScreen.style.display = 'none';
+  gameScreen.style.display = 'block';
+
+  // Load the game interface
+  loadGameInterface();
+
+  // Set up real-time subscription for game updates (not yet implemented)
 }
 
 // Load the game interface
 function loadGameInterface() {
-  console.log('Loading game interface...');
-
-  // Check if game screen is available
-  if (!gameScreen) {
-    console.error('Game screen not initialized');
-    gameScreen = document.getElementById('game-screen');
-
-    if (!gameScreen) {
-      console.error('Game screen not found');
-      alert('Game interface not found. Please refresh the page and try again.');
-      return;
-    }
-  }
-
-  // Check if player state and game state are available
-  if (!playerState || !gameState) {
-    console.error('Player state or game state not initialized');
-    alert('Game data not initialized. Please refresh the page and try again.');
-    return;
-  }
-
-  // Make sure currentRound is initialized
-  if (typeof currentRound === 'undefined' || currentRound === null) {
-    console.log('Initializing currentRound to 0');
-    currentRound = 0;
-  }
-
-  // Make sure gameSession is initialized
-  if (!gameSession) {
-    console.error('Game session not initialized');
-    alert('Game session not initialized. Please refresh the page and try again.');
-    return;
-  }
-
-  console.log('Current round:', currentRound);
-  console.log('Game session:', gameSession);
-
   // Calculate portfolio value
   const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
@@ -455,19 +260,13 @@ function loadGameInterface() {
     playerState.portfolio_value_history[currentRound] = totalValue;
   }
 
-  console.log('Portfolio value history:', playerState.portfolio_value_history);
-
-  // Create the game interface first, then update the values
-  // This ensures the elements exist before we try to update them
-  createGameInterface(portfolioValue, totalValue);
-
-  // Now update all portfolio value displays in the UI
+  // Update all portfolio value displays in the UI
   const portfolioValueDisplays = document.querySelectorAll('.stat-value');
   portfolioValueDisplays.forEach(display => {
-    const label = display.previousElementSibling ? display.previousElementSibling.textContent : '';
-    if (label && label.includes('Total Value')) {
+    const label = display.previousElementSibling.textContent;
+    if (label.includes('Total Value')) {
       display.textContent = `$${totalValue.toFixed(2)}`;
-    } else if (label && label.includes('Invested')) {
+    } else if (label.includes('Invested')) {
       display.textContent = `$${portfolioValue.toFixed(2)}`;
     }
   });
@@ -560,26 +359,24 @@ function loadGameInterface() {
   portfolioData.push(playerState.cash);
   portfolioLabels.push('Cash');
 
-  // Create the game interface function
-  function createGameInterface(portfolioValue, totalValue) {
-    // Create the game interface
-    gameScreen.innerHTML = `
-      <!-- Asset Ticker -->
-      <div class="asset-ticker">
-        ${tickerItems}
-      </div>
+  // Create the game interface
+  gameScreen.innerHTML = `
+    <!-- Asset Ticker -->
+    <div class="asset-ticker">
+      ${tickerItems}
+    </div>
 
-      <!-- Game Progress -->
-      <div class="game-progress">
-        <div class="progress-info">
-          Game Progress: Round ${currentRound} of ${gameSession.max_rounds}
-        </div>
-        <div class="progress-actions">
-          <button id="start-game-btn" class="primary-btn" ${currentRound > 0 ? 'style="display:none;"' : ''}>Start Game</button>
-          <button id="next-round-btn" class="primary-btn" ${currentRound === 0 ? 'style="display:none;"' : ''}>Next Round</button>
-          <button id="start-over-btn" class="secondary-btn">Start Over <i class="fas fa-redo"></i></button>
-        </div>
+    <!-- Game Progress -->
+    <div class="game-progress">
+      <div class="progress-info">
+        Game Progress: Round ${currentRound} of ${gameSession.max_rounds}
       </div>
+      <div class="progress-actions">
+        <button id="start-game-btn" class="primary-btn" ${currentRound > 0 ? 'style="display:none;"' : ''}>Start Game</button>
+        <button id="next-round-btn" class="primary-btn" ${currentRound === 0 ? 'style="display:none;"' : ''}>Next Round</button>
+        <button id="start-over-btn" class="secondary-btn">Start Over <i class="fas fa-redo"></i></button>
+      </div>
+    </div>
 
     <div class="game-content">
       <div class="dashboard-grid">
@@ -1399,31 +1196,18 @@ function generateCashInjection() {
   playerState.total_value = playerState.cash + calculatePortfolioValue();
 
   // Show notification to user
-  window.showNotification(`Cash injection: $${cashInjection.toFixed(2)}`, 'success', 8000);
-
-  // Show a more prominent cash injection notification
-  showCashInjectionNotification(cashInjection);
+  window.showNotification(`Cash injection: $${cashInjection.toFixed(2)}`, 'success');
 
   // Update the UI to show the new cash amount
-  const cashDisplay = document.querySelector('.stat-item:nth-child(2) .stat-value');
+  const cashDisplay = document.querySelector('.stat-value:nth-child(2)');
   if (cashDisplay) {
     cashDisplay.textContent = `$${playerState.cash.toFixed(2)}`;
-    // Add a highlight animation
-    cashDisplay.style.animation = 'highlight-pulse 2s';
-    setTimeout(() => {
-      cashDisplay.style.animation = '';
-    }, 2000);
   }
 
   // Update the total value display
-  const totalValueDisplay = document.querySelector('.stat-item:nth-child(1) .stat-value');
+  const totalValueDisplay = document.querySelector('.stat-value:nth-child(1)');
   if (totalValueDisplay) {
     totalValueDisplay.textContent = `$${playerState.total_value.toFixed(2)}`;
-    // Add a highlight animation
-    totalValueDisplay.style.animation = 'highlight-pulse 2s';
-    setTimeout(() => {
-      totalValueDisplay.style.animation = '';
-    }, 2000);
   }
 
   return cashInjection;
@@ -1752,7 +1536,7 @@ async function showGameResults() {
   const totalReturn = totalValue - initialValue;
   const percentReturn = (totalReturn / initialValue) * 100;
 
-  // Create the results screen with detailed breakdown
+  // Create the results screen
   gameScreen.innerHTML = `
     <div class="game-header">
       <h2>Game Complete!</h2>
@@ -1768,52 +1552,14 @@ async function showGameResults() {
         </div>
 
         <div class="result-item">
-          <span class="result-label">Cash on Hand:</span>
-          <span class="result-value">$${playerState.cash.toFixed(2)}</span>
-        </div>
-
-        <div class="result-item">
-          <span class="result-label">Portfolio Value:</span>
-          <span class="result-value">$${portfolioValue.toFixed(2)}</span>
-        </div>
-
-        <div class="result-item">
-          <span class="result-label">Final Total Value:</span>
-          <span class="result-value" style="font-weight: bold; font-size: 1.2em;">$${totalValue.toFixed(2)}</span>
+          <span class="result-label">Final Portfolio Value:</span>
+          <span class="result-value">$${totalValue.toFixed(2)}</span>
         </div>
 
         <div class="result-item">
           <span class="result-label">Total Return:</span>
           <span class="result-value ${totalReturn >= 0 ? 'positive' : 'negative'}">$${totalReturn.toFixed(2)} (${percentReturn.toFixed(2)}%)</span>
         </div>
-      </div>
-
-      <div class="results-portfolio">
-        <h4>Final Portfolio Breakdown</h4>
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Asset</th>
-              <th>Quantity</th>
-              <th>Price</th>
-              <th>Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${Object.entries(playerState.portfolio).map(([asset, quantity]) => {
-              const price = gameState.asset_prices[asset];
-              const value = quantity * price;
-              return `
-                <tr>
-                  <td>${asset}</td>
-                  <td>${quantity.toFixed(2)}</td>
-                  <td>$${price.toFixed(2)}</td>
-                  <td>$${value.toFixed(2)}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
       </div>
 
       <div class="results-actions">
