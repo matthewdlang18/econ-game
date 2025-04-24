@@ -161,6 +161,9 @@ function loadGameInterface() {
 
     // Create the full game interface HTML
     gameScreen.innerHTML = `
+        <div id="cash-injection-alert" class="alert alert-success" style="display:none; margin-bottom:10px;">
+            Cash injection: $<span id="cash-injection-amount"></span>
+        </div>
         <!-- Asset Price Ticker -->
         <div class="row mb-3">
             <div class="col-12">
