@@ -660,6 +660,49 @@ async function completeGame(gameId) {
       return false;
     }
 
+    // Get the latest game state for the final round
+    const { data: finalGameState, error: gameStateError } = await supabase
+      .from('game_states')
+      .select('*')
+      .eq('game_id', gameId)
+      .eq('user_id', currentUser.id)
+      .eq('round_number', gameSession.current_round)
+      .single();
+
+    if (gameStateError) {
+      console.error('Error getting final game state:', gameStateError);
+      // Continue anyway, as we might have the player state
+    }
+
+    // Double-check the total_value by recalculating it
+    let finalValue = playerState.total_value;
+
+    // If we have the game state, recalculate to be sure
+    if (finalGameState) {
+      const portfolioValue = calculatePortfolioValue(playerState.portfolio, finalGameState.asset_prices);
+      const calculatedTotalValue = playerState.cash + portfolioValue;
+
+      // If there's a significant difference, log it but use the higher value
+      if (Math.abs(calculatedTotalValue - finalValue) > 1) {
+        console.log(`Warning: Calculated total value (${calculatedTotalValue}) differs from stored value (${finalValue})`);
+        // Use the higher value to benefit the player
+        finalValue = Math.max(calculatedTotalValue, finalValue);
+
+        // Update the player state with this value
+        const { error: updateError } = await supabase
+          .from('player_states')
+          .update({ total_value: finalValue })
+          .eq('game_id', gameId)
+          .eq('user_id', currentUser.id);
+
+        if (updateError) {
+          console.error('Error updating player state with recalculated value:', updateError);
+        }
+      }
+    }
+
+    console.log('Final value to be saved to leaderboard:', finalValue);
+
     // Check if entry already exists in leaderboard
     const { data: existingEntry, error: checkError } = await supabase
       .from('leaderboard')
@@ -674,7 +717,7 @@ async function completeGame(gameId) {
       // Update existing entry
       const { error: updateError } = await supabase
         .from('leaderboard')
-        .update({ final_value: playerState.total_value })
+        .update({ final_value: finalValue })
         .eq('user_id', currentUser.id)
         .eq('game_id', gameId);
 
@@ -691,7 +734,7 @@ async function completeGame(gameId) {
           game_mode: 'single',
           game_id: gameId,
           section_id: gameSession.section_id,
-          final_value: playerState.total_value
+          final_value: finalValue
           // Ensure we only include fields that exist in the schema
         };
 

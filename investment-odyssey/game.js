@@ -1034,6 +1034,21 @@ async function advanceToNextRound() {
     // Check if the game is over
     if (nextGameState && nextGameState.gameOver) {
       console.log('Game over detected');
+
+      // Calculate final portfolio value before completing the game
+      const portfolioValue = calculatePortfolioValue();
+      const totalValue = playerState.cash + portfolioValue;
+
+      // Update player state with final values
+      playerState.total_value = totalValue;
+      console.log('Final game values - Portfolio Value:', portfolioValue, 'Total Value:', totalValue);
+
+      // Save the updated player state to the database
+      const updated = await window.gameSupabase.updatePlayerState(gameSession.id, playerState);
+      if (!updated) {
+        console.error('Failed to save final player state before completing game');
+      }
+
       // Complete the game and show results
       const completed = await window.gameSupabase.completeGame(gameSession.id);
       if (!completed) {
@@ -1042,7 +1057,7 @@ async function advanceToNextRound() {
       }
 
       // Show game results
-      showGameResults();
+      await showGameResults();
       return;
     }
 
@@ -1197,10 +1212,37 @@ function showAssetInfo(asset) {
 }
 
 // Show game results
-function showGameResults() {
+async function showGameResults() {
   // Calculate final portfolio value
   const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
+
+  // Update player state with final values
+  playerState.total_value = totalValue;
+
+  // Save the updated player state to the database
+  console.log('Saving final player state with total value:', totalValue);
+  if (window.gameSession && window.gameSupabase) {
+    try {
+      // Update player state in database
+      const updated = await window.gameSupabase.updatePlayerState(window.gameSession.id, playerState);
+      if (!updated) {
+        console.error('Failed to save final player state to database');
+      } else {
+        console.log('Successfully saved final player state with total value:', totalValue);
+
+        // Explicitly save to leaderboard with updated values
+        const savedToLeaderboard = await window.gameSupabase.saveToLeaderboard(window.gameSession.id, playerState, gameState);
+        if (savedToLeaderboard) {
+          console.log('Successfully saved to leaderboard with final value:', totalValue);
+        } else {
+          console.error('Failed to save to leaderboard');
+        }
+      }
+    } catch (error) {
+      console.error('Error saving final game state:', error);
+    }
+  }
 
   // Create a summary of the player's performance
   const initialValue = 10000; // Starting cash
