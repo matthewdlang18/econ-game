@@ -496,77 +496,82 @@ function endGame() {
             }
         }
 
-    // Show results screen
-    const gameScreen = document.getElementById('game-screen');
-    if (gameScreen) {
-        gameScreen.innerHTML = `
-            <div class="results-screen text-center">
-                <h2 class="display-4 mb-4">Game Complete!</h2>
+        // Show results screen
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            gameScreen.innerHTML = `
+                <div class="results-screen text-center">
+                    <h2 class="display-4 mb-4">Game Complete!</h2>
 
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h3 class="mb-0">Your Investment Results</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="results-summary">
-                            <div class="result-item">
-                                <span class="result-label">Initial Investment:</span>
-                                <span class="result-value">$${initialValue.toFixed(2)}</span>
-                            </div>
-                            <div class="result-item">
-                                <span class="result-label">Final Portfolio Value:</span>
-                                <span class="result-value">$${totalValue.toFixed(2)}</span>
-                            </div>
-                            <div class="result-item">
-                                <span class="result-label">Total Return:</span>
-                                <span class="result-value ${totalReturn >= 0 ? 'positive' : 'negative'}">
-                                    $${totalReturn.toFixed(2)} (${percentReturn.toFixed(2)}%)
-                                </span>
-                            </div>
-                            <div class="result-item">
-                                <span class="result-label">Inflation-Adjusted Return:</span>
-                                <span class="result-value ${realReturn >= 0 ? 'positive' : 'negative'}">
-                                    $${realReturn.toFixed(2)} (${realPercentReturn.toFixed(2)}%)
-                                </span>
-                            </div>
-                            <div class="result-item">
-                                <span class="result-label">Final CPI:</span>
-                                <span class="result-value">${gameState.CPI.toFixed(2)}</span>
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="mb-0">Your Investment Results</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="results-summary">
+                                <div class="result-item">
+                                    <span class="result-label">Initial Investment:</span>
+                                    <span class="result-value">$${initialValue.toFixed(2)}</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Final Portfolio Value:</span>
+                                    <span class="result-value">$${totalValue.toFixed(2)}</span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Total Return:</span>
+                                    <span class="result-value ${totalReturn >= 0 ? 'positive' : 'negative'}">
+                                        $${totalReturn.toFixed(2)} (${percentReturn.toFixed(2)}%)
+                                    </span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Inflation-Adjusted Return:</span>
+                                    <span class="result-value ${realReturn >= 0 ? 'positive' : 'negative'}">
+                                        $${realReturn.toFixed(2)} (${realPercentReturn.toFixed(2)}%)
+                                    </span>
+                                </div>
+                                <div class="result-item">
+                                    <span class="result-label">Final CPI:</span>
+                                    <span class="result-value">${gameState.CPI.toFixed(2)}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+
+                    <div class="results-actions">
+                        <button id="play-again-btn" class="btn btn-primary btn-lg">Play Again</button>
+                        <button id="back-to-welcome-btn" class="btn btn-secondary btn-lg">Back to Welcome</button>
+                    </div>
                 </div>
+            `;
 
-                <div class="results-actions">
-                    <button id="play-again-btn" class="btn btn-primary btn-lg">Play Again</button>
-                    <button id="back-to-welcome-btn" class="btn btn-secondary btn-lg">Back to Welcome</button>
-                </div>
-            </div>
-        `;
+            // Add event listeners
+            document.getElementById('play-again-btn').addEventListener('click', () => {
+                // For Supabase-based game use startSinglePlayerGame, else fallback
+                if (typeof startSinglePlayerGame === 'function') {
+                    startSinglePlayerGame();
+                } else {
+                    resetGame();
+                    startGame();
+                }
+            });
 
-        // Add event listeners
-        document.getElementById('play-again-btn').addEventListener('click', () => {
-            resetGame();
-            startGame();
-        });
+            document.getElementById('back-to-welcome-btn').addEventListener('click', () => {
+                const welcomeScreen = document.getElementById('welcome-screen');
+                if (welcomeScreen) {
+                    gameScreen.style.display = 'none';
+                    welcomeScreen.style.display = 'block';
+                }
+            });
+        }
 
-        document.getElementById('back-to-welcome-btn').addEventListener('click', () => {
-            const welcomeScreen = document.getElementById('welcome-screen');
-            if (welcomeScreen) {
-                gameScreen.style.display = 'none';
-                welcomeScreen.style.display = 'block';
-            }
-        });
-    }
+        // Hide sticky next round button
+        const stickyNextRoundBtn = document.getElementById('sticky-next-round');
+        if (stickyNextRoundBtn) {
+            stickyNextRoundBtn.style.display = 'none';
+        }
 
-    // Hide sticky next round button
-    const stickyNextRoundBtn = document.getElementById('sticky-next-round');
-    if (stickyNextRoundBtn) {
-        stickyNextRoundBtn.style.display = 'none';
-    }
-
-    // Show notification
-    showNotification('Game complete! Check your results.', 'success');
+        // Show notification
+        showNotification('Game complete! Check your results.', 'success');
     } catch (error) {
         console.error('Error in endGame function:', error);
         showNotification('Error ending game', 'danger');
