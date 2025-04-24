@@ -157,8 +157,24 @@ function executeTrade() {
             window.showNotification(`Successfully sold ${quantity.toFixed(6)} ${assetName} for $${value.toFixed(2)}`, 'success');
         }
 
+        // Calculate the new portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        const totalValue = playerState.cash + portfolioValue;
+
+        // Update player state with the final total value
+        playerState.total_value = totalValue;
+
+        console.log('Portfolio value after trade:', {
+            portfolioValue,
+            cash: playerState.cash,
+            totalValue
+        });
+
         // Update UI
         updateUI();
+
+        // Also directly update the Portfolio Summary display
+        updatePortfolioSummaryDisplay(portfolioValue, totalValue);
 
         // Reset form
         quantityInput.value = '';
@@ -272,8 +288,24 @@ function buyAllAssets() {
         // Set cash to 0
         playerState.cash = 0;
 
+        // Calculate the new portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        const totalValue = playerState.cash + portfolioValue;
+
+        // Update player state with the final total value
+        playerState.total_value = totalValue;
+
+        console.log('Portfolio value after distribution:', {
+            portfolioValue,
+            cash: playerState.cash,
+            totalValue
+        });
+
         // Update UI
         updateUI();
+
+        // Also directly update the Portfolio Summary display
+        updatePortfolioSummaryDisplay(portfolioValue, totalValue);
 
         // Save game state
         saveGameState();
@@ -352,8 +384,24 @@ function buySelectedAssets() {
         // Set cash to 0
         playerState.cash = 0;
 
+        // Calculate the new portfolio value
+        const portfolioValue = calculatePortfolioValue();
+        const totalValue = playerState.cash + portfolioValue;
+
+        // Update player state with the final total value
+        playerState.total_value = totalValue;
+
+        console.log('Portfolio value after distribution to selected assets:', {
+            portfolioValue,
+            cash: playerState.cash,
+            totalValue
+        });
+
         // Update UI
         updateUI();
+
+        // Also directly update the Portfolio Summary display
+        updatePortfolioSummaryDisplay(portfolioValue, totalValue);
 
         // Save game state
         saveGameState();
@@ -403,8 +451,24 @@ function sellAllAssets() {
     // Clear portfolio
     playerState.portfolio = {};
 
+    // Calculate the new portfolio value (should be 0 now)
+    const portfolioValue = 0;
+    const totalValue = playerState.cash;
+
+    // Update player state with the final total value
+    playerState.total_value = totalValue;
+
+    console.log('Portfolio value after selling all assets:', {
+        portfolioValue,
+        cash: playerState.cash,
+        totalValue
+    });
+
     // Update UI
     updateUI();
+
+    // Also directly update the Portfolio Summary display
+    updatePortfolioSummaryDisplay(portfolioValue, totalValue);
 
     // Save game state
     saveGameState();
@@ -555,6 +619,55 @@ function generateTradeHistoryRows() {
     }
 
     return rows;
+}
+
+// Update Portfolio Summary display
+function updatePortfolioSummaryDisplay(portfolioValue, totalValue) {
+    try {
+        console.log('Directly updating Portfolio Summary display with values:', {
+            portfolioValue,
+            totalValue
+        });
+
+        // Update by ID
+        const totalValueDisplay = document.getElementById('total-value-display');
+        if (totalValueDisplay) {
+            totalValueDisplay.textContent = totalValue.toFixed(2);
+        }
+
+        const portfolioValueDisplay = document.getElementById('portfolio-value-display');
+        if (portfolioValueDisplay) {
+            portfolioValueDisplay.textContent = portfolioValue.toFixed(2);
+        }
+
+        const cashDisplay = document.getElementById('cash-display');
+        if (cashDisplay) {
+            cashDisplay.textContent = playerState.cash.toFixed(2);
+        }
+
+        // Also update by class name for the Portfolio Summary section
+        const statValueElements = document.querySelectorAll('.stat-value');
+        statValueElements.forEach(element => {
+            const label = element.previousElementSibling;
+            if (label && label.textContent) {
+                if (label.textContent.includes('Total Value')) {
+                    element.textContent = '$' + totalValue.toFixed(2);
+                } else if (label.textContent.includes('Cash')) {
+                    element.textContent = '$' + playerState.cash.toFixed(2);
+                } else if (label.textContent.includes('Invested')) {
+                    element.textContent = '$' + portfolioValue.toFixed(2);
+                } else if (label.textContent.includes('Return')) {
+                    const initialValue = 10000;
+                    const totalReturn = totalValue - initialValue;
+                    const percentReturn = (totalReturn / initialValue) * 100;
+                    element.textContent = '$' + totalReturn.toFixed(2) + ' (' + percentReturn.toFixed(2) + '%)';
+                    element.className = 'stat-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error updating Portfolio Summary display:', error);
+    }
 }
 
 // Update asset price in trade form
