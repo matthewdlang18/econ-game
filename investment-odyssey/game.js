@@ -3,6 +3,8 @@
 // Game state variables
 let playerState = null;
 let gameState = null;
+let gameSession = null;
+let currentRound = 0;
 
 // Asset information for educational purposes
 const assetInfo = {
@@ -52,11 +54,18 @@ const assetInfo = {
 
 // DOM Elements will be queried upon DOMContentLoaded
 // (buttons may not exist until welcome screen is rendered)
-const welcomeScreen = document.getElementById('welcome-screen');
-const gameScreen = document.getElementById('game-screen');
+let welcomeScreen;
+let gameScreen;
 
 // Initialize the game
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize DOM elements
+  welcomeScreen = document.getElementById('welcome-screen');
+  gameScreen = document.getElementById('game-screen');
+
+  console.log('DOM loaded - welcomeScreen:', welcomeScreen);
+  console.log('DOM loaded - gameScreen:', gameScreen);
+
   // Query buttons and set up event listeners
   const singlePlayerBtn = document.getElementById('single-player-btn');
   const classModeBtn = document.getElementById('class-mode-btn');
@@ -225,82 +234,210 @@ window.showNotification = function(message, type = 'info', duration = 5000) {
 
 // Start a single player game
 async function startSinglePlayerGame() {
-  // Create a new game session
-  gameSession = await window.gameSupabase.createSinglePlayerGame();
-  if (!gameSession) {
-    alert('Failed to create a new game. Please try again.');
+  console.log('Starting single player game...');
+
+  // Check if DOM elements are available
+  if (!welcomeScreen || !gameScreen) {
+    console.error('DOM elements not initialized');
+    welcomeScreen = document.getElementById('welcome-screen');
+    gameScreen = document.getElementById('game-screen');
+
+    if (!welcomeScreen || !gameScreen) {
+      alert('Game interface not found. Please refresh the page and try again.');
+      return;
+    }
+  }
+
+  // Check if Supabase is initialized
+  if (!window.gameSupabase) {
+    console.error('Supabase not initialized');
+    alert('Game database not initialized. Please refresh the page and try again.');
     return;
   }
 
-  // Join the game session
-  const joined = await window.gameSupabase.joinGameSession(gameSession.id);
-  if (!joined) {
-    alert('Failed to join the game. Please try again.');
-    return;
+  try {
+    // Create a new game session
+    console.log('Creating new game session...');
+    gameSession = await window.gameSupabase.createSinglePlayerGame();
+    if (!gameSession) {
+      console.error('Failed to create game session');
+      alert('Failed to create a new game. Please try again.');
+      return;
+    }
+    console.log('Game session created:', gameSession);
+
+    // Join the game session
+    console.log('Joining game session...');
+    const joined = await window.gameSupabase.joinGameSession(gameSession.id);
+    if (!joined) {
+      console.error('Failed to join game session');
+      alert('Failed to join the game. Please try again.');
+      return;
+    }
+    console.log('Successfully joined game session');
+
+    // Get initial player state
+    console.log('Getting player state...');
+    playerState = await window.gameSupabase.getPlayerState(gameSession.id);
+    if (!playerState) {
+      console.error('Failed to get player state');
+      alert('Failed to initialize player state. Please try again.');
+      return;
+    }
+    console.log('Player state:', playerState);
+
+    // Get initial game state
+    console.log('Getting game state...');
+    gameState = await window.gameSupabase.getGameState(gameSession.id, 0);
+    if (!gameState) {
+      console.error('Failed to get game state');
+      alert('Failed to initialize game state. Please try again.');
+      return;
+    }
+    console.log('Game state:', gameState);
+
+    // Initialize current round
+    currentRound = 0;
+    console.log('Current round set to:', currentRound);
+
+    // Show the game screen
+    console.log('Showing game screen...');
+    welcomeScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+
+    // Load the game interface
+    console.log('Loading game interface...');
+    loadGameInterface();
+    console.log('Game started successfully');
+  } catch (error) {
+    console.error('Error starting game:', error);
+    alert('An error occurred while starting the game. Please try again.');
   }
-
-  // Get initial player state
-  playerState = await window.gameSupabase.getPlayerState(gameSession.id);
-  if (!playerState) {
-    alert('Failed to initialize player state. Please try again.');
-    return;
-  }
-
-  // Get initial game state
-  gameState = await window.gameSupabase.getGameState(gameSession.id, 0);
-  if (!gameState) {
-    alert('Failed to initialize game state. Please try again.');
-    return;
-  }
-
-  // Show the game screen
-  welcomeScreen.style.display = 'none';
-  gameScreen.style.display = 'block';
-
-  // Load the game interface
-  loadGameInterface();
 }
 
 // Join a class game
 async function joinClassGame() {
-  // Check if there's an active game session for the user's section
-  const existingSession = await window.gameSupabase.checkExistingGameSession();
-  if (!existingSession) {
-    alert('No active class game found. Please ask your instructor to start a game.');
+  console.log('Joining class game...');
+
+  // Check if DOM elements are available
+  if (!welcomeScreen || !gameScreen) {
+    console.error('DOM elements not initialized');
+    welcomeScreen = document.getElementById('welcome-screen');
+    gameScreen = document.getElementById('game-screen');
+
+    if (!welcomeScreen || !gameScreen) {
+      alert('Game interface not found. Please refresh the page and try again.');
+      return;
+    }
+  }
+
+  // Check if Supabase is initialized
+  if (!window.gameSupabase) {
+    console.error('Supabase not initialized');
+    alert('Game database not initialized. Please refresh the page and try again.');
     return;
   }
 
-  // Join the existing game session
-  gameSession = existingSession;
-  const joined = await window.gameSupabase.joinGameSession(gameSession.id);
-  if (!joined) {
-    alert('Failed to join the class game. Please try again.');
-    return;
+  try {
+    // Check if there's an active game session for the user's section
+    console.log('Checking for existing game session...');
+    const existingSession = await window.gameSupabase.checkExistingGameSession();
+    if (!existingSession) {
+      console.log('No active class game found');
+      alert('No active class game found. Please ask your instructor to start a game.');
+      return;
+    }
+    console.log('Found existing game session:', existingSession);
+
+    // Join the existing game session
+    gameSession = existingSession;
+    console.log('Joining game session:', gameSession.id);
+    const joined = await window.gameSupabase.joinGameSession(gameSession.id);
+    if (!joined) {
+      console.error('Failed to join class game');
+      alert('Failed to join the class game. Please try again.');
+      return;
+    }
+    console.log('Successfully joined class game');
+
+    // Get player state
+    console.log('Getting player state...');
+    playerState = await window.gameSupabase.getPlayerState(gameSession.id);
+    if (!playerState) {
+      console.error('Failed to get player state');
+      alert('Failed to initialize player state. Please try again.');
+      return;
+    }
+    console.log('Player state:', playerState);
+
+    // Get current game state
+    currentRound = gameSession.current_round;
+    console.log('Current round:', currentRound);
+    console.log('Getting game state for round:', currentRound);
+    gameState = await window.gameSupabase.getGameState(gameSession.id, currentRound);
+    if (!gameState) {
+      console.error('Failed to get game state');
+      alert('Failed to initialize game state. Please try again.');
+      return;
+    }
+    console.log('Game state:', gameState);
+
+    // Show the game screen
+    console.log('Showing game screen...');
+    welcomeScreen.style.display = 'none';
+    gameScreen.style.display = 'block';
+
+    // Load the game interface
+    console.log('Loading game interface...');
+    loadGameInterface();
+    console.log('Class game joined successfully');
+
+    // Set up real-time subscription for game updates (not yet implemented)
+  } catch (error) {
+    console.error('Error joining class game:', error);
+    alert('An error occurred while joining the class game. Please try again.');
   }
-
-  // Get player state
-  playerState = await window.gameSupabase.getPlayerState(gameSession.id);
-  if (!playerState) {
-    alert('Failed to initialize player state. Please try again.');
-    return;
-  }
-
-  // Get current game state
-  currentRound = gameSession.current_round;
-  gameState = await window.gameSupabase.getGameState(gameSession.id, currentRound);
-
-  // Show the game screen
-  welcomeScreen.style.display = 'none';
-  gameScreen.style.display = 'block';
-
-  // Load the game interface
-  loadGameInterface();
-
-  // Set up real-time subscription for game updates (not yet implemented)
 }
 
 // Load the game interface
 function loadGameInterface() {
+  console.log('Loading game interface...');
+
+  // Check if game screen is available
+  if (!gameScreen) {
+    console.error('Game screen not initialized');
+    gameScreen = document.getElementById('game-screen');
+
+    if (!gameScreen) {
+      console.error('Game screen not found');
+      alert('Game interface not found. Please refresh the page and try again.');
+      return;
+    }
+  }
+
+  // Check if player state and game state are available
+  if (!playerState || !gameState) {
+    console.error('Player state or game state not initialized');
+    alert('Game data not initialized. Please refresh the page and try again.');
+    return;
+  }
+
+  // Make sure currentRound is initialized
+  if (typeof currentRound === 'undefined' || currentRound === null) {
+    console.log('Initializing currentRound to 0');
+    currentRound = 0;
+  }
+
+  // Make sure gameSession is initialized
+  if (!gameSession) {
+    console.error('Game session not initialized');
+    alert('Game session not initialized. Please refresh the page and try again.');
+    return;
+  }
+
+  console.log('Current round:', currentRound);
+  console.log('Game session:', gameSession);
+
   // Calculate portfolio value
   const portfolioValue = calculatePortfolioValue();
   const totalValue = playerState.cash + portfolioValue;
@@ -318,13 +455,19 @@ function loadGameInterface() {
     playerState.portfolio_value_history[currentRound] = totalValue;
   }
 
-  // Update all portfolio value displays in the UI
+  console.log('Portfolio value history:', playerState.portfolio_value_history);
+
+  // Create the game interface first, then update the values
+  // This ensures the elements exist before we try to update them
+  createGameInterface(portfolioValue, totalValue);
+
+  // Now update all portfolio value displays in the UI
   const portfolioValueDisplays = document.querySelectorAll('.stat-value');
   portfolioValueDisplays.forEach(display => {
-    const label = display.previousElementSibling.textContent;
-    if (label.includes('Total Value')) {
+    const label = display.previousElementSibling ? display.previousElementSibling.textContent : '';
+    if (label && label.includes('Total Value')) {
       display.textContent = `$${totalValue.toFixed(2)}`;
-    } else if (label.includes('Invested')) {
+    } else if (label && label.includes('Invested')) {
       display.textContent = `$${portfolioValue.toFixed(2)}`;
     }
   });
@@ -417,24 +560,26 @@ function loadGameInterface() {
   portfolioData.push(playerState.cash);
   portfolioLabels.push('Cash');
 
-  // Create the game interface
-  gameScreen.innerHTML = `
-    <!-- Asset Ticker -->
-    <div class="asset-ticker">
-      ${tickerItems}
-    </div>
+  // Create the game interface function
+  function createGameInterface(portfolioValue, totalValue) {
+    // Create the game interface
+    gameScreen.innerHTML = `
+      <!-- Asset Ticker -->
+      <div class="asset-ticker">
+        ${tickerItems}
+      </div>
 
-    <!-- Game Progress -->
-    <div class="game-progress">
-      <div class="progress-info">
-        Game Progress: Round ${currentRound} of ${gameSession.max_rounds}
+      <!-- Game Progress -->
+      <div class="game-progress">
+        <div class="progress-info">
+          Game Progress: Round ${currentRound} of ${gameSession.max_rounds}
+        </div>
+        <div class="progress-actions">
+          <button id="start-game-btn" class="primary-btn" ${currentRound > 0 ? 'style="display:none;"' : ''}>Start Game</button>
+          <button id="next-round-btn" class="primary-btn" ${currentRound === 0 ? 'style="display:none;"' : ''}>Next Round</button>
+          <button id="start-over-btn" class="secondary-btn">Start Over <i class="fas fa-redo"></i></button>
+        </div>
       </div>
-      <div class="progress-actions">
-        <button id="start-game-btn" class="primary-btn" ${currentRound > 0 ? 'style="display:none;"' : ''}>Start Game</button>
-        <button id="next-round-btn" class="primary-btn" ${currentRound === 0 ? 'style="display:none;"' : ''}>Next Round</button>
-        <button id="start-over-btn" class="secondary-btn">Start Over <i class="fas fa-redo"></i></button>
-      </div>
-    </div>
 
     <div class="game-content">
       <div class="dashboard-grid">
