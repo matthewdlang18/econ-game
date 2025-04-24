@@ -34,73 +34,45 @@ window.updateUI = function() {
         // Update player state with the calculated total value
         playerState.total_value = totalValue;
 
+        // Calculate return values
+        const initialValue = 10000; // Starting cash
+        const totalReturn = totalValue - initialValue;
+        const percentReturn = (totalReturn / initialValue) * 100;
+
         // Log the calculated values for debugging
         console.log('Portfolio Summary Values:', {
             cash: playerState.cash,
             portfolioValue: portfolioValue,
             totalValue: totalValue,
+            totalReturn: totalReturn,
+            percentReturn: percentReturn,
             portfolio: playerState.portfolio
         });
 
-        // Update portfolio summary - try different possible selectors
-        // First try by ID
+        // Update simplified portfolio summary
         const cashDisplay = document.getElementById('cash-display');
         if (cashDisplay) {
-            cashDisplay.textContent = playerState.cash.toFixed(2);
+            cashDisplay.textContent = '$' + playerState.cash.toFixed(2);
+            console.log('Updated Cash display to:', playerState.cash.toFixed(2));
         }
 
         const portfolioValueDisplay = document.getElementById('portfolio-value-display');
         if (portfolioValueDisplay) {
-            portfolioValueDisplay.textContent = portfolioValue.toFixed(2);
+            portfolioValueDisplay.textContent = '$' + portfolioValue.toFixed(2);
+            console.log('Updated Invested display to:', portfolioValue.toFixed(2));
         }
 
         const totalValueDisplay = document.getElementById('total-value-display');
         if (totalValueDisplay) {
-            totalValueDisplay.textContent = totalValue.toFixed(2);
+            totalValueDisplay.textContent = '$' + totalValue.toFixed(2);
+            console.log('Updated Total Value display to:', totalValue.toFixed(2));
         }
 
-        // Also try updating by class name for the Portfolio Summary section
-        const totalValueElements = document.querySelectorAll('.stat-value');
-        totalValueElements.forEach(element => {
-            const label = element.previousElementSibling;
-            if (label && label.textContent) {
-                if (label.textContent.includes('Total Value')) {
-                    element.textContent = '$' + totalValue.toFixed(2);
-                    console.log('Updated Total Value display to:', totalValue.toFixed(2));
-                } else if (label.textContent.includes('Cash')) {
-                    element.textContent = '$' + playerState.cash.toFixed(2);
-                    console.log('Updated Cash display to:', playerState.cash.toFixed(2));
-                } else if (label.textContent.includes('Invested')) {
-                    element.textContent = '$' + portfolioValue.toFixed(2);
-                    console.log('Updated Invested display to:', portfolioValue.toFixed(2));
-                } else if (label.textContent.includes('Return')) {
-                    const initialValue = 10000;
-                    const totalReturn = totalValue - initialValue;
-                    const percentReturn = (totalReturn / initialValue) * 100;
-                    element.textContent = '$' + totalReturn.toFixed(2) + ' (' + percentReturn.toFixed(2) + '%)';
-                    element.className = 'stat-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
-                    console.log('Updated Return display to:', totalReturn.toFixed(2), percentReturn.toFixed(2) + '%');
-                }
-            }
-        });
-
-        // Also update any elements with specific IDs for the portfolio summary
-        const portfolioSummaryTotalValue = document.querySelector('#portfolio-summary .total-value');
-        if (portfolioSummaryTotalValue) {
-            portfolioSummaryTotalValue.textContent = totalValue.toFixed(2);
-            console.log('Updated portfolio-summary total-value to:', totalValue.toFixed(2));
-        }
-
-        const portfolioSummaryCash = document.querySelector('#portfolio-summary .cash-value');
-        if (portfolioSummaryCash) {
-            portfolioSummaryCash.textContent = playerState.cash.toFixed(2);
-            console.log('Updated portfolio-summary cash-value to:', playerState.cash.toFixed(2));
-        }
-
-        const portfolioSummaryInvested = document.querySelector('#portfolio-summary .invested-value');
-        if (portfolioSummaryInvested) {
-            portfolioSummaryInvested.textContent = portfolioValue.toFixed(2);
-            console.log('Updated portfolio-summary invested-value to:', portfolioValue.toFixed(2));
+        const returnDisplay = document.getElementById('return-display');
+        if (returnDisplay) {
+            returnDisplay.textContent = '$' + totalReturn.toFixed(2) + ' (' + percentReturn.toFixed(2) + '%)';
+            returnDisplay.className = totalReturn >= 0 ? 'mb-0 text-success' : 'mb-0 text-danger';
+            console.log('Updated Return display to:', totalReturn.toFixed(2), percentReturn.toFixed(2) + '%');
         }
 
         const cpiDisplay = document.getElementById('cpi-display');
@@ -194,62 +166,50 @@ window.updateCashAndPortfolioDisplays = function() {
     // Update player state with the calculated total value
     playerState.total_value = totalValue;
 
+    // Calculate return values
+    const initialValue = 10000; // Starting cash
+    const totalReturn = totalValue - initialValue;
+    const percentReturn = (totalReturn / initialValue) * 100;
+
     // Log the calculated values for debugging
     console.log('Portfolio Summary Values (updateCashAndPortfolioDisplays):', {
         cash: playerState.cash,
         portfolioValue: portfolioValue,
         totalValue: totalValue,
+        totalReturn: totalReturn,
+        percentReturn: percentReturn,
         portfolio: playerState.portfolio
     });
 
-    // Update displays by ID
-    updateElementText('cash-display', playerState.cash.toFixed(2));
-    updateElementText('portfolio-value-display', portfolioValue.toFixed(2));
-    updateElementText('total-value-display', totalValue.toFixed(2));
-    updateElementText('cpi-display', gameState.CPI.toFixed(2));
-
-    // Also update by class name for the Portfolio Summary section
-    const totalValueElements = document.querySelectorAll('.stat-value');
-    totalValueElements.forEach(element => {
-        const label = element.previousElementSibling;
-        if (label && label.textContent) {
-            if (label.textContent.includes('Total Value')) {
-                element.textContent = '$' + totalValue.toFixed(2);
-                console.log('Updated Total Value display to:', totalValue.toFixed(2));
-            } else if (label.textContent.includes('Cash')) {
-                element.textContent = '$' + playerState.cash.toFixed(2);
-                console.log('Updated Cash display to:', playerState.cash.toFixed(2));
-            } else if (label.textContent.includes('Invested')) {
-                element.textContent = '$' + portfolioValue.toFixed(2);
-                console.log('Updated Invested display to:', portfolioValue.toFixed(2));
-            } else if (label.textContent.includes('Return')) {
-                const initialValue = 10000;
-                const totalReturn = totalValue - initialValue;
-                const percentReturn = (totalReturn / initialValue) * 100;
-                element.textContent = '$' + totalReturn.toFixed(2) + ' (' + percentReturn.toFixed(2) + '%)';
-                element.className = 'stat-value ' + (totalReturn >= 0 ? 'positive' : 'negative');
-                console.log('Updated Return display to:', totalReturn.toFixed(2), percentReturn.toFixed(2) + '%');
-            }
-        }
-    });
-
-    // Also update any elements with specific IDs for the portfolio summary
-    const portfolioSummaryTotalValue = document.querySelector('#portfolio-summary .total-value');
-    if (portfolioSummaryTotalValue) {
-        portfolioSummaryTotalValue.textContent = totalValue.toFixed(2);
-        console.log('Updated portfolio-summary total-value to:', totalValue.toFixed(2));
+    // Update simplified portfolio summary
+    const cashDisplay = document.getElementById('cash-display');
+    if (cashDisplay) {
+        cashDisplay.textContent = '$' + playerState.cash.toFixed(2);
+        console.log('Updated Cash display to:', playerState.cash.toFixed(2));
     }
 
-    const portfolioSummaryCash = document.querySelector('#portfolio-summary .cash-value');
-    if (portfolioSummaryCash) {
-        portfolioSummaryCash.textContent = playerState.cash.toFixed(2);
-        console.log('Updated portfolio-summary cash-value to:', playerState.cash.toFixed(2));
+    const portfolioValueDisplay = document.getElementById('portfolio-value-display');
+    if (portfolioValueDisplay) {
+        portfolioValueDisplay.textContent = '$' + portfolioValue.toFixed(2);
+        console.log('Updated Invested display to:', portfolioValue.toFixed(2));
     }
 
-    const portfolioSummaryInvested = document.querySelector('#portfolio-summary .invested-value');
-    if (portfolioSummaryInvested) {
-        portfolioSummaryInvested.textContent = portfolioValue.toFixed(2);
-        console.log('Updated portfolio-summary invested-value to:', portfolioValue.toFixed(2));
+    const totalValueDisplay = document.getElementById('total-value-display');
+    if (totalValueDisplay) {
+        totalValueDisplay.textContent = '$' + totalValue.toFixed(2);
+        console.log('Updated Total Value display to:', totalValue.toFixed(2));
+    }
+
+    const returnDisplay = document.getElementById('return-display');
+    if (returnDisplay) {
+        returnDisplay.textContent = '$' + totalReturn.toFixed(2) + ' (' + percentReturn.toFixed(2) + '%)';
+        returnDisplay.className = totalReturn >= 0 ? 'mb-0 text-success' : 'mb-0 text-danger';
+        console.log('Updated Return display to:', totalReturn.toFixed(2), percentReturn.toFixed(2) + '%');
+    }
+
+    const cpiDisplay = document.getElementById('cpi-display');
+    if (cpiDisplay) {
+        cpiDisplay.textContent = gameState.CPI.toFixed(2);
     }
 }
 
